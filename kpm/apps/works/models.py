@@ -3,6 +3,7 @@ from kpm.apps.themes.models import Theme
 
 
 class Work(models.Model):
+    id = models.AutoField('work id', primary_key=True, editable=False)
     name = models.CharField('work name', max_length=100)
     grades = models.CharField('work grades', max_length=100)
     max_score = models.FloatField('max score')

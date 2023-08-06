@@ -6,7 +6,7 @@ import psycopg2
 from datetime import timedelta
 
 PROJECT_ROOT = os.path.dirname(__file__)
-DOTENV_PATH = os.path.join(PROJECT_ROOT, '.env')
+DOTENV_PATH = os.path.join(PROJECT_ROOT, '../.env')
 
 dotenv.load_dotenv(DOTENV_PATH)
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'apps'))
@@ -24,8 +24,8 @@ INSTALLED_APPS = [
     'logs.apps.LogsConfig',
     'works.apps.WorksConfig',
     'themes.apps.ThemesConfig',
-    'mysessions.apps.MysessionsConfig',
     'grades.apps.GradesConfig',
+    'messages.apps.MessagesConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'rest_framework',
+    'drf_yasg'
 ]
 
 MIDDLEWARE = [
@@ -106,6 +107,7 @@ DATABASES = {
         'PASSWORD': DB_USER_PASSWORD,
         'HOST': DB_HOST,
         'PORT': DB_PORT,
+        'TIME_ZONE': 'Europe/Moscow',
     }
 }
 
@@ -163,6 +165,17 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+}
+
+SWAGGER_SETTINGS = {
+    'DEFAULT_MODEL_RENDERING': 'example',
+    'SECURITY_DEFINITIONS': {
+            'api_key': {
+                'type': 'apiKey',
+                'in': 'header',
+                'name': 'Authorization'
+            }
+        },
 }
 
 AUTH_USER_MODEL = 'users.User'

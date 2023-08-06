@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from .customfunctions import get_variable
+from .functions import get_variable
 from kpm.apps.works.models import Work
 from kpm.apps.logs.models import Log
 from kpm.apps.users.models import User
@@ -10,247 +10,132 @@ from kpm.apps.grades.models import Grade
 import json
 from django.db.models import Sum, Q, Count
 from kpm.apps.users.permissions import IsAdmin
+from drf_yasg.utils import swagger_auto_schema
+from kpm.apps.works.docs import *
 
 
-@api_view(["GET"])
-@permission_classes([IsAdmin])
-def get_works_sorted_by_theme(request):
-    class_ = get_variable("class", request)
-    if not class_:
-        return HttpResponse(
-            json.dumps(
-                {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
-                ensure_ascii=False), status=404)
-    else:
-        if class_ not in ['4', '5', '6']:
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
-                     'instance': request.path},
-                    ensure_ascii=False), status=404)
-    try:
-        works = Work.objects.select_related('theme').filter(school_class=class_)
-        themes_dict = {}
-        for work in works:
-            if work.theme.type == 0:
-                text = 'домашняя работа'
-            elif work.theme.type == 1:
-                text = 'классная работа'
-            elif work.theme.type == 2:
-                text = 'блиц'
-            elif work.theme.type == 3:
-                text = 'экзамен письменный'
-            elif work.theme.type == 4:
-                text = 'экзамен устный'
-            else:
-                text = 'вне статистики'
-            if work.theme.name not in themes_dict.keys():
-                themes_dict[work.theme.name] = []
-            work_info = {"id": work.id, "name": work.name, "theme_id": work.theme_id, "grades": work.grades.split('_._'), "max_score": work.max_score, "exercises": work.exercises, "theme_name": work.theme.name, "type_text": text}
-            themes_dict[work.theme.name].append(work_info)
-        themes_list = []
-        for theme in themes_dict.keys():
-            tmp = []
-            tmp_dict = {}
-            for work in themes_dict[theme]:
-                tmp.append(work)
-            tmp_dict["theme"] = theme
-            tmp_dict["works"] = tmp
-            themes_list.append(tmp_dict)
-        return HttpResponse(
-            json.dumps({'state': 'success', 'message': 'Работы получены.', 'details': {'themes': themes_list}}, ensure_ascii=False),
-            status=200)
-    except KeyError as e:
-        return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
-    except Exception as e:
-        return HttpResponse(json.dumps({'state': 'error', 'message': f'{e}', 'details': {}, 'instance': request.path},
-                                       ensure_ascii=False), status=404)
-
-
+@swagger_auto_schema(method='GET', operation_summary="Получение списка работ.",
+                     manual_parameters=[class_param],
+                     responses=get_works_responses)
 @api_view(["GET"])
 @permission_classes([IsAdmin])
 def get_works(request):
-    class_ = get_variable("class", request)
-    if not class_:
-        return HttpResponse(
-            json.dumps(
-                {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
-                ensure_ascii=False), status=404)
-    else:
-        if class_ not in ['4', '5', '6']:
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
-                     'instance': request.path},
-                    ensure_ascii=False), status=404)
     try:
-        works = Work.objects.filter(school_class=class_)
-        works_list = []
-        for work in works:
-            theme = Theme.objects.get(id=work.theme_id)
-            if theme.type == 0:
-                text = 'домашняя работа'
-            elif theme.type == 1:
-                text = 'классная работа'
-            elif theme.type == 2:
-                text = 'блиц'
-            elif theme.type == 3:
-                text = 'экзамен письменный'
-            elif theme.type == 4:
-                text = 'экзамен устный'
-            else:
-                text = 'вне статистики'
-            work_info = {"id": work.id, "name": work.name, "theme_id": work.theme_id, "grades": work.grades.split('_._'),
-                         "max_score": work.max_score, "exercises": work.exercises, "theme_name": theme.name, "type_text": text}
-            works_list.append(work_info)
-        return HttpResponse(
-            json.dumps({'state': 'success', 'message': 'Работы получены.', 'details': {'works': works_list}}, ensure_ascii=False),
-            status=200)
-    except KeyError as e:
-        return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
-    except Exception as e:
-        return HttpResponse(json.dumps({'state': 'error', 'message': f'{e}', 'details': {}, 'instance': request.path},
-                                       ensure_ascii=False), status=404)
-
-
-@api_view(["POST"])
-@permission_classes([IsAdmin])
-def get_some_works(request):
-    if request.body:
-        request_body = json.loads(request.body)
-    else:
-        return HttpResponse(
-            json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=400)
-    class_ = get_variable("class", request)
-    if not class_:
-        return HttpResponse(
-            json.dumps(
-                {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
-                ensure_ascii=False), status=404)
-    else:
-        if class_ not in ['4', '5', '6']:
+        class_ = get_variable("class", request)
+        if not class_:
             return HttpResponse(
                 json.dumps(
-                    {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
-                     'instance': request.path},
+                    {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
-    try:
-        works_list = []
-        if "works" not in request_body:
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Работы не найдены.', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=404)
-        works_order = list(map(int, request_body["works"]))
-        works = Work.objects.filter(Q(id__in=works_order) & Q(school_class=class_))
-        if not works:
-            return HttpResponse(
-                json.dumps({'state': 'error', 'message': f'Работы не найдены.', 'details': {}, 'instance': request.path},
-                           ensure_ascii=False), status=404)
-        for work in works:
-            theme = Theme.objects.get(id=work.theme_id)
-            if theme.type == 0:
-                text = 'домашняя работа'
-            elif theme.type == 1:
-                text = 'классная работа'
-            elif theme.type == 2:
-                text = 'блиц'
-            elif theme.type == 3:
-                text = 'экзамен письменный'
-            elif theme.type == 4:
-                text = 'экзамен устный'
-            else:
-                text = 'вне статистики'
-            work_info = {"id": work.id, "name": work.name, "theme_id": work.theme_id, "grades": work.grades.split('_._'),
-                         "max_score": work.max_score, "exercises": work.exercises, "theme_name": theme.name, "type_text": text}
-            works_list.append(work_info)
-        return HttpResponse(
-            json.dumps({'state': 'success', 'message': 'Работы возвращены.', 'details': {'works': works_list}}, ensure_ascii=False),
-            status=200)
-    except KeyError as e:
-        return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
-    except Exception as e:
-        return HttpResponse(json.dumps({'state': 'error', 'message': f'{e}', 'details': {}, 'instance': request.path}, ensure_ascii=False), status=400)
-
-
-@api_view(["GET"])
-@permission_classes([IsAdmin])
-def get_works_id(request):
-    filter_ = get_variable("filter", request)
-    param = get_variable("param", request)
-    class_ = get_variable("class", request)
-    if not class_:
-        return HttpResponse(
-            json.dumps(
-                {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
-                ensure_ascii=False), status=404)
-    else:
-        if class_ not in ['4', '5', '6']:
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
-                     'instance': request.path},
-                    ensure_ascii=False), status=404)
-    try:
-        if not filter_:
-            return HttpResponse(
-                json.dumps({'state': 'error', 'message': f'Не указан фильтр.', 'details': {}, 'instance': request.path},
-                           ensure_ascii=False), status=404)
         else:
-            if not param:
+            if class_ not in ['4', '5', '6']:
                 return HttpResponse(
                     json.dumps(
-                        {'state': 'error', 'message': f'Не указаны параметры фильтра.', 'details': {}, 'instance': request.path},
+                        {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
+                         'instance': request.path},
                         ensure_ascii=False), status=404)
-        if filter_ == 'theme_id':
-            works = Work.objects.filter(Q(theme_id=param) & Q(school_class=class_))
-            works_id_list = list(works.values_list('id', flat=True))
-            if not works:
+        filter_ = get_variable("filter", request)
+        filter_value = get_variable("filter_value", request)
+        works = Work.objects.filter(school_class=int(class_)).select_related("theme")
+        if filter_:
+            if not filter_value:
                 return HttpResponse(
-                    json.dumps({'state': 'error', 'message': f'Работы не найдены.', 'details': {}, 'instance': request.path},
-                               ensure_ascii=False), status=200)
-        elif filter_ == 'theme_type':
-            themes = Theme.objects.filter(Q(type=param) & Q(school_class=class_))
-            if not themes:
-                return HttpResponse(
-                    json.dumps({'state': 'error', 'message': f'Темы не найдены.', 'details': {}, 'instance': request.path},
-                               ensure_ascii=False), status=404)
-            works = Work.objects.filter(Q(theme_id__in=themes) & Q(school_class=class_))
-            works_id_list = list(works.values_list('id', flat=True))
-            if not works:
-                return HttpResponse(
-                    json.dumps({'state': 'error', 'message': f'Работы не найдены.', 'details': {}, 'instance': request.path},
-                               ensure_ascii=False), status=404)
+                    json.dumps(
+                        {'state': 'error', 'message': f'Указан фильтр, но не указано значение фильтра.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=404)
+        if not filter_:
+            pass
+        elif filter_ == 'theme':
+            works = works.filter(theme_id=filter_value)
+        elif filter_ == 'type':
+            works = works.filter(theme__type=filter_value)
+        elif filter_ == 'homework':
+            works = works.filter(theme__type=filter_value)
         else:
-            works_id_list = []
-        return HttpResponse(
-            json.dumps({'state': 'success', 'message': f'ID работ получены.', 'details': {'works': works_id_list}},
-                       ensure_ascii=False), status=200)
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Некорректное значение фильтра.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=404)
+        works_list = []
+        for work in works:
+            works_list.append({
+                "id": work.id,
+                "name": work.name,
+                "grades": work.grades.split('_._'),
+                "max_score": work.max_score,
+                "exercises": work.exercises,
+                "theme_id": work.theme_id,
+                "theme_name": work.theme.name,
+                "theme_type": work.theme.type,
+                "is_homework": work.theme.is_homework
+            })
+        return HttpResponse(json.dumps({'works': works_list}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
-        return HttpResponse(json.dumps({'state': 'error', 'message': f'{e}', 'details': {}, 'instance': request.path}, ensure_ascii=False), status=400)
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
 
 
-# todo: обработка ошибок
+@swagger_auto_schema(method='GET', operation_summary="Получение работы.",
+                     manual_parameters=[id_param],
+                     responses=get_work_responses)
+@api_view(["GET"])
+@permission_classes([IsAdmin])
+def get_work(request):
+    try:
+        id_ = get_variable("id", request)
+        if not id_:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        work = Work.objects.filter(id=id_).select_related("theme")
+        if not work:
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': f'Работа не существует.', 'details': {}, 'instance': request.path},
+                           ensure_ascii=False), status=404)
+        return HttpResponse(
+            json.dumps({
+                "id": work.id,
+                "name": work.name,
+                "grades": work.grades.split('_._'),
+                "max_score": work.max_score,
+                "exercises": work.exercises,
+                "theme_id": work.theme_id,
+                "theme_name": work.theme.name,
+                "theme_type": work.theme.type,
+                "is_homework": work.theme.is_homework
+            }, ensure_ascii=False), status=200)
+    except KeyError as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='POST', operation_summary="Создание работы.",
+                     request_body=create_work_request_body,
+                     responses=create_work_responses)
 @api_view(["POST"])
 @permission_classes([IsAdmin])
 def create_work(request):
-    if request.body:
-        request_body = json.loads(request.body)
-    else:
-        return HttpResponse(json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path}, ensure_ascii=False), status=400)
     try:
-        grades_list = request_body["grades"].replace(',', '.').split()
+        if request.body:
+            request_body = json.loads(request.body)
+        else:
+            return HttpResponse(json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path}, ensure_ascii=False), status=400)
+        grades_list = request_body["grades"]
         max_score = 0
         for grade in grades_list:
             cast = float(grade)
@@ -265,123 +150,141 @@ def create_work(request):
             empty_grades = '_._'.join(list('#' * len(grades_list)))
             grade = Grade(student_id=student.id, work_id=work.id, grades=empty_grades, max_score=0, score=0, exercises=0)
             grade.save()
-        return HttpResponse(
-            json.dumps({'state': 'success', 'message': 'Работа успешно добавлена.', 'details': {}}, ensure_ascii=False),
-            status=200)
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path}, ensure_ascii=False), status=404)
     except Exception as e:
-        return HttpResponse(json.dumps({'state': 'error', 'message': f'{e}', 'details': {}, 'instance': request.path}, ensure_ascii=False), status=400)
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
 
 
-# todo: обработка ошибок
+@swagger_auto_schema(method='PATCH', operation_summary="Изменение работы.",
+                     request_body=update_work_request_body,
+                     responses=update_work_responses)
 @api_view(["PATCH"])
 @permission_classes([IsAdmin])
 def update_work(request):
-    if request.body:
-        request_body = json.loads(request.body)
-    else:
-        return HttpResponse(json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path}, ensure_ascii=False), status=400)
     try:
-        grades_list = request_body["grades"].replace(',', '.').split()
-        max_score = 0
-        for grade in grades_list:
-            cast = float(grade)
-            max_score += cast
-        grades = '_._'.join(grades_list)
+        if request.body:
+            request_body = json.loads(request.body)
+        else:
+            return HttpResponse(json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path}, ensure_ascii=False), status=400)
         work = Work.objects.get(id=request_body["id"])
-        old_grades = work.grades
-        old_maximum = work.max_score
-        work.grades = grades
-        work.max_score = max_score
-        work.save()
-        log = Log(operation='UPDATE', from_table='works', details=f'Изменена работа {request_body["id"]} в таблице works. ["grades": "{old_grades}", "max_score": "{old_maximum}"]')
-        log.save()
-        return HttpResponse(
-            json.dumps({'state': 'success', 'message': 'Работа успешно обновлена.', 'details': {}}, ensure_ascii=False),
-            status=200)
+        if "grades" in request_body.keys():
+            grades_list = request_body["grades"]
+            max_score = 0
+            for grade in grades_list:
+                cast = float(grade)
+                max_score += cast
+            grades = '_._'.join(grades_list)
+            old_grades = work.grades
+            old_maximum = work.max_score
+            work.grades = grades
+            work.max_score = max_score
+            work.save()
+            log = Log(operation='UPDATE', from_table='works', details=f'Изменены оценки в работе {request_body["id"]} в таблице works. ["grades": "{old_grades}", "max_score": "{old_maximum}"]')
+            log.save()
+        if "name" in request_body.keys():
+            old_name = work.name
+            new_name = request_body["name"]
+            work.name = new_name
+            work.save()
+            log = Log(operation='UPDATE', from_table='works',
+                      details=f'Изменено имя работы {request_body["id"]} в таблице works. ["name": "{old_name}"]')
+            log.save()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path}, ensure_ascii=False), status=404)
     except Exception as e:
-        return HttpResponse(json.dumps({'state': 'error', 'message': f'{e}', 'details': {}, 'instance': request.path}, ensure_ascii=False), status=400)
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
 
 
-# todo: обработка ошибок
+@swagger_auto_schema(method='DELETE', operation_summary="Удаление работы.",
+                     manual_parameters=[id_param],
+                     responses=delete_work_responses)
 @api_view(["DELETE"])
 @permission_classes([IsAdmin])
 def delete_work(request):
-    if request.body:
-        request_body = json.loads(request.body)
-    else:
-        return HttpResponse(
-            json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=400)
     try:
-        work = Work.objects.get(id=request_body["id"])
+        id_ = get_variable("id", request)
+        if not id_:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        work = Work.objects.get(id=id_)
         log_details = f'Удалена работа из таблицы works. ["id": {work.id} | "name": "{work.name}" | "grades": {", ".join(map(str, work.grades.split("_._")))} | "max_score": "{work.max_score}" | "exercises": "{work.exercises}" | "theme_id": {work.theme_id} | "school_class": {work.school_class}]'
         work.delete()
         log = Log(operation='DELETE', from_table='works', details=log_details)
         log.save()
-        return HttpResponse(
-            json.dumps({'state': 'success', 'message': 'Работа успешно удалена.', 'details': {}}, ensure_ascii=False),
-            status=205)
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=205)
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
-        return HttpResponse(json.dumps({'state': 'error', 'message': f'{e}', 'details': {}, 'instance': request.path},
-                                       ensure_ascii=False), status=404)
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
 
 
+@swagger_auto_schema(method='DELETE', operation_summary="Удаление работ.",
+                     manual_parameters=[class_param],
+                     responses=delete_work_responses)
 @api_view(["DELETE"])
 @permission_classes([IsAdmin])
 def delete_works(request):
-    class_ = get_variable("class", request)
-    if not class_:
-        return HttpResponse(
-            json.dumps(
-                {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
-                ensure_ascii=False), status=404)
-    else:
-        if class_ not in ['4', '5', '6']:
+    try:
+        class_ = get_variable("class", request)
+        if not class_:
             return HttpResponse(
                 json.dumps(
-                    {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
-                     'instance': request.path},
+                    {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
-    try:
+        else:
+            if class_ not in ['4', '5', '6']:
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=404)
         works = Work.objects.filter(school_class=class_)
         for work in works:
             Log(operation='DELETE', from_table='works',
                 details=f'Работа удалена из таблицы works. ["id": {work.id} | "name": "{work.name}" | "grades": {", ".join(map(str, work.grades.split("_._")))} | "max_score": "{work.max_score}" | "exercises": "{work.exercises}" | "theme_id": {work.theme_id} | "school_class": {work.school_class}]').save()
         works.delete()
-        return HttpResponse(
-            json.dumps({'state': 'success', 'message': 'Все работы успешно удалены.', 'details': {}},
-                       ensure_ascii=False),
-            status=205)
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=205)
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
-        return HttpResponse(json.dumps({'state': 'error', 'message': f'{e}', 'details': {}, 'instance': request.path},
-                                       ensure_ascii=False), status=404)
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
 
 
+"""
 @api_view(["PATCH"])
 @permission_classes([IsAdmin])
 def update_work_grades(request):
-    if request.body:
-        request_body = json.loads(request.body)
-    else:
-        return HttpResponse(
-            json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=400)
-    global_change = None
     try:
+        if request.body:
+            request_body = json.loads(request.body)
+        else:
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
+                           ensure_ascii=False), status=400)
+        global_change = None
         works = Work.objects.all()
         changes = request_body["changes"]
         formatted_changes = {}
@@ -472,9 +375,7 @@ def update_work_grades(request):
             work.save()
             log = Log(operation='UPDATE', from_table='works', details=log_details)
             log.save()
-        return HttpResponse(
-            json.dumps({'state': 'success', 'message': 'Оценки успешно обновлены.', 'details': {}}, ensure_ascii=False),
-            status=200)
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
@@ -488,5 +389,8 @@ def update_work_grades(request):
                                         'instance': request.path},
                                        ensure_ascii=False), status=404)
     except Exception as e:
-        return HttpResponse(json.dumps({'state': 'error', 'message': f'{e}', 'details': {}, 'instance': request.path},
-                                       ensure_ascii=False), status=404)
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+"""""
