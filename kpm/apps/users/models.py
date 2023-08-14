@@ -4,6 +4,18 @@ import datetime
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
 
+class Group(models.Model):
+    id = models.AutoField('group id', primary_key=True, editable=False)
+    name = models.CharField('group name', max_length=100, unique=True)
+    school_class = models.IntegerField('student class', default=4)
+
+    def __str__(self):
+        return f'{self.id}'
+
+    class Meta:
+        db_table = 'groups'
+
+
 class UserManager(BaseUserManager):
     def create_user(self, name, login, password, is_admin):
         if login is None:
@@ -32,6 +44,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     school_class = models.IntegerField('student class', default=None, null=True, blank=True)
     default_password = models.CharField('default password', max_length=5, null=True, blank=True)
     is_default = models.BooleanField('is default password', default=True)
+    group = models.ForeignKey(Group, default=None, null=True, blank=True, on_delete=models.SET_NULL)
 
     USERNAME_FIELD = 'login'
     REQUIRED_FIELDS = ['name', 'default_password', 'is_admin']

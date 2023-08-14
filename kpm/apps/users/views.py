@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from kpm.apps.users.models import User
+from kpm.apps.users.models import User, Group
 from kpm.apps.users.permissions import *
 from kpm.apps.users.functions import *
 from kpm.apps.logs.models import Log
@@ -12,7 +12,6 @@ import json
 from django.db.models import Sum, Q, Count
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
-from kpm.apps.users.permissions import IsAdmin
 from rest_framework_simplejwt.exceptions import TokenError
 from django.contrib.auth.hashers import check_password, make_password
 from drf_yasg.utils import swagger_auto_schema
@@ -175,7 +174,7 @@ def delete_user(request):
         student.delete()
         log = Log(operation='DELETE', from_table='users', details=log_details)
         log.save()
-        return HttpResponse(json.dumps({}, ensure_ascii=False), status=205)
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
@@ -214,7 +213,7 @@ def delete_users(request):
                       details=f'Удален ученик из таблицы users. ["id": {student.id} | "name": "{student.name}" | "login": {student.login} | "password": {student.password} | "experience": {student.experience} | "mana_earned": {student.mana_earned} | "last_homework_id": {student.last_homework_id} | "last_classwork_id": {student.last_classwork_id} | "school_class": {student.school_class}]')
             log.save()
         students.delete()
-        return HttpResponse(json.dumps({}, ensure_ascii=False), status=205)
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
@@ -376,6 +375,143 @@ def logout(request):
             json.dumps({'state': 'success', 'message': f'Успешный выход.', 'details': {},
                         'instance': request.path},
                        ensure_ascii=False), status=200)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='POST', operation_summary="Создание группы учеников.",
+                     request_body=create_group_request_body,
+                     responses=create_group_responses)
+@api_view(["POST"])
+@permission_classes([IsAdmin])
+def create_group(request):
+    try:
+        if request.body:
+            request_body = json.loads(request.body)
+        else:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
+        group = Group(name=request_body["name"], school_class=request_body["class"])
+        group.save()
+        log = Log(operation='INSERT', from_table='groups', details='Добавлен новая группа в таблицу groups.')
+        log.save()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except KeyError as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='DELETE', operation_summary="Удаление группы учеников.",
+                     manual_parameters=[id_param_group],
+                     responses=delete_group_responses)
+@api_view(["DELETE"])
+@permission_classes([IsAdmin])
+def delete_group(request):
+    try:
+        id_ = get_variable("id", request)
+        if not id_:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id группы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        group = Group.objects.get(id=id_)
+        log_details = f'Удалена группа из таблицы groups. ["id": {group.id} | "name": "{group.name}" | "school_class": {group.school_class}]'
+        group.delete()
+        log = Log(operation='DELETE', from_table='group', details=log_details)
+        log.save()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except KeyError as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='PATCH', operation_summary="Добавление ученика в группу.",
+                     manual_parameters=[id_param_group, id_param],
+                     responses=set_user_group_responses)
+@api_view(["PATCH"])
+@permission_classes([IsAdmin])
+def set_user_group(request):
+    try:
+        id_ = get_variable("user", request)
+        group = get_variable("group", request)
+        if not id_:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        student = User.objects.get(id=id_)
+        if group:
+            group = Group.objects.get(id=group)
+            if student.school_class != group.school_class:
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Не совпадает класс ученика и группы.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=404)
+            log_details = f'Добавление ученика {student.id} в группу {group.id}. ["id": {student.id} | "group": "{student.group}"]'
+            student.group = group
+            student.save()
+            log = Log(operation='UPDATE', from_table='users', details=log_details)
+            log.save()
+        else:
+            log_details = f'Удаление у ученика {student.id} группы. ["id": {student.id} | "group": "{student.group}"]'
+            student.group = group
+            student.save()
+            log = Log(operation='DELETE', from_table='users', details=log_details)
+            log.save()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except KeyError as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='GET', operation_summary="Получить список групп.",
+                     manual_parameters=[class_param],
+                     responses=get_groups_responses)
+@api_view(["GET"])
+@permission_classes([IsAdmin])
+def get_groups(request):
+    try:
+        class_ = get_variable("class", request)
+        if class_ not in ['4', '5', '6']:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=404)
+        groups = Group.objects.filter(school_class=int(class_))
+        groups_list = []
+        if not groups:
+            return HttpResponse(json.dumps({'groups': []}, ensure_ascii=False), status=200)
+        for group in groups:
+            groups_list.append({'id': group.id, 'name': group.name})
+        return HttpResponse(json.dumps({'groups': groups_list}, ensure_ascii=False), status=200)
+    except KeyError as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},

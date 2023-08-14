@@ -224,7 +224,7 @@ def delete_work(request):
         work.delete()
         log = Log(operation='DELETE', from_table='works', details=log_details)
         log.save()
-        return HttpResponse(json.dumps({}, ensure_ascii=False), status=205)
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
@@ -261,7 +261,7 @@ def delete_works(request):
             Log(operation='DELETE', from_table='works',
                 details=f'Работа удалена из таблицы works. ["id": {work.id} | "name": "{work.name}" | "grades": {", ".join(map(str, work.grades.split("_._")))} | "max_score": "{work.max_score}" | "exercises": "{work.exercises}" | "theme_id": {work.theme_id} | "school_class": {work.school_class}]').save()
         works.delete()
-        return HttpResponse(json.dumps({}, ensure_ascii=False), status=205)
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
