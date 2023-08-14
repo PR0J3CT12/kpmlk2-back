@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from kpm.apps.users.models import User, Group
+from kpm.apps.users.models import User, Group, History
 from kpm.apps.users.permissions import *
 from kpm.apps.users.functions import *
 from kpm.apps.logs.models import Log
@@ -16,6 +16,8 @@ from rest_framework_simplejwt.exceptions import TokenError
 from django.contrib.auth.hashers import check_password, make_password
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.users.docs import *
+from django.utils import timezone
+from datetime import datetime, timedelta
 
 
 SECRET_KEY = settings.SECRET_KEY
@@ -40,6 +42,19 @@ def get_user(request):
                     {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=403)
         student = User.objects.get(id=id_)
+        student.last_login = timezone.now()
+        student.save()
+        logons = History.objects.filter(user=student).order_by('-datetime')
+        if logons:
+            last_logon = logons[0]
+            current_date = datetime.now()
+            if not (
+                    last_logon.datetime.date() == current_date.date() and last_logon.datetime.hour == current_date.hour):
+                login_obj = History(user=student)
+                login_obj.save()
+        else:
+            login_obj = History(user=student)
+            login_obj.save()
         return HttpResponse(
             json.dumps({
                 "id": student.id,
@@ -517,3 +532,28 @@ def get_groups(request):
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
              'instance': request.path},
             ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='GET',
+                     operation_summary="Список последних входов всех пользователей.",
+                     responses=get_all_logons_responses)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_all_logons(request):
+    try:
+        logons = History.objects.all()
+        logons_list = []
+        for logon in logons:
+            logons_list.append({
+                'date': logon.datetime.date(),
+                'hour': f'{logon.datetime.hour}:00',
+                'datetime': str(logon.datetime)
+            })
+        return HttpResponse(json.dumps({'logons': logons_list}, ensure_ascii=False), status=200)
+    except Exception as e:
+        return HttpResponse(
+            json.dumps(
+                {'state': 'error', 'message': f'Произошла странная ошибка.',
+                 'details': {'error': str(e)},
+                 'instance': request.path},
+                ensure_ascii=False), status=404)

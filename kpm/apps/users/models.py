@@ -55,3 +55,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     class Meta:
         db_table = 'users'
+
+
+class History(models.Model):
+    id = models.AutoField('id входа', primary_key=True, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    datetime = models.DateTimeField('Дата входа', auto_now_add=True)
+
+    class Meta:
+        db_table = 'history'

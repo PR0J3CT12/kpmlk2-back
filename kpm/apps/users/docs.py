@@ -99,17 +99,33 @@ get_user_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                            "last_classwork_id": openapi.Schema(type=openapi.TYPE_INTEGER, example=12),
                                        })
 get_groups_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
-                                        properties={
-                                            "groups": openapi.Schema(type=openapi.TYPE_OBJECT,
-                                                                       properties={
-                                                                           "id": openapi.Schema(
-                                                                               type=openapi.TYPE_INTEGER, example=1),
-                                                                           "name": openapi.Schema(
-                                                                               type=openapi.TYPE_STRING,
-                                                                               example="Группа 1"),
-                                                                       }),
+                                         properties={
+                                             "groups": openapi.Schema(type=openapi.TYPE_OBJECT,
+                                                                      properties={
+                                                                          "id": openapi.Schema(
+                                                                              type=openapi.TYPE_INTEGER, example=1),
+                                                                          "name": openapi.Schema(
+                                                                              type=openapi.TYPE_STRING,
+                                                                              example="Группа 1"),
+                                                                      }),
 
-                                        })
+                                         })
+get_all_logons_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                             properties={
+                                                 "logons": openapi.Schema(type=openapi.TYPE_OBJECT,
+                                                                          properties={
+                                                                              "date": openapi.Schema(
+                                                                                  type=openapi.TYPE_STRING,
+                                                                                  example="14.08.2023"),
+                                                                              "hour": openapi.Schema(
+                                                                                  type=openapi.TYPE_STRING,
+                                                                                  example="16:00"),
+                                                                              "datetime": openapi.Schema(
+                                                                                  type=openapi.TYPE_STRING,
+                                                                                  example="2023-08-14 16:33:11.402593+03"),
+                                                                          }),
+
+                                             })
 logout_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_users_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_user_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
@@ -130,3 +146,4 @@ create_group_responses = {200: create_group_response_200}
 delete_group_responses = {200: delete_group_response_200}
 set_user_group_responses = {200: set_user_group_response_200}
 get_groups_responses = {200: get_groups_response_200}
+get_all_logons_responses = {200: get_all_logons_response_200}
