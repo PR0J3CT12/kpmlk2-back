@@ -148,7 +148,7 @@ def create_work(request):
         students = User.objects.filter(Q(is_admin=0) & Q(school_class=request_body["class"]))
         for student in students:
             empty_grades = '_._'.join(list('#' * len(grades_list)))
-            grade = Grade(student_id=student.id, work_id=work.id, grades=empty_grades, max_score=0, score=0, exercises=0)
+            grade = Grade(user_id=student.id, work_id=work.id, grades=empty_grades, max_score=0, score=0, exercises=0)
             grade.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:

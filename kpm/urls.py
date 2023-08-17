@@ -24,6 +24,8 @@ urlpatterns = [
     path('api/theme/', include('themes.urls')),
     path('api/work/', include('works.urls')),
     path('api/message/', include('messages.urls')),
+    path('api/stat/', include('stats.urls')),
+    path('api/homework/', include('homeworks.urls')),
     path('api/token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/verify', TokenVerifyView.as_view(), name='token_verify'),
     path('api/docs', schema_view.with_ui('swagger', cache_timeout=0), name="swagger-schema")

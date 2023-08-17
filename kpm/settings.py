@@ -26,6 +26,8 @@ INSTALLED_APPS = [
     'themes.apps.ThemesConfig',
     'grades.apps.GradesConfig',
     'messages.apps.MessagesConfig',
+    'stats.apps.StatsConfig',
+    'homeworks.apps.HomeworksConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -189,5 +191,9 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+MEDIA_URL = '/media/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

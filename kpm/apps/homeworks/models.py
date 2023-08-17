@@ -1,0 +1,51 @@
+from django.db import models
+from kpm.apps.users.models import User, Group
+from uuid import uuid4
+import os
+from django.utils.deconstruct import deconstructible
+
+
+@deconstructible
+class PathRename(object):
+
+    def __init__(self, sub_path):
+        self.path = sub_path
+
+    def __call__(self, instance, filename):
+        ext = filename.split('.')[-1]
+        filename = 'homework_{}.{}'.format(uuid4().hex, ext)
+        return os.path.join(self.path, filename)
+
+
+path_and_rename = PathRename("homeworks/")
+
+
+class Homework(models.Model):
+    id = models.AutoField('id домашней работы', primary_key=True, editable=False)
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='author')
+    title = models.CharField('Заголовок домашней работы', max_length=200)
+    text = models.TextField('Текст домашней работы')
+    score = models.IntegerField('Максимальный балл за работу')
+    group = models.ForeignKey(Group, null=True, blank=True, default=None, on_delete=models.CASCADE)
+    student = models.ForeignKey(User, null=True, blank=True, default=None, on_delete=models.CASCADE, related_name='student')
+    #image = models.ImageField('Картинка новости', upload_to=path_and_rename, null=True, blank=True, default=None)
+    created_at = models.DateTimeField('Дата создания домашней работы', auto_now_add=True)
+    is_closed = models.BooleanField('Домашняя работа закрыта', default=False)
+
+    def __str__(self):
+        return f'{str(self.id)}'
+
+    class Meta:
+        db_table = 'homeworks'
+
+
+class HomeworkImage(models.Model):
+    id = models.AutoField('id файла', primary_key=True, editable=False)
+    homework = models.ForeignKey(Homework, on_delete=models.CASCADE)
+    image = models.ImageField('Картинка новости', upload_to=path_and_rename)
+
+    def __str__(self):
+        return f'{str(self.id)}'
+
+    class Meta:
+        db_table = 'homeworks_images'

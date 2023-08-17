@@ -129,7 +129,7 @@ def get_grades(request):
         if theme:
             theme_id = int(theme)
             grades = grades.filter(user__school_class=int(class_), work__theme__id=theme_id)
-        works_list = grades.distinct('work')
+        works_list = grades.distinct('work').values_list('work', flat=True)
         works = Work.objects.filter(id__in=works_list)
         works_data = []
         for work in works:
@@ -138,15 +138,15 @@ def get_grades(request):
         students_data = []
         for student in students:
             student_object = {'id': student.id, 'name': student.name, 'experience': student.experience, 'grades': []}
-            full_score = grades.filter(student_id=student.id).aggregate(Sum('score'))['score__sum']
-            max_full_score = grades.filter(student_id=student.id).aggregate(Sum('max_score'))['max_score__sum']
+            full_score = grades.filter(user_id=student.id).aggregate(Sum('score'))['score__sum']
+            max_full_score = grades.filter(user_id=student.id).aggregate(Sum('max_score'))['max_score__sum']
             if max_full_score != 0:
                 percentage_full_score = round(full_score / max_full_score * 100, 1)
             else:
                 percentage_full_score = ""
             student_object['percentage_full_score'] = percentage_full_score
             for work in works:
-                current_student_grades = grades.get(work_id=work, student_id=student.id)
+                current_student_grades = grades.get(work=work, user_id=student.id)
                 score = current_student_grades.score
                 max_score = current_student_grades.max_score
                 if float(max_score) != 0:
@@ -171,7 +171,7 @@ def get_grades(request):
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
-    except Exception as e:
+    except ZeroDivisionError as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
              'instance': request.path},
