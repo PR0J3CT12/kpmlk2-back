@@ -32,7 +32,7 @@ def insert_grades(request):
             global_change = change
             work = Work.objects.get(id=int(change["work_id"]))
             student = User.objects.get(id=int(change["user_id"]))
-            grade = Grade.objects.get(student_id=student, work_id=work)
+            grade = Grade.objects.get(user=student, work=work)
             work_grades = list(map(float, work.grades.split("_._")))
             new_max_score = sum(work_grades)
             new_grades = grade.grades.split("_._")
@@ -71,15 +71,15 @@ def insert_grades(request):
             log_grades_string = grade.grades
             new_grades_string = '_._'.join(new_grades)
             if grade.score != new_score:
-                manas_delete = Mana.objects.filter(Q(student=student) & Q(work=work))
+                manas_delete = Mana.objects.filter(Q(user=student) & Q(work=work))
                 manas_delete.delete()
             green, blue = mana_generation(int(work.theme.type), new_score, new_max_score)
             if grade.score != new_score:
                 for i in range(0, green):
-                    mana = Mana(student=student, work=work, color='green')
+                    mana = Mana(user=student, work=work, color='green')
                     mana.save()
                 for i in range(0, blue):
-                    mana = Mana(student=student, work=work, color='blue')
+                    mana = Mana(user=student, work=work, color='blue')
                     mana.save()
             grade.grades = new_grades_string
             grade.max_score = new_max_score
