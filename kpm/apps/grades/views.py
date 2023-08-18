@@ -59,12 +59,12 @@ def insert_grades(request):
                     cast = float(new_grades[i])
                     if cast < 0:
                         return HttpResponse(
-                            json.dumps({'state': 'error', 'message': f'Указано недопустимое значение.', 'details': {"student_id": change["student_id"], "work_id": change["work_id"], "cell_number": change["cell_number"], "cell_name": f'{change["student_id"]}_{change["work_id"]}_{change["cell_number"]}'},
+                            json.dumps({'state': 'error', 'message': f'Указано недопустимое значение.', 'details': {"user_id": change["user_id"], "work_id": change["work_id"], "cell_number": change["cell_number"], "cell_name": f'{change["user_id"]}_{change["work_id"]}_{change["cell_number"]}'},
                                         'instance': request.path},
                                        ensure_ascii=False), status=400)
                     if cast > float(work_grades[i]):
                         return HttpResponse(
-                            json.dumps({'state': 'error', 'message': f'Указанная оценка больше максимальной.', 'details': {"student_id": change["student_id"], "work_id": change["work_id"], "cell_number": change["cell_number"], "cell_name": f'{change["student_id"]}_{change["work_id"]}_{change["cell_number"]}'},
+                            json.dumps({'state': 'error', 'message': f'Указанная оценка больше максимальной.', 'details': {"user_id": change["user_id"], "work_id": change["work_id"], "cell_number": change["cell_number"], "cell_name": f'{change["user_id"]}_{change["work_id"]}_{change["cell_number"]}'},
                                         'instance': request.path},
                                        ensure_ascii=False), status=400)
                 new_score += cast
