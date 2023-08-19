@@ -4,3 +4,8 @@ venv
 .env
 kpm/apps/works/__pycache__
 kpm/apps/themes/__pycache__
+kpm/apps/grades/__pycache__
+kpm/apps/users/__pycache__
+kpm/apps/stats/__pycache__
+kpm/apps/homeworks/__pycache__
+kpm/apps/messages/__pycache__
