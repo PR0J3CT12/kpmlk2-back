@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from .functions import get_variable
+from django.core.exceptions import ObjectDoesNotExist
 from kpm.apps.works.models import Work
 from kpm.apps.logs.models import Log
 from kpm.apps.users.models import User
@@ -12,6 +12,7 @@ from django.db.models import Sum, Q, Count
 from kpm.apps.users.permissions import IsAdmin
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.works.docs import *
+from kpm.apps.works.functions import *
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение списка работ.",
@@ -28,7 +29,7 @@ def get_works(request):
                     {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         else:
-            if class_ not in ['4', '5', '6']:
+            if class_ not in ['4', '5', '6', 4, 5, 6]:
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
@@ -91,16 +92,12 @@ def get_works(request):
 def get_work(request):
     try:
         id_ = get_variable("id", request)
-        if not id_:
+        if (id_ is None) or (id_ == ''):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
-        work = Work.objects.filter(id=id_).select_related("theme")
-        if not work:
-            return HttpResponse(
-                json.dumps({'state': 'error', 'message': f'Работа не существует.', 'details': {}, 'instance': request.path},
-                           ensure_ascii=False), status=404)
+        work = Work.objects.get(id=id_).select_related("theme")
         return HttpResponse(
             json.dumps({
                 "id": work.id,
@@ -116,6 +113,10 @@ def get_work(request):
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа не существует.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
@@ -138,10 +139,28 @@ def create_work(request):
         grades_list = request_body["grades"]
         max_score = 0
         for grade in grades_list:
+            if not is_number(grade):
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Введены некорректные оценки.', 'details': {}, 'instance': request.path},
+                        ensure_ascii=False), status=404)
+            if float(grade) < 0:
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Введены некорректные оценки.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=404)
             cast = float(grade)
             max_score += cast
         grades = '_._'.join(grades_list)
-        work = Work(name=request_body["name"], grades=grades, theme_id=request_body["theme_id"], max_score=max_score, exercises=len(grades_list), school_class=request_body["class"])
+        theme = Theme.objects.get(id=request_body["theme_id"])
+        if request_body["class"] not in ['4', '5', '6', 4, 5, 6]:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=404)
+        work = Work(name=request_body["name"], grades=grades, theme=theme, max_score=max_score, exercises=len(grades_list), school_class=request_body["class"])
         work.save()
         log = Log(operation='INSERT', from_table='works', details='Добавлена новая работа в таблицу works.')
         log.save()
@@ -154,6 +173,10 @@ def create_work(request):
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path}, ensure_ascii=False), status=404)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Тема не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -177,6 +200,18 @@ def update_work(request):
             grades_list = request_body["grades"]
             max_score = 0
             for grade in grades_list:
+                if not is_number(grade):
+                    return HttpResponse(
+                        json.dumps(
+                            {'state': 'error', 'message': f'Введены некорректные оценки.', 'details': {},
+                             'instance': request.path},
+                            ensure_ascii=False), status=404)
+                if float(grade) < 0:
+                    return HttpResponse(
+                        json.dumps(
+                            {'state': 'error', 'message': f'Введены некорректные оценки.', 'details': {},
+                             'instance': request.path},
+                            ensure_ascii=False), status=404)
                 cast = float(grade)
                 max_score += cast
             grades = '_._'.join(grades_list)
@@ -199,6 +234,10 @@ def update_work(request):
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path}, ensure_ascii=False), status=404)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -214,7 +253,7 @@ def update_work(request):
 def delete_work(request):
     try:
         id_ = get_variable("id", request)
-        if not id_:
+        if (id_ is None) or (id_ == ''):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
@@ -228,6 +267,10 @@ def delete_work(request):
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа не существует.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
@@ -250,13 +293,15 @@ def delete_works(request):
                     {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         else:
-            if class_ not in ['4', '5', '6']:
+            if class_ not in ['4', '5', '6', 4, 5, 6]:
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
                          'instance': request.path},
                         ensure_ascii=False), status=404)
         works = Work.objects.filter(school_class=class_)
+        if not works:
+            return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
         for work in works:
             Log(operation='DELETE', from_table='works',
                 details=f'Работа удалена из таблицы works. ["id": {work.id} | "name": "{work.name}" | "grades": {", ".join(map(str, work.grades.split("_._")))} | "max_score": "{work.max_score}" | "exercises": "{work.exercises}" | "theme_id": {work.theme_id} | "school_class": {work.school_class}]').save()

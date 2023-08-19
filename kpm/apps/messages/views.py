@@ -28,7 +28,7 @@ def send_message(request):
                 ensure_ascii=False), status=400)
         receiver_id = request_body['user_to']
         receiver = User.objects.get(id=receiver_id)
-        sender = request.user.id
+        sender = User.objects.get(id=request.user.id)
         text = request_body['text']
         message = Message(user_to=receiver, user_from=sender, text=text)
         message.save()
@@ -83,6 +83,11 @@ def read_message(request):
 def get_message(request):
     try:
         id_ = get_variable('id', request)
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id сообщения.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
         message = Message.objects.get(id=id_)
         if not is_trusted(request, message.user_to):
             return HttpResponse(json.dumps(
@@ -150,6 +155,11 @@ def get_messages(request):
 def delete_message(request):
     try:
         id_ = get_variable('id', request)
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id сообщения.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
         message = Message.objects.get(id=id_)
         message.delete()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)

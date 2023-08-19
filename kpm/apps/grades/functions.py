@@ -89,5 +89,13 @@ def mana_generation(type_, score, max_score):
     return green, blue
 
 
+def is_number(value):
+    try:
+        int(value)
+        return True
+    except ValueError:
+        return False
+
+
 if __name__ == '__main__':
     pass

@@ -72,7 +72,7 @@ create_work_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                type=openapi.TYPE_ARRAY,
                                                items=openapi.Schema(
                                                    type=openapi.TYPE_OBJECT,
-                                                   example=[5, 5, 5, 10, 15])),
+                                                   example=["5", "5", "5", "10", "15"])),
                                           },
                                           operation_description='Создание работы.')
 update_work_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
@@ -84,7 +84,7 @@ update_work_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                type=openapi.TYPE_ARRAY,
                                                items=openapi.Schema(
                                                    type=openapi.TYPE_OBJECT,
-                                                   example=[5, 5, 5, 10, 15])),
+                                                   example=["5", "5", "5", "10", "15"])),
                                           },
                                           operation_description='Изменение работы.')
 create_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)

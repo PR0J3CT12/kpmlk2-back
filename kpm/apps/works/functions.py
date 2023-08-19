@@ -17,5 +17,13 @@ def get_variable(variable_name, source_request):
         return None
 
 
+def is_number(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
+
+
 if __name__ == '__main__':
     pass

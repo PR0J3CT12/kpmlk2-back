@@ -1,6 +1,7 @@
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from django.core.exceptions import ObjectDoesNotExist
 from .functions import get_variable
 from kpm.apps.logs.models import Log
 import json
@@ -19,15 +20,11 @@ from kpm.apps.themes.docs import *
 def get_theme(request):
     try:
         id_ = get_variable("id", request)
-        if not id_:
+        if (id_ is None) or (id_ == ''):
             return HttpResponse(
                 json.dumps({'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                            ensure_ascii=False), status=404)
         theme = Theme.objects.get(id=id_)
-        if not theme:
-            return HttpResponse(
-                json.dumps({'state': 'error', 'message': f'Тема не найдена.', 'details': {}, 'instance': request.path},
-                           ensure_ascii=False), status=404)
         return HttpResponse(
             json.dumps({
                 "id": theme.id,
@@ -37,6 +34,10 @@ def get_theme(request):
                 "school_class": theme.school_class
             }, ensure_ascii=False),
             status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Тема не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -59,13 +60,15 @@ def get_themes(request):
                     {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         else:
-            if class_ not in ['4', '5', '6']:
+            if class_ not in ['4', '5', '6', 4, 5, 6]:
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
                          'instance': request.path},
                         ensure_ascii=False), status=404)
         themes_ = Theme.objects.filter(school_class=class_)
+        if not themes_:
+            return HttpResponse(json.dumps({'themes': []}, ensure_ascii=False), status=200)
         themes_list = []
         for theme in themes_:
             theme_info = {
@@ -103,7 +106,7 @@ def create_theme(request):
             is_homework = True
         else:
             is_homework = False
-        if request_body["class"] not in ['4', '5', '6']:
+        if request_body["class"] not in ['4', '5', '6', 4, 5, 6]:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
@@ -132,7 +135,7 @@ def create_theme(request):
 def delete_theme(request):
     try:
         id_ = get_variable("id", request)
-        if not id_:
+        if (id_ is None) or (id_ == ''):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
@@ -143,6 +146,10 @@ def delete_theme(request):
         log = Log(operation='DELETE', from_table='themes', details=log_details)
         log.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Тема не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -165,13 +172,15 @@ def delete_themes(request):
                     {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         else:
-            if class_ not in ['4', '5', '6']:
+            if class_ not in ['4', '5', '6', 4, 5, 6]:
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
                          'instance': request.path},
                         ensure_ascii=False), status=404)
         themes = Theme.objects.filter(school_class=class_)
+        if not themes:
+            return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
         for theme in themes:
             Log(operation='DELETE', from_table='themes',
                 details=f'Удалена тема из таблицы themes. ["id": {theme.id} | "name": "{theme.name}" | "type": {theme.type} | "school_class": {theme.school_class}] | "is_homework": {theme.is_homework}').save()

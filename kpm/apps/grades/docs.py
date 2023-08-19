@@ -11,10 +11,6 @@ type_param = openapi.Parameter("type", in_=openapi.IN_QUERY, type=openapi.TYPE_I
 insert_grades_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                             required=['changes'],
                                             properties={
-                                                "changes": openapi.Schema(type=openapi.TYPE_OBJECT,
-                                                                          required=['work_id', 'user_id', 'cell_number',
-                                                                                    'value'],
-                                                                          properties={
                                                                               "work_id": openapi.Schema(
                                                                                   type=openapi.TYPE_INTEGER, example=1),
                                                                               "user_id": openapi.Schema(
@@ -22,10 +18,9 @@ insert_grades_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                               "cell_number": openapi.Schema(
                                                                                   type=openapi.TYPE_INTEGER, example=1),
                                                                               "value": openapi.Schema(
-                                                                                  type=openapi.FORMAT_FLOAT,
-                                                                                  example=15.0),
+                                                                                  type=openapi.TYPE_STRING,
+                                                                                  example="15.0"),
                                                                           })
-                                            })
 get_mana_waiters_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                properties={
                                                    "waiters": openapi.Schema(type=openapi.TYPE_OBJECT,

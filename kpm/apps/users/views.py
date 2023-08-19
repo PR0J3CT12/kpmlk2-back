@@ -7,7 +7,7 @@ from kpm.apps.users.functions import *
 from kpm.apps.logs.models import Log
 from kpm.apps.works.models import Work
 from kpm.apps.grades.models import Grade
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist
 import json
 from django.db.models import Sum, Q, Count
 from django.conf import settings
@@ -31,7 +31,7 @@ SECRET_KEY = settings.SECRET_KEY
 def get_user(request):
     try:
         id_ = get_variable("id", request)
-        if not id_:
+        if (id_ is None) or (id_ == ''):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
@@ -71,6 +71,10 @@ def get_user(request):
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -89,18 +93,20 @@ def get_users(request):
         if not class_:
             return HttpResponse(
                 json.dumps(
-                    {'state': 'error', 'message': f'Не указан класс учеников.', 'details': {},
-                     'instance': request.path},
+                    {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         else:
-            if class_ not in ['4', '5', '6']:
+            if class_ not in ['4', '5', '6', 4, 5, 6]:
                 return HttpResponse(
                     json.dumps(
-                        {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
+                        {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
                          'instance': request.path},
                         ensure_ascii=False), status=404)
         students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_)))
         students_list = []
+        if not students:
+            return HttpResponse(
+                json.dumps({'students': students_list}, ensure_ascii=False), status=200)
         for student in students:
             if not student.default_password:
                 default_password = ""
@@ -148,6 +154,12 @@ def create_user(request):
         else:
             last_id = 0
         id_, login_, password_ = login_password_creator(request_body["name"], last_id + 1)
+        if request_body["class"] not in ['4', '5', '6', 4, 5, 6]:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=404)
         student = User(id=last_id + 1, name=request_body["name"], login=login_, default_password=password_,
                        school_class=request_body["class"], is_superuser=False)
         student.save()
@@ -157,7 +169,7 @@ def create_user(request):
         for work in works:
             grades = work.grades.split('_._')
             empty_grades = '_._'.join(list('#' * len(grades)))
-            grade = Grade(user_id=student.id, work_id=work.id, grades=empty_grades, max_score=0, score=0, exercises=0)
+            grade = Grade(user=student, work=work, grades=empty_grades, max_score=0, score=0, exercises=0)
             grade.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
@@ -179,7 +191,7 @@ def create_user(request):
 def delete_user(request):
     try:
         id_ = get_variable("id", request)
-        if not id_:
+        if (id_ is None) or (id_ == ''):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
@@ -193,6 +205,10 @@ def delete_user(request):
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
@@ -216,13 +232,15 @@ def delete_users(request):
                      'instance': request.path},
                     ensure_ascii=False), status=404)
         else:
-            if class_ not in ['4', '5', '6']:
+            if class_ not in ['4', '5', '6', 4, 5, 6]:
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                          'instance': request.path},
                         ensure_ascii=False), status=404)
         students = User.objects.filter(school_class=int(class_))
+        if not students:
+            return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
         for student in students:
             log = Log(operation='DELETE', from_table='users',
                       details=f'Удален ученик из таблицы users. ["id": {student.id} | "name": "{student.name}" | "login": {student.login} | "password": {student.password} | "experience": {student.experience} | "mana_earned": {student.mana_earned} | "last_homework_id": {student.last_homework_id} | "last_classwork_id": {student.last_classwork_id} | "school_class": {student.school_class}]')
@@ -305,6 +323,10 @@ def change_password(request):
                 {'state': 'error', 'message': f'Токен недействителен.', 'details': {},
                  'instance': request.path},
                 ensure_ascii=False), status=400)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
