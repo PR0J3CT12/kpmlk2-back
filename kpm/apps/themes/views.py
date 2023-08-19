@@ -13,8 +13,7 @@ from kpm.apps.themes.docs import *
 
 @swagger_auto_schema(method='GET', operation_summary="Получение темы.",
                      manual_parameters=[id_param],
-                     responses=get_theme_responses,
-                     operation_description=operation_description)
+                     responses=get_theme_responses)
 @api_view(["GET"])
 @permission_classes([IsAdmin])
 def get_theme(request):
@@ -29,8 +28,6 @@ def get_theme(request):
             json.dumps({
                 "id": theme.id,
                 "name": theme.name,
-                "type": theme.type,
-                "is_homework": theme.is_homework,
                 "school_class": theme.school_class
             }, ensure_ascii=False),
             status=200)
@@ -47,8 +44,7 @@ def get_theme(request):
 
 @swagger_auto_schema(method='GET', operation_summary="Получение тем.",
                      manual_parameters=[class_param],
-                     responses=get_themes_responses,
-                     operation_description=operation_description)
+                     responses=get_themes_responses)
 @api_view(["GET"])
 @permission_classes([IsAdmin])
 def get_themes(request):
@@ -74,8 +70,6 @@ def get_themes(request):
             theme_info = {
                 "id": theme.id,
                 "name": theme.name,
-                "type": theme.type,
-                "is_homework": theme.is_homework,
                 "school_class": theme.school_class
             }
             themes_list.append(theme_info)
@@ -89,8 +83,7 @@ def get_themes(request):
 
 @swagger_auto_schema(method='POST', operation_summary="Создание темы.",
                      request_body=create_theme_request_body,
-                     responses=create_theme_responses,
-                     operation_description=operation_description)
+                     responses=create_theme_responses)
 @api_view(["POST"])
 @permission_classes([IsAdmin])
 def create_theme(request):
@@ -101,18 +94,13 @@ def create_theme(request):
             return HttpResponse(
                 json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
                            ensure_ascii=False), status=400)
-        type_ = int(request_body["type"])
-        if type_ in [0, 3, 4]:
-            is_homework = True
-        else:
-            is_homework = False
         if request_body["class"] not in ['4', '5', '6', 4, 5, 6]:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        theme = Theme(name=request_body["name"], type=request_body["type"], school_class=int(request_body["class"]), is_homework=is_homework)
+        theme = Theme(name=request_body["name"], school_class=int(request_body["class"]))
         theme.save()
         log = Log(operation='INSERT', from_table='themes', details='Добавлена новая тема в таблицу themes.')
         log.save()
@@ -128,8 +116,7 @@ def create_theme(request):
 
 @swagger_auto_schema(method='DELETE', operation_summary="Удаление темы.",
                      manual_parameters=[id_param],
-                     responses=delete_theme_responses,
-                     operation_description=operation_description)
+                     responses=delete_theme_responses)
 @api_view(["DELETE"])
 @permission_classes([IsAdmin])
 def delete_theme(request):
@@ -141,7 +128,7 @@ def delete_theme(request):
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         theme = Theme.objects.get(id=id_)
-        log_details = f'Удалена тема из таблицы themes. ["id": {theme.id} | "name": "{theme.name}" | "type": {theme.type} | "school_class": {theme.school_class} | "is_homework": {theme.is_homework}]'
+        log_details = f'Удалена тема из таблицы themes. ["id": {theme.id} | "name": "{theme.name}" | "school_class": {theme.school_class}]'
         theme.delete()
         log = Log(operation='DELETE', from_table='themes', details=log_details)
         log.save()
@@ -159,8 +146,7 @@ def delete_theme(request):
 
 @swagger_auto_schema(method='DELETE', operation_summary="Удаление тем.",
                      manual_parameters=[class_param],
-                     responses=delete_themes_responses,
-                     operation_description=operation_description)
+                     responses=delete_themes_responses)
 @api_view(["DELETE"])
 @permission_classes([IsAdmin])
 def delete_themes(request):
@@ -183,7 +169,7 @@ def delete_themes(request):
             return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
         for theme in themes:
             Log(operation='DELETE', from_table='themes',
-                details=f'Удалена тема из таблицы themes. ["id": {theme.id} | "name": "{theme.name}" | "type": {theme.type} | "school_class": {theme.school_class}] | "is_homework": {theme.is_homework}').save()
+                details=f'Удалена тема из таблицы themes. ["id": {theme.id} | "name": "{theme.name}" | "school_class": {theme.school_class}]').save()
         themes.delete()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except Exception as e:

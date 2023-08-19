@@ -2,5 +2,5 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    #path('send-message', views.send_message, name='send message'),
+    path('get-stats', views.get_stats, name='get stats'),
 ]

@@ -2,6 +2,7 @@ from django.db import connection
 from django.utils.datastructures import MultiValueDictKeyError
 from transliterate import translit
 import random
+import math
 
 
 def get_variable(variable_name, source_request):
@@ -20,7 +21,9 @@ def get_variable(variable_name, source_request):
         return None
 
 
-def mana_generation(type_, score, max_score):
+def mana_generation(type_, is_homework, score, max_score):
+    if not is_homework:
+        return 0, 0
     if type_ == 0:
         percentage = float(score) / float(max_score) * 100
         if 0 < percentage <= 25:
@@ -44,17 +47,12 @@ def mana_generation(type_, score, max_score):
         else:
             mana = 0
     elif type_ == 3:
-        score_ = float(score)
-        if score_ == 1:
-            mana = 1
-        elif score_ == 2:
-            mana = 2
-        elif score_ == 3:
-            mana = 3
-        elif score_ >= 4:
+        mana = math.ceil(float(score) / float(max_score) * 4)
+    elif type_ == 4:
+        if score >= 4:
             mana = 4
         else:
-            mana = 0
+            mana = score
     else:
         mana = 0
     if mana == 4:
@@ -95,6 +93,22 @@ def is_number(value):
         return True
     except ValueError:
         return False
+
+
+def is_number_float(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
+
+
+def custom_distinct(array):
+    new_array = []
+    for element in array:
+        if element not in new_array:
+            new_array.append(element)
+    return new_array
 
 
 if __name__ == '__main__':

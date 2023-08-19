@@ -32,9 +32,18 @@ def get_stats(request):
                     ensure_ascii=False), status=403)
         student = User.objects.get(id=id_, is_admin=False)
 
-        last_homework = Grade.objects.filter(work_id=student.last_homework_id)
-        last_homework_current = last_homework.filter(user=student)
-        last_homework_others = last_homework.exclude(user=student)
+        if student.last_homework_id is None:
+            last_homework_current = None
+            last_homework_others = None
+        else:
+            try:
+                last_homework_work = Work.objects.get(id=student.last_homework_id)
+                last_homework = Grade.objects.filter(work=last_homework_work)
+                last_homework_current = last_homework.filter(user=student)
+                last_homework_others = last_homework.exclude(user=student)
+            except ObjectDoesNotExist:
+                last_homework_current = None
+                last_homework_others = None
         if not last_homework_current:
             last_homework_perc_current = None
         else:
@@ -45,41 +54,63 @@ def get_stats(request):
         else:
             total = 0
             total_perc = 0
-            for student in last_homework_others:
-                total_perc += round(student.score / student.max_score * 100)
+            for student_ in last_homework_others:
+                if student_.max_score <= 0:
+                    continue
+                total_perc += round(student_.score / student_.max_score * 100)
                 total += 1
-            last_homework_perc_others = total_perc // total
+            if total > 0:
+                last_homework_perc_others = total_perc // total
+            else:
+                last_homework_perc_others = None
 
-        last_classwork = Grade.objects.filter(work_id=student.last_classwork_id)
+        if student.last_classwork_id is None:
+            last_classwork = None
+        else:
+            try:
+                last_classwork_work = Work.objects.get(id=student.last_classwork_id)
+                last_classwork = Grade.objects.filter(work=last_classwork_work, user=student)
+            except ObjectDoesNotExist:
+                last_classwork = None
         if not last_classwork:
             last_classwork_perc = None
         else:
             last_classwork = last_classwork[0]
             last_classwork_perc = round(last_classwork.score / last_classwork.max_score * 100)
 
-        homeworks = Grade.objects.filter(work__theme__is_homework=True, user=student)
+        homeworks = Grade.objects.filter(work__is_homework=True, user=student)
         if not homeworks:
             homeworks_perc = None
         else:
             total = 0
             total_perc = 0
             for homework in homeworks:
+                if homework.max_score <= 0:
+                    continue
                 homework_perc = round(homework.score / homework.max_score * 100)
                 total_perc += homework_perc
                 total += 1
-            homeworks_perc = total_perc // total
+            if total > 0:
+                homeworks_perc = total_perc // total
+            else:
+                homeworks_perc = None
 
-        classworks = Grade.objects.filter(work__theme__is_homework=False, user=student)
+        classworks = Grade.objects.filter(work__is_homework=False, user=student)
         if not classworks:
             classworks_perc = None
         else:
             total = 0
             total_perc = 0
             for classwork in classworks:
+                if classwork.max_score <= 0:
+                    continue
                 classwork_perc = round(classwork.score / classwork.max_score * 100)
                 total_perc += classwork_perc
                 total += 1
-            classworks_perc = total_perc // total
+            if total > 0:
+                classworks_perc = total_perc // total
+            else:
+                classworks_perc = None
 
         return HttpResponse(json.dumps({
             'last_homework_current': last_homework_perc_current,

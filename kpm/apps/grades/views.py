@@ -79,7 +79,17 @@ def insert_grades(request):
         if grade.score != new_score:
             manas_delete = Mana.objects.filter(Q(user=student) & Q(work=work))
             manas_delete.delete()
-        green, blue = mana_generation(int(work.theme.type), new_score, new_max_score)
+        if work.type == 4:
+            count = 0
+            for grade in new_grades:
+                if is_number_float(grade):
+                    if float(grade) > 0:
+                        count += 1
+            green, blue = mana_generation(int(work.type), work.is_homework, count, 0)
+        elif work.type == 2:
+            green, blue = mana_generation(int(work.type), True, new_score, new_max_score)
+        else:
+            green, blue = mana_generation(int(work.type), work.is_homework, new_score, new_max_score)
         if grade.score != new_score:
             for i in range(0, green):
                 mana = Mana(user=student, work=work, color='green')
@@ -93,6 +103,28 @@ def insert_grades(request):
         grade.exercises = new_exercises
         log_details = f'Обновлены оценки для ученика {student.id} в работе {work.id}. ["old_grades": {log_grades_string}, "new_grades": {new_grades_string}]'
         grade.save()
+        if work.type in [0, 1, 3, 4]:
+            if work.is_homework:
+                if student.last_homework_id is None:
+                    student.last_homework_id = work.id
+                else:
+                    try:
+                        last_homework = Work.objects.get(id=student.last_homework_id)
+                        if work.added_at > last_homework.added_at:
+                            student.last_homework_id = work.id
+                    except ObjectDoesNotExist:
+                        student.last_homework_id = work.id
+            else:
+                if student.last_classwork_id is None:
+                    student.last_classwork_id = work.id
+                else:
+                    try:
+                        last_classwork = Work.objects.get(id=student.last_classwork_id)
+                        if work.added_at > last_classwork.added_at:
+                            student.last_classwork_id = work.id
+                    except ObjectDoesNotExist:
+                        student.last_classwork_id = work.id
+            student.save()
         log = Log(operation='UPDATE', from_table='grades', details=log_details)
         log.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
@@ -131,14 +163,15 @@ def get_grades(request):
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        grades = Grade.objects.filter(user__school_class=int(class_))
-        if type_ in ['0', '1', '2', '3', '4', '5', '6', '7']:
-            grades = grades.filter(work__theme__type=int(type_))
+        grades = Grade.objects.filter(user__school_class=int(class_)).select_related('work')
+        if type_ in ['0', '1', '2', '3', '4', '5']:
+            grades = grades.filter(work__type=int(type_))
         if (theme is not None) and (theme != ''):
             if is_number(theme):
                 theme_id = int(theme)
                 grades = grades.filter(work__theme__id=theme_id)
-        works_list = grades.distinct('work').values_list('work', flat=True)
+        works_list = grades.order_by('work__added_at').values_list('work', flat=True)
+        works_list = custom_distinct(works_list)
         works = Work.objects.filter(id__in=works_list)
         works_data = []
         if works:
