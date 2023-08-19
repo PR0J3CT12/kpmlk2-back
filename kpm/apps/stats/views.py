@@ -7,7 +7,7 @@ from kpm.apps.users.functions import is_trusted
 from kpm.apps.stats.functions import *
 from kpm.apps.logs.models import Log
 from kpm.apps.works.models import Work
-from kpm.apps.grades.models import Grade
+from kpm.apps.grades.models import Grade, Mana
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 import json
 from django.db.models import Sum, Q, Count
@@ -112,12 +112,18 @@ def get_stats(request):
             else:
                 classworks_perc = None
 
+        manas = Mana.objects.filter(Q(user=student) & Q(is_given=0))
+        green = manas.filter(color='green').aggregate(Count('id'))["id__count"]
+        blue = manas.filter(color='blue').aggregate(Count('id'))["id__count"]
+
         return HttpResponse(json.dumps({
             'last_homework_current': last_homework_perc_current,
             'last_homework_others': last_homework_perc_others,
             'last_classwork': last_classwork_perc,
             'homeworks': homeworks_perc,
             'classworks': classworks_perc,
+            'green': green,
+            'blue': blue
         }, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
