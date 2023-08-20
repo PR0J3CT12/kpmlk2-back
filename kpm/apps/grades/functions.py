@@ -111,5 +111,32 @@ def custom_distinct(array):
     return new_array
 
 
+def borders_lvl(score):
+    homework_lvl = 0
+    if 50 <= score < 110:
+        homework_lvl = 1
+    elif 110 <= score < 180:
+        homework_lvl = 2
+    elif 180 <= score < 260:
+        homework_lvl = 3
+    elif 260 <= score < 350:
+        homework_lvl = 4
+    elif 350 <= score < 450:
+        homework_lvl = 5
+    elif 450 <= score < 560:
+        homework_lvl = 6
+    elif 560 <= score < 680:
+        homework_lvl = 7
+    elif 680 <= score < 810:
+        homework_lvl = 8
+    elif 810 <= score < 950:
+        homework_lvl = 9
+    elif 950 <= score < 1100:
+        homework_lvl = 10
+    elif score >= 1100:
+        homework_lvl = 10
+    return homework_lvl
+
+
 if __name__ == '__main__':
     pass
