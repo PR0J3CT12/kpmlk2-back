@@ -13,6 +13,7 @@ from kpm.apps.users.permissions import IsAdmin
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.works.docs import *
 from kpm.apps.works.functions import *
+from django.utils import timezone
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение списка работ.",
@@ -38,7 +39,7 @@ def get_works(request):
                         ensure_ascii=False), status=404)
         filter_ = get_variable("filter", request)
         filter_value = get_variable("filter_value", request)
-        works = Work.objects.filter(school_class=int(class_)).select_related("theme")
+        works = Work.objects.filter(school_class=int(class_)).select_related("theme").order_by('-updated_at')
         if filter_:
             if not filter_value:
                 return HttpResponse(
@@ -233,6 +234,7 @@ def update_work(request):
             old_maximum = work.max_score
             work.grades = grades
             work.max_score = max_score
+            work.updated_at = timezone.now()
             work.save()
             log = Log(operation='UPDATE', from_table='works', details=f'Изменены оценки в работе {request_body["id"]} в таблице works. ["grades": "{old_grades}", "max_score": "{old_maximum}"]')
             log.save()
@@ -240,6 +242,7 @@ def update_work(request):
             old_name = work.name
             new_name = request_body["name"]
             work.name = new_name
+            work.updated_at = timezone.now()
             work.save()
             log = Log(operation='UPDATE', from_table='works',
                       details=f'Изменено имя работы {request_body["id"]} в таблице works. ["name": "{old_name}"]')

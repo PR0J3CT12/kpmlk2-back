@@ -21,6 +21,7 @@ class Work(models.Model):
     is_homework = models.BooleanField('is homework')
     type = models.IntegerField('theme type', choices=TYPE_CHOICES, default=0)
     added_at = models.DateTimeField('Дата создания работы', auto_now_add=True)
+    updated_at = models.DateTimeField('Дата обновления работы', auto_now_add=True)
 
     def __str__(self):
         return f'{self.id}'

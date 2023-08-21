@@ -68,12 +68,8 @@ create_work_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                               'theme_id': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
                                               'class': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
                                               'name': openapi.Schema(type=openapi.TYPE_STRING, example="Классная работа 1"),
-                                              'type': openapi.Schema(type=openapi.TYPE_BOOLEAN, example=False),
-                                              "grades": openapi.Schema(
-                                               type=openapi.TYPE_ARRAY,
-                                               items=openapi.Schema(
-                                                   type=openapi.TYPE_OBJECT,
-                                                   example=["5", "5", "5", "10", "15"])),
+                                              'type': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
+                                              "grades": ["5", "5", "5", "10", "15"],
                                           },
                                           operation_description='Создание работы.')
 update_work_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
