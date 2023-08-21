@@ -26,8 +26,6 @@ class Homework(models.Model):
     title = models.CharField('Заголовок домашней работы', max_length=200)
     text = models.TextField('Текст домашней работы')
     score = models.IntegerField('Максимальный балл за работу')
-    group = models.ForeignKey(Group, null=True, blank=True, default=None, on_delete=models.CASCADE)
-    student = models.ForeignKey(User, null=True, blank=True, default=None, on_delete=models.CASCADE, related_name='student')
     #image = models.ImageField('Картинка новости', upload_to=path_and_rename, null=True, blank=True, default=None)
     created_at = models.DateTimeField('Дата создания домашней работы', auto_now_add=True)
     is_closed = models.BooleanField('Домашняя работа закрыта', default=False)
@@ -49,3 +47,15 @@ class HomeworkImage(models.Model):
 
     class Meta:
         db_table = 'homeworks_images'
+
+
+class HomeworkUsers(models.Model):
+    id = models.AutoField('id связи', primary_key=True, editable=False)
+    homework = models.ForeignKey(Homework, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{str(self.id)}'
+
+    class Meta:
+        db_table = 'homeworks_users'

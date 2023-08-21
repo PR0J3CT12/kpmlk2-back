@@ -291,7 +291,7 @@ def give_mana_all(request):
         log_details = f'Обновлена мана для ученика {student.id}.'
         for mana in manas:
             mana.is_given = 1
-        manas.save()
+            mana.save()
         log = Log(operation='UPDATE', from_table='mana', details=log_details)
         log.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
@@ -303,7 +303,7 @@ def give_mana_all(request):
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
-    except Exception as e:
+    except ZeroDivisionError as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
              'instance': request.path},
