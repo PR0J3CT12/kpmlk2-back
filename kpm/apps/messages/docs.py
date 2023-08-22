@@ -7,8 +7,7 @@ id_user_param = openapi.Parameter("id", in_=openapi.IN_QUERY, type=openapi.TYPE_
 send_message_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                            required=['user_to', 'text'],
                                            properties={
-                                               "user_to": openapi.Schema(
-                                                   type=openapi.TYPE_INTEGER, example=1),
+                                               "user_to": [1, 2, 3, 4, 5],
                                                "text": openapi.Schema(
                                                    type=openapi.TYPE_STRING, example='Текст сообщения'),
                                            })

@@ -26,12 +26,13 @@ def send_message(request):
             return HttpResponse(json.dumps(
                 {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=400)
-        receiver_id = request_body['user_to']
-        receiver = User.objects.get(id=receiver_id)
+        receivers_ids = request_body['users_to']
+        receivers = User.objects.filter(id__in=receivers_ids)
         sender = User.objects.get(id=request.user.id)
         text = request_body['text']
-        message = Message(user_to=receiver, user_from=sender, text=text)
-        message.save()
+        for receiver in receivers:
+            message = Message(user_to=receiver, user_from=sender, text=text)
+            message.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
