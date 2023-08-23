@@ -184,7 +184,7 @@ def get_grades(request):
         if works:
             for work in works:
                 works_data.append({'id': work.id, 'name': work.name, 'max_score': work.max_score, 'grades': list(map(int, work.grades.split("_._")))})
-            students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_)))
+            students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).order_by('name')
             students_data = []
             for student in students:
                 student_object = {'id': student.id, 'name': student.name, 'experience': student.experience, 'grades': []}
