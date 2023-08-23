@@ -125,12 +125,9 @@ def insert_grades(request):
                     except ObjectDoesNotExist:
                         student.last_classwork_id = work.id
             student.save()
-        scores = Grade.objects.filter(user=student, work__is_homework=True).values('work__theme__id').order_by('work__theme__id').annotate(sum_score=Sum('score'))
-        lvl = 1
-        for theme_score in scores:
-            lvl_up = borders_lvl(theme_score['sum_score'])
-            lvl += lvl_up
-        student.experience = lvl
+        scores = Grade.objects.filter(user=student, work__is_homework=True).annotate(sum_score=Sum('score'))
+        experience = int(scores['sum_score'])
+        student.experience = experience
         student.save()
         log = Log(operation='UPDATE', from_table='grades', details=log_details)
         log.save()
