@@ -125,7 +125,7 @@ def insert_grades(request):
                     except ObjectDoesNotExist:
                         student.last_classwork_id = work.id
             student.save()
-        scores = Grade.objects.filter(user=student, work__is_homework=True).annotate(sum_score=Sum('score'))
+        scores = Grade.objects.filter(user=student, work__is_homework=True).aggregate(sum_score=Sum('score'))
         experience = int(scores['sum_score'])
         student.experience = experience
         student.save()
@@ -144,7 +144,7 @@ def insert_grades(request):
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Что-то не существует.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
-    except Exception as e:
+    except ZeroDivisionError as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
              'instance': request.path},
