@@ -6,8 +6,11 @@ class_param = openapi.Parameter("class", in_=openapi.IN_QUERY, type=openapi.TYPE
                                 operation_description='Класс учеников.', example=4)
 get_works_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                         properties={
-                                            "works": openapi.Schema(type=openapi.TYPE_OBJECT,
-                                                                    properties={
+                                            "works": openapi.Schema(
+                                                  type=openapi.TYPE_ARRAY,
+                                                  items=openapi.Schema(
+                                                      type=openapi.TYPE_OBJECT,
+                                                      properties={
                                                                         "id": openapi.Schema(
                                                                             type=openapi.TYPE_INTEGER, example=3),
                                                                         "name": openapi.Schema(
@@ -32,7 +35,7 @@ get_works_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                         "is_homework": openapi.Schema(
                                                                             type=openapi.TYPE_BOOLEAN,
                                                                             example=True)
-                                                                    })
+                                                                    }))
 
                                         })
 get_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,

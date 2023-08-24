@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'messages.apps.MessagesConfig',
     'stats.apps.StatsConfig',
     'homeworks.apps.HomeworksConfig',
+    'ratings.apps.RatingsConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',

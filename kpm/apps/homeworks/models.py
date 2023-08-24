@@ -1,5 +1,5 @@
 from django.db import models
-from kpm.apps.users.models import User, Group
+from kpm.apps.users.models import User
 from uuid import uuid4
 import os
 from django.utils.deconstruct import deconstructible
