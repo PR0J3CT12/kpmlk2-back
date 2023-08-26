@@ -37,7 +37,7 @@ class Homework(models.Model):
         db_table = 'homeworks'
 
 
-class HomeworkImage(models.Model):
+class HomeworkFile(models.Model):
     id = models.AutoField('id файла', primary_key=True, editable=False)
     homework = models.ForeignKey(Homework, on_delete=models.CASCADE)
     image = models.ImageField('Картинка новости', upload_to=path_and_rename)
@@ -46,7 +46,7 @@ class HomeworkImage(models.Model):
         return f'{str(self.id)}'
 
     class Meta:
-        db_table = 'homeworks_images'
+        db_table = 'homeworks_files'
 
 
 class HomeworkUsers(models.Model):
