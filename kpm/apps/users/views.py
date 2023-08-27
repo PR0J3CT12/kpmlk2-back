@@ -61,6 +61,7 @@ def get_user(request):
                 "name": student.name,
                 "login": student.login,
                 "default_password": student.default_password,
+                "class": student.school_class,
                 "is_default": student.is_default,
                 "experience": student.experience,
                 "mana_earned": student.mana_earned,
@@ -292,11 +293,6 @@ def change_password(request):
                     {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=403)
         user = User.objects.get(id=id_)
-        if not user:
-            return HttpResponse(
-                json.dumps({'state': 'error', 'message': 'Пользователь не существует.', 'details': {},
-                            'instance': request.path},
-                           ensure_ascii=False), status=404)
         if not is_default:
             encrypted_password = make_password(password_, SECRET_KEY)
             user.password = encrypted_password

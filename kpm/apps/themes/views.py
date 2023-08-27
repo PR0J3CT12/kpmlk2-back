@@ -46,7 +46,7 @@ def get_theme(request):
                      manual_parameters=[class_param],
                      responses=get_themes_responses)
 @api_view(["GET"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAuthenticated])
 def get_themes(request):
     try:
         class_ = get_variable("class", request)

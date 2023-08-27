@@ -92,10 +92,10 @@ def create_rating(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='POST', operation_summary="Создание рейтинга.",
+@swagger_auto_schema(method='DELETE', operation_summary="Создание рейтинга.",
                      manual_parameters=[id_param],
                      responses=delete_rating_responses)
-@api_view(["POST"])
+@api_view(["DELETE"])
 @permission_classes([IsAdmin])
 def delete_rating(request):
     try:
@@ -221,6 +221,7 @@ def get_user_rating(request):
             total_exp = student_.user.experience
             lvl, exp, base_exp = count_lvl(total_exp)
             rating.append({
+                'id': student_.user.id,
                 'name': student_.user.name,
                 'lvl': lvl,
                 'exp': exp,

@@ -96,8 +96,10 @@ def get_message(request):
                     ensure_ascii=False), status=401)
         return HttpResponse(json.dumps({
             'id': message.id,
-            'user_to': message.user_to,
-            'user_from': message.user_from,
+            'user_to': message.user_to.id,
+            'user_to_name': message.user_to.name,
+            'user_from': message.user_from.id,
+            'user_from_name': message.user_from.name,
             'text': message.text,
             'is_viewed': message.is_viewed,
             'datetime': str(message.datetime)
@@ -133,8 +135,10 @@ def get_messages(request):
             messages_list.append(
                 {
                     'id': message.id,
-                    'user_to': message.user_to,
-                    'user_from': message.user_from,
+                    'user_to': message.user_to.id,
+                    'user_to_name': message.user_to.name,
+                    'user_from': message.user_from.id,
+                    'user_from_name': message.user_from.name,
                     'text': message.text,
                     'is_viewed': message.is_viewed,
                     'datetime': str(message.datetime)
