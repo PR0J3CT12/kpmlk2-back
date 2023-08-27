@@ -58,7 +58,7 @@ def read_message(request):
     try:
         id_ = get_variable('id', request)
         message = Message.objects.get(id=id_)
-        if message.user_to != request.user.id:
+        if message.user_to.id != request.user.id:
             return HttpResponse(json.dumps(
                     {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=401)
