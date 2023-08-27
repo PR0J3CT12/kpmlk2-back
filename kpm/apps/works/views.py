@@ -148,7 +148,10 @@ def create_work(request):
                     {'state': 'error', 'message': f'Неверно указан класс тип работы.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        grades_list = request_body["grades"]
+        if request_body["type"] == 2:
+            grades_list = ["1", "1", "1"]
+        else:
+            grades_list = request_body["grades"]
         max_score = 0
         for grade in grades_list:
             if not is_number(grade):
@@ -179,10 +182,6 @@ def create_work(request):
         else:
             is_homework = False
         students = User.objects.filter(Q(is_admin=0) & Q(school_class=request_body["class"]))
-        if request_body["type"] == 2:
-            grades_list = ["1", "1", "1"]
-            grades = '_._'.join(grades_list)
-            max_score = 3
         work = Work(name=request_body["name"], grades=grades, theme=theme, max_score=max_score,
                     exercises=len(grades_list), school_class=request_body["class"], type=request_body["type"],
                     is_homework=is_homework)
