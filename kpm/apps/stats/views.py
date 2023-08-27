@@ -169,16 +169,56 @@ def get_graph(request):
             grades = Grade.objects.filter(work__theme__id=theme_id, max_score__gt=0)
         elif theme_id == '8':
             grades = Grade.objects.filter(work__theme__id=theme_id, max_score__gt=0, work__type=7)
+        elif theme_id == '9':
+            grades = Grade.objects.filter(work__theme__id=theme_id, max_score__gt=0, work__type=6)
         else:
             grades = Grade.objects.filter(work__is_homework=True, work__theme__id=theme_id, max_score__gt=0)
-        current = grades.filter(user=student).annotate(percentage=ExpressionWrapper(F('score') * 100 / F('max_score'), output_field=FloatField())).values('work_id').annotate(avg_percentage=Avg('percentage'))
-        others = grades.exclude(user=student).annotate(percentage=ExpressionWrapper(F('score') * 100 / F('max_score'), output_field=FloatField())).values('work_id').annotate(avg_percentage=Avg('percentage'))
+        if theme_id in ['1', '8']:
+            current = grades.filter(user=student).values('work_id').annotate(avg=Avg('score'))
+            others = grades.exclude(user=student).values('work_id').annotate(avg=Avg('score'))
+        elif theme_id == '9':
+            current = grades.filter(user=student)
+            current_list = []
+            for current_grade in current:
+                grades_ = current_grade.grades.split('_._')
+                count = 0
+                for grade in grades_:
+                    if is_number_float(grade):
+                        if float(grade) > 0:
+                            count += 1
+                current_list.append({
+                    'work_id': current_grade.work_id,
+                    'avg': count
+                })
+            current = current_list
+            others = grades.exclude(user=student)
+            others_list = []
+            others_dict = {}
+            for others_grades in others:
+                if others_grades.work_id not in others_dict.keys():
+                    others_dict[others_grades.work_id] = []
+                grades_ = others_grades.grades.split('_._')
+                count = 0
+                for grade in grades_:
+                    if is_number_float(grade):
+                        if float(grade) > 0:
+                            count += 1
+                others_dict[others_grades.work_id].append(count)
+            for work_ in others_dict:
+                others_list.append({
+                    'work_id': work_,
+                    'avg': sum(others_dict[work_])/len(others_dict[work_])
+                })
+            others = others_list
+        else:
+            current = grades.filter(user=student).annotate(percentage=ExpressionWrapper(F('score') * 100 / F('max_score'), output_field=FloatField())).values('work_id').annotate(avg=Avg('percentage'))
+            others = grades.exclude(user=student).annotate(percentage=ExpressionWrapper(F('score') * 100 / F('max_score'), output_field=FloatField())).values('work_id').annotate(avg=Avg('percentage'))
         current_grades = {}
         for work in current:
-            current_grades[work['work_id']] = {'current': round(work['avg_percentage'], 1), 'others': 0}
+            current_grades[work['work_id']] = {'current': round(work['avg'], 1), 'others': 0}
         for work in others:
             if work['work_id'] in current_grades:
-                current_grades[work['work_id']]['others'] = round(work['avg_percentage'], 1)
+                current_grades[work['work_id']]['others'] = round(work['avg'], 1)
         graph_list = []
         for work in current_grades:
             graph_list.append(current_grades[work])
