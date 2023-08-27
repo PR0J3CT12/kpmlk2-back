@@ -70,4 +70,4 @@ class HomeworkUsersFile(models.Model):
         return f'{str(self.id)}'
 
     class Meta:
-        db_table = 'homeworks_files'
+        db_table = 'homeworks_users_files'
