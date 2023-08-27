@@ -277,12 +277,6 @@ def change_password(request):
         if 'id' not in request_body.keys():
             id_ = request.user.id
             password_ = str(request_body["password"])
-            refresh = request_body['refresh']
-            if not refresh:
-                return HttpResponse(
-                    json.dumps({'state': 'error', 'message': 'Отсутствует refresh токен.', 'details': {},
-                                'instance': request.path},
-                               ensure_ascii=False), status=400)
         else:
             id_ = request_body["id"]
             password_ = password_creator()
@@ -305,9 +299,6 @@ def change_password(request):
         user.save()
         log = Log(operation='UPDATE', from_table='users', details=f"Изменен пароль у пользователя {id_}.")
         log.save()
-        if refresh:
-            token = RefreshToken(refresh)
-            token.blacklist()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
