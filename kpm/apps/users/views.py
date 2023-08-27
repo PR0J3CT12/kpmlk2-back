@@ -277,7 +277,7 @@ def change_password(request):
         if 'id' not in request_body.keys():
             id_ = request.user.id
             password_ = str(request_body["password"])
-            refresh = request.data.get('refresh')
+            refresh = request_body['refresh']
             if not refresh:
                 return HttpResponse(
                     json.dumps({'state': 'error', 'message': 'Отсутствует refresh токен.', 'details': {},
