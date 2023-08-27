@@ -358,7 +358,7 @@ def login(request):
                 id_ = user.id
                 tokens = get_tokens_for_user(user)
                 return HttpResponse(json.dumps(
-                        {'id': id_, 'tokens': tokens, 'is_default': user.is_default}, ensure_ascii=False), status=200)
+                        {'id': id_, 'tokens': tokens, 'is_admin': user.is_admin}, ensure_ascii=False), status=200)
             else:
                 return HttpResponse(
                     json.dumps({'state': 'error', 'message': 'Неверный пароль.', 'details': {},
@@ -371,7 +371,7 @@ def login(request):
                 id_ = user.id
                 tokens = get_tokens_for_user(user)
                 return HttpResponse(json.dumps(
-                        {'id': id_, 'tokens': tokens, 'is_default': user.is_default}, ensure_ascii=False), status=200)
+                        {'id': id_, 'tokens': tokens, 'is_admin': user.is_admin}, ensure_ascii=False), status=200)
             else:
                 return HttpResponse(
                     json.dumps({'state': 'error', 'message': 'Неверный пароль.', 'details': {},

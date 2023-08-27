@@ -26,7 +26,7 @@ class Homework(models.Model):
     title = models.CharField('Заголовок домашней работы', max_length=200)
     text = models.TextField('Текст домашней работы')
     score = models.IntegerField('Максимальный балл за работу')
-    #image = models.ImageField('Картинка новости', upload_to=path_and_rename, null=True, blank=True, default=None)
+    grades = models.CharField('Форма с оценками', max_length=200)
     created_at = models.DateTimeField('Дата создания домашней работы', auto_now_add=True)
     is_closed = models.BooleanField('Домашняя работа закрыта', default=False)
 
@@ -40,7 +40,7 @@ class Homework(models.Model):
 class HomeworkFile(models.Model):
     id = models.AutoField('id файла', primary_key=True, editable=False)
     homework = models.ForeignKey(Homework, on_delete=models.CASCADE)
-    image = models.ImageField('Картинка новости', upload_to=path_and_rename)
+    file = models.FileField('Файл новости', upload_to=path_and_rename)
 
     def __str__(self):
         return f'{str(self.id)}'
@@ -59,3 +59,15 @@ class HomeworkUsers(models.Model):
 
     class Meta:
         db_table = 'homeworks_users'
+
+
+class HomeworkUsersFile(models.Model):
+    id = models.AutoField('id файла пользователя', primary_key=True, editable=False)
+    link = models.ForeignKey(HomeworkUsers, on_delete=models.CASCADE)
+    file = models.FileField('Файл новости', upload_to=path_and_rename)
+
+    def __str__(self):
+        return f'{str(self.id)}'
+
+    class Meta:
+        db_table = 'homeworks_files'
