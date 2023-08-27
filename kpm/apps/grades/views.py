@@ -207,20 +207,21 @@ def get_grades(request):
         if type_ in ['0', '1', '2', '3', '4', '7', '6', '8']:
             grades = grades.filter(work__type=int(type_))
         if (theme is not None) and (theme != ''):
-            if is_number(theme):
-                theme_id = int(theme)
-                grades = grades.filter(work__theme__id=theme_id)
+            if theme == '8':
+                grades = grades.filter(work__theme__id=int(theme)).exclude(work__type=5)
+            else:
+                grades = grades.filter(work__theme__id=int(theme))
         works_list = grades.order_by('work__added_at').values_list('work', flat=True)
         works_list = custom_distinct(works_list)
         works = Work.objects.filter(id__in=works_list)
         works_data = []
         links = None
-        if type_ == '7':
+        if (type_ == '7') or (theme == '8'):
             links = Exam.objects.filter(work_2007__in=works)
         if works:
             for work in works:
                 data = {'id': work.id, 'name': work.name, 'max_score': work.max_score, 'grades': list(map(int, work.grades.split("_._")))}
-                if type_ == '7':
+                if (type_ == '7') or (theme == '8'):
                     work_tech = links.get(work_2007=work)
                     grades_tech = list(map(int, work_tech.work.grades.split("_._")))
                     data['grades_tech'] = grades_tech
