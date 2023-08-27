@@ -117,9 +117,9 @@ def insert_grades(request):
             manas_delete.delete()
         if work.type == 6:
             count = 0
-            for grade in new_grades:
-                if is_number_float(grade):
-                    if float(grade) > 0:
+            for grade_ in new_grades:
+                if is_number_float(grade_):
+                    if float(grade_) > 0:
                         count += 1
             green, blue = mana_generation(int(work.type), work.is_homework, count, 0)
         elif work.type == 2:
