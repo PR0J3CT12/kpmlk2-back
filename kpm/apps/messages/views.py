@@ -49,10 +49,10 @@ def send_message(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='GET', operation_summary="Прочитать сообщение.",
+@swagger_auto_schema(method='POST', operation_summary="Прочитать сообщение.",
                      manual_parameters=[id_param],
                      responses=read_message_responses)
-@api_view(["GET"])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def read_message(request):
     try:
