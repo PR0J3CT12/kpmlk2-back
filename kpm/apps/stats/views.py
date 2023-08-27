@@ -80,7 +80,7 @@ def get_stats(request):
             last_classwork = last_classwork[0]
             last_classwork_perc = round(last_classwork.score / last_classwork.max_score * 100)
 
-        homeworks = Grade.objects.filter(work__is_homework=True, user=student)
+        homeworks = Grade.objects.filter(user=student, work__type__in=[0, 5, 6])
         if not homeworks:
             homeworks_perc = None
         else:
