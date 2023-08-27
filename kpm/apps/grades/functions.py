@@ -46,9 +46,9 @@ def mana_generation(type_, is_homework, score, max_score):
             mana = 2
         else:
             mana = 0
-    elif type_ == 3:
+    elif type_ == 7:
         mana = math.ceil(float(score) / float(max_score) * 4)
-    elif type_ == 4:
+    elif type_ == 6:
         if score >= 4:
             mana = 4
         else:

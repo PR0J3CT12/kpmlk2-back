@@ -95,4 +95,4 @@ get_work_responses = {200: get_work_response_200}
 create_work_responses = {200: create_work_response_200}
 delete_work_responses = {200: delete_work_response_200}
 update_work_responses = {200: update_work_response_200}
-operation_description = "Type: 0 - Домашняя работа, 1 - Классная работа, 2 - Блиц, 3 - Письменный экзамен, 4 - Устный экзамен, 5 - Вне статистики"
+operation_description = "Type: 0 - Домашняя работа, 1 - Классная работа, 2 - Блиц, 3 - Письменный экзамен, 4 - Устный экзамен, 5 - Письменный экзамен дз, 6 - Устный экзамен дз, 7 - Письменный экзамен дз(баллы 2007), 8 - Вне статистики"

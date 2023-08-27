@@ -9,7 +9,10 @@ class Work(models.Model):
         (2, 'Блиц'),
         (3, 'Письменный экзамен'),
         (4, 'Устный экзамен'),
-        (5, 'Вне статистики'),
+        (5, 'Письменный экзамен дз'),
+        (6, 'Устный экзамен дз'),
+        (7, 'Письменный экзамен дз(баллы 2007)'),
+        (8, 'Вне статистики'),
     )
     id = models.AutoField('work id', primary_key=True, editable=False)
     name = models.CharField('work name', max_length=100)
@@ -28,3 +31,15 @@ class Work(models.Model):
 
     class Meta:
         db_table = 'works'
+
+
+class Exam(models.Model):
+    id = models.AutoField('link id', primary_key=True, editable=False)
+    work = models.ForeignKey(Work, on_delete=models.CASCADE, related_name='work')
+    work_2007 = models.ForeignKey(Work, on_delete=models.CASCADE, related_name='work_2007')
+
+    def __str__(self):
+        return f'{self.id}'
+
+    class Meta:
+        db_table = 'exam_links'

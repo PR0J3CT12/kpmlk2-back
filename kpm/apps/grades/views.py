@@ -5,7 +5,7 @@ from kpm.apps.users.permissions import IsAdmin
 from .functions import *
 from kpm.apps.logs.models import Log
 from kpm.apps.users.models import User
-from kpm.apps.works.models import Work
+from kpm.apps.works.models import Work, Exam
 from kpm.apps.themes.models import Theme
 from kpm.apps.grades.models import Grade, Mana
 import json
@@ -30,7 +30,15 @@ def insert_grades(request):
         else:
             return HttpResponse(json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path}, ensure_ascii=False), status=400)
         work = Work.objects.get(id=int(request_body["work_id"]))
+        if work.type == 5:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Закрытая таблица.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
         student = User.objects.get(id=int(request_body["user_id"]))
+        work_tech = None
+        if work.type == 7:
+            link = Exam.objects.get(work_2007=work)
+            work_tech = link.work
         grade = Grade.objects.get(user=student, work=work)
         work_grades = list(map(float, work.grades.split("_._")))
         new_max_score = sum(work_grades)
@@ -40,11 +48,7 @@ def insert_grades(request):
         if request_body["value"] == '':
             request_body["value"] = '#'
         new_grades[int(request_body["cell_number"])] = request_body["value"]
-        if work.exercises < len(new_grades):
-            return HttpResponse(
-                json.dumps({'state': 'error', 'message': f'Неверное количество оценок.', 'details': {},
-                            'instance': request.path},
-                           ensure_ascii=False), status=400)
+        coefficient_2007 = []
         for i in range(len(new_grades)):
             if ',' in new_grades[i]:
                 new_grades[i] = new_grades[i].replace(',', '.')
@@ -52,9 +56,13 @@ def insert_grades(request):
                 work_grades[i] = 0
                 new_exercises -= 1
                 new_max_score -= work_grades[i]
+                if work.type == 7:
+                    coefficient_2007.append('-')
                 continue
             elif new_grades[i] == '#':
                 cast = 0
+                if work.type == 7:
+                    coefficient_2007.append('#')
             else:
                 cast = float(new_grades[i])
                 if cast < 0:
@@ -73,13 +81,41 @@ def insert_grades(request):
                                                 "cell_name": f'{request_body["user_id"]}_{request_body["work_id"]}_{request_body["cell_number"]}'},
                                     'instance': request.path},
                                    ensure_ascii=False), status=400)
+                if work.type == 7:
+                    coefficient_2007.append(cast / work_grades[i])
             new_score += cast
+        if work_tech:
+            grade_tech = Grade.objects.get(user=student, work=work_tech)
+            work_tech_grades = list(map(float, work_tech.grades.split("_._")))
+            max_score_tech = 0
+            score_tech = 0
+            exercises_tech = 0
+            new_grades_list_tech = []
+            for i in range(len(work_tech_grades)):
+                if coefficient_2007[i] == '-':
+                    new_grades_list_tech.append('-')
+                elif coefficient_2007[i] == '#':
+                    exercises_tech += 1
+                    max_score_tech += work_tech_grades[i]
+                    new_grades_list_tech.append('#')
+                else:
+                    exercises_tech += 1
+                    current_grade_tech = math.ceil(coefficient_2007[i] * work_tech_grades[i])
+                    max_score_tech += work_tech_grades[i]
+                    score_tech += current_grade_tech
+                    new_grades_list_tech.append(str(current_grade_tech))
+            grade_tech.exercises = exercises_tech
+            grade_tech.max_score = max_score_tech
+            new_grades_string_tech = '_._'.join(new_grades_list_tech)
+            grade_tech.grades = new_grades_string_tech
+            grade_tech.score = score_tech
+            grade_tech.save()
         log_grades_string = grade.grades
         new_grades_string = '_._'.join(new_grades)
         if grade.score != new_score:
             manas_delete = Mana.objects.filter(Q(user=student) & Q(work=work))
             manas_delete.delete()
-        if work.type == 4:
+        if work.type == 6:
             count = 0
             for grade in new_grades:
                 if is_number_float(grade):
@@ -103,7 +139,7 @@ def insert_grades(request):
         grade.exercises = new_exercises
         log_details = f'Обновлены оценки для ученика {student.id} в работе {work.id}. ["old_grades": {log_grades_string}, "new_grades": {new_grades_string}]'
         grade.save()
-        if work.type in [0, 1, 3, 4]:
+        if work.type in [0, 1, 3, 4, 6, 7]:
             if work.is_homework:
                 if student.last_homework_id is None:
                     student.last_homework_id = work.id
@@ -125,7 +161,7 @@ def insert_grades(request):
                     except ObjectDoesNotExist:
                         student.last_classwork_id = work.id
             student.save()
-        scores = Grade.objects.filter(user=student, work__is_homework=True).aggregate(sum_score=Sum('score'))
+        scores = Grade.objects.filter(user=student, work__type__in=[0, 2, 5, 6]).aggregate(sum_score=Sum('score'))
         experience = int(scores['sum_score'])
         student.experience = experience
         student.save()
@@ -300,7 +336,7 @@ def give_mana_all(request):
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
-    except ZeroDivisionError as e:
+    except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
              'instance': request.path},

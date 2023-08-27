@@ -6,7 +6,6 @@ from kpm.apps.users.models import User
 class Grade(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     work = models.ForeignKey(Work, on_delete=models.CASCADE)
-    mana = models.IntegerField('mana', default=0)
     score = models.FloatField('score', default=0)
     max_score = models.FloatField('max_score', default=0)
     grades = models.CharField('grades string', default=None, max_length=200)
