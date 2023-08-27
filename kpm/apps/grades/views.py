@@ -191,7 +191,7 @@ def insert_grades(request):
                      manual_parameters=[class_param, theme_param, type_param],
                      responses=get_grades_responses)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAdmin])
 def get_grades(request):
     try:
         class_ = get_variable("class", request)
@@ -204,7 +204,7 @@ def get_grades(request):
                      'instance': request.path},
                     ensure_ascii=False), status=404)
         grades = Grade.objects.filter(user__school_class=int(class_)).select_related('work')
-        if type_ in ['0', '1', '2', '3', '4', '5']:
+        if type_ in ['0', '1', '2', '3', '4', '7', '6', '8']:
             grades = grades.filter(work__type=int(type_))
         if (theme is not None) and (theme != ''):
             if is_number(theme):
@@ -214,9 +214,17 @@ def get_grades(request):
         works_list = custom_distinct(works_list)
         works = Work.objects.filter(id__in=works_list)
         works_data = []
+        links = None
+        if type_ == '7':
+            links = Exam.objects.filter(work_2007__in=works)
         if works:
             for work in works:
-                works_data.append({'id': work.id, 'name': work.name, 'max_score': work.max_score, 'grades': list(map(int, work.grades.split("_._")))})
+                data = {'id': work.id, 'name': work.name, 'max_score': work.max_score, 'grades': list(map(int, work.grades.split("_._")))}
+                if type_ == '7':
+                    work_tech = links.get(work_2007=work)
+                    grades_tech = list(map(int, work_tech.work.grades.split("_._")))
+                    data['grades_tech'] = grades_tech
+                works_data.append(data)
             students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).order_by('name')
             students_data = []
             for student in students:
