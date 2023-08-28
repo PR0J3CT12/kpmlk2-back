@@ -21,14 +21,47 @@ from django.utils import timezone
 @permission_classes([IsAdmin])
 def create_homework(request):
     try:
-        if request.body:
-            request_body = json.loads(request.body)
+        if request.POST or request.FILES:
+            data = request.POST
+            files = request.FILES
         else:
-            return HttpResponse(json.dumps(
-                {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
-                ensure_ascii=False), status=400)
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=400)
         author = User.objects.get(id=request.user.id)
-
+        title = data["title"]
+        score = data["score"]
+        if not is_number_float(score):
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Некорректное значение score.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=404)
+        text = data["text"]
+        if data["class"] not in ['4', '5', '6', 4, 5, 6]:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=404)
+        class_ = data["class"]
+        answers = data.getlist("answers")
+        answers_string = '_._'.join(answers)
+        fields = len(answers)
+        files = files.getlist('files')
+        for file in files:
+            if file.content_type not in ['image/jpeg', 'image/png', 'application/pdf']:
+                return HttpResponse(
+                    json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
+                                'instance': request.path},
+                               ensure_ascii=False), status=404)
+        homework = Homework(author=author, title=title, text=text, score=score, answers=answers_string, fields=fields, school_class=class_)
+        homework.save()
+        for file in files:
+            ext = file.content_type.split('/')[1]
+            homework_file = HomeworkFile(homework=homework, file=file, ext=ext)
+            homework_file.save()
+        homework.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -66,6 +99,478 @@ def delete_homework(request):
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Работа не существует.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
+#                     manual_parameters=[id_param],
+#                     responses=delete_work_responses,
+#                     operation_description=operation_description)
+@api_view(["GET"])
+@permission_classes([IsAdmin])
+def get_homework(request):
+    try:
+        id_ = get_variable("id", request)
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        homework = Homework.objects.get(id=id_)
+        files = HomeworkFile.objects.filter(homework=homework)
+        files_list = []
+        for file in files:
+            files_list.append({'name': file.file.name, 'ext': file.ext})
+        homework_users = HomeworkUsers.objects.filter(homework=homework)
+        users_list = []
+        for user in homework_users:
+            users_list.append({'id': user.user.id, 'name': user.user.name})
+        return HttpResponse(json.dumps({
+            'id': homework.id,
+            'title': homework.title,
+            'text': homework.text,
+            'score': homework.score,
+            'fields': homework.fields,
+            'answers': homework.answers.split("_._"),
+            'files': files_list,
+            'class': homework.school_class,
+            'users': users_list,
+            'created_at': str(homework.created_at)
+        }, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
+#                     manual_parameters=[id_param],
+#                     responses=delete_work_responses,
+#                     operation_description=operation_description)
+@api_view(["PATCH"])
+@permission_classes([IsAdmin])
+def add_to_homework(request):
+    try:
+        id_ = get_variable("id", request)
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        student_id = get_variable("student", request)
+        if (student_id is None) or (student_id == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        homework = Homework.objects.get(id=id_)
+        student = User.objects.get(id=student_id)
+        if student.school_class != homework.school_class:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Класс ученика не соответствует классу работы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        fields = ['#'] * homework.fields
+        answers = fields.join('_._')
+        homework_user = HomeworkUsers(homework=homework, user=student, answers=answers)
+        homework_user.save()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
+#                     manual_parameters=[id_param],
+#                     responses=delete_work_responses,
+#                     operation_description=operation_description)
+@api_view(["PATCH"])
+@permission_classes([IsAdmin])
+def delete_from_homework(request):
+    try:
+        id_ = get_variable("id", request)
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        student_id = get_variable("student", request)
+        if (student_id is None) or (student_id == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        homework = Homework.objects.get(id=id_)
+        student = User.objects.get(id=student_id)
+        homework_user = HomeworkUsers.objects.filter(homework=homework, user=student)
+        if homework_user:
+            homework_user[0].delete()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
+#                     manual_parameters=[id_param],
+#                     responses=delete_work_responses,
+#                     operation_description=operation_description)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_user_homework(request):
+    try:
+        id_ = get_variable("id", request)
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        homework = Homework.objects.get(id=id_)
+        student = User.objects.get(id=request.user.id)
+        homework_user = HomeworkUsers.objects.filter(user=student, homework=homework)
+        if not homework_user:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=403)
+        homework_user = homework_user[0]
+        files = HomeworkFile.objects.filter(homework=homework)
+        files_list = []
+        for file in files:
+            files_list.append({'name': file.file.name, 'ext': file.ext})
+        response = {
+            'id': homework.id,
+            'title': homework.title,
+            'text': homework.text,
+            'score': homework.score,
+            'fields': homework.fields,
+            'files': files_list,
+            'class': homework.school_class,
+            'is_done': homework_user.is_done,
+            'is_checked': homework_user.is_checked,
+            'created_at': str(homework.created_at)
+        }
+        if homework_user.is_done:
+            response['answers'] = homework.answers.split("_._")
+            response['user_answers'] = homework_user.answers.split("_._")
+            user_files = HomeworkUsersFile.objects.filter(link=homework_user)
+            user_files_list = []
+            for file in user_files:
+                user_files_list.append({'name': file.file.name, 'ext': file.ext})
+            response['user_files'] = user_files_list
+            response['answered_at'] = str(homework_user.answered_at)
+        if homework_user.is_checked:
+            response['user_score'] = homework_user.score
+        return HttpResponse(json.dumps(response, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
+#                     manual_parameters=[id_param],
+#                     responses=delete_work_responses,
+#                     operation_description=operation_description)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def create_response(request):
+    try:
+        if request.POST or request.FILES:
+            data = request.POST
+            files = request.FILES
+        else:
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=400)
+        id_ = get_variable("id", request)
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        homework = Homework.objects.get(id=id_)
+        student = User.objects.get(id=request.user.id)
+        homework_user = HomeworkUsers.objects.filter(user=student, homework=homework)
+        if not homework_user:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=403)
+        homework_user = homework_user[0]
+        answers = data.getlist("answers")
+        for answer in answers:
+            if '_._' in answer:
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Некорректный ответ.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=403)
+        answers_string = '_._'.join(answers)
+        fields = len(answers)
+        if fields != homework.fields:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Некорректное количество ответов.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=403)
+        files = files.getlist('files')
+        for file in files:
+            if file.content_type not in ['image/jpeg', 'image/png', 'application/pdf']:
+                return HttpResponse(
+                    json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
+                                'instance': request.path},
+                               ensure_ascii=False), status=404)
+        homework_user.is_done = True
+        homework_user.answers = answers_string
+        homework_user.answered_at = timezone.now()
+        for file in files:
+            ext = file.content_type.split('/')[1]
+            homework_file = HomeworkUsersFile(link=homework_user, file=file, ext=ext)
+            homework_file.save()
+        homework_user.save()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
+#                     manual_parameters=[id_param],
+#                     responses=delete_work_responses,
+#                     operation_description=operation_description)
+@api_view(["PATCH"])
+@permission_classes([IsAdmin])
+def check_user_homework(request):
+    try:
+        if request.body:
+            request_body = json.loads(request.body)
+        else:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
+        id_ = request_body['id']
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        student_id = request_body['student']
+        if (student_id is None) or (student_id == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        homework = Homework.objects.get(id=id_)
+        student = User.objects.get(id=student_id)
+        homework_user = HomeworkUsers.objects.filter(user=student, homework=homework)
+        if not homework_user:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=403)
+        homework_user = homework_user[0]
+        score = request_body['score']
+        if not is_number_float(score):
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Некорректное значение score.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=404)
+        if (float(score) < 0) or (float(score) > homework.score):
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Некорректное значение score.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=404)
+        homework_user.score = int(score)
+        homework_user.is_checked = True
+        homework_user.save()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
+#                     manual_parameters=[id_param],
+#                     responses=delete_work_responses,
+#                     operation_description=operation_description)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_my_homeworks(request):
+    try:
+        student = User.objects.get(id=request.user.id)
+        homework_user = HomeworkUsers.objects.filter(user=student)
+        homeworks_list = []
+        for homework_ in homework_user:
+            homeworks_list.append(
+                {
+                    'id': homework_.homework.id,
+                    'name': homework_.homework.title,
+                    'is_done': homework_.is_done,
+                    'is_checked': homework_.is_checked
+                }
+            )
+        return HttpResponse(json.dumps({'homeworks': homeworks_list}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
+#                     manual_parameters=[id_param],
+#                     responses=delete_work_responses,
+#                     operation_description=operation_description)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_my_homeworks(request):
+    try:
+        student = User.objects.get(id=request.user.id)
+        homework_user = HomeworkUsers.objects.filter(user=student)
+        homeworks_list = []
+        for homework_ in homework_user:
+            homeworks_list.append(
+                {
+                    'id': homework_.homework.id,
+                    'name': homework_.homework.title,
+                    'is_done': homework_.is_done,
+                    'is_checked': homework_.is_checked
+                }
+            )
+        return HttpResponse(json.dumps({'homeworks': homeworks_list}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
+#                     manual_parameters=[id_param],
+#                     responses=delete_work_responses,
+#                     operation_description=operation_description)
+@api_view(["GET"])
+@permission_classes([IsAdmin])
+def get_all_homeworks(request):
+    try:
+        class_ = get_variable("class", request)
+        if not class_:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        else:
+            if class_ not in ['4', '5', '6', 4, 5, 6]:
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=404)
+        homeworks = Homework.objects.filter(school_class=class_)
+        homeworks_list = []
+        for homework_ in homeworks:
+            homeworks_list.append(
+                {
+                    'id': homework_.id,
+                    'name': homework_.title,
+                    'created_at': str(homework_.created_at)
+                }
+            )
+        return HttpResponse(json.dumps({'homeworks': homeworks_list}, ensure_ascii=False), status=200)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
+#                     manual_parameters=[id_param],
+#                     responses=delete_work_responses,
+#                     operation_description=operation_description)
+@api_view(["GET"])
+@permission_classes([IsAdmin])
+def get_all_answers(request):
+    try:
+        class_ = get_variable("class", request)
+        if not class_:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        else:
+            if class_ not in ['4', '5', '6', 4, 5, 6]:
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=404)
+        homeworks = Homework.objects.filter(homework__school_class=class_)
+        homeworks_data = []
+        for homework in homeworks:
+            data = {'id': homework.id, 'title': homework.title, 'answers': homework.grades.split("_._")}
+            homeworks_data.append(data)
+        students = User.objects.filter(school_class=class_)
+        students_list = []
+        for student in students:
+            student_data = {'id': student.id, 'name': student.name, 'answers': []}
+            for homework_ in homeworks:
+                homework_id = homework_.id
+                homework_user = HomeworkUsers.objects.filter(homework=homework_, user=student)
+                if not homework_user:
+                    answers_list = [''] * homework_.fields
+                else:
+                    answers_list = homework_user[0].answers.split('_._')
+                student_data['answers'].append({'homework_id': homework_id, 'answers': answers_list})
+            students_list.append(student_data)
+        return HttpResponse(json.dumps({'homeworks': homeworks_data, 'students': students_list}, ensure_ascii=False), status=200)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},

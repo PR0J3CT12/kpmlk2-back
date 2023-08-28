@@ -15,3 +15,11 @@ def get_variable(variable_name, source_request):
         return None
     except Exception as e:
         return None
+
+
+def is_number_float(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
