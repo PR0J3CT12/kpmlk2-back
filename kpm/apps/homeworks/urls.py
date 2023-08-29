@@ -11,6 +11,6 @@ urlpatterns = [
     path('create-response', views.create_response, name='create response on homework'),
     path('get-user-homework', views.get_user_homework, name='get user homework'),
     path('get-my-homeworks', views.get_my_homeworks, name='get user homeworks'),
-    path('get-all-homeworks', views.get_my_homeworks, name='get all homeworks'),
+    path('get-all-homeworks', views.get_all_homeworks, name='get all homeworks'),
     path('get-all-answers', views.get_all_answers, name='get all answers'),
 ]

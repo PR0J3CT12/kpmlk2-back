@@ -26,7 +26,7 @@ class Homework(models.Model):
     title = models.CharField('Заголовок домашней работы', max_length=200)
     text = models.TextField('Текст домашней работы')
     score = models.IntegerField('Максимальный балл за работу')
-    answers = models.CharField('Форма с ответами', max_length=1000)
+    answers = models.CharField('Форма с ответами', max_length=5000)
     fields = models.IntegerField('Количество полей в форме')
     school_class = models.IntegerField('Класс работы', default=4)
     created_at = models.DateTimeField('Дата создания домашней работы', auto_now_add=True)
@@ -59,7 +59,7 @@ class HomeworkUsers(models.Model):
     is_done = models.BooleanField('Сдал ли работу ученик', default=False)
     is_checked = models.BooleanField('Проверена ли работа', default=False)
     score = models.IntegerField('Оценка за работу', default=0)
-    answers = models.CharField('Форма с ответами', max_length=1000)
+    answers = models.CharField('Форма с ответами', max_length=5000)
     answered_at = models.DateTimeField('Дата ответа', default=None, null=True)
 
     def __str__(self):

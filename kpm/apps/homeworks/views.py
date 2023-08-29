@@ -13,10 +13,9 @@ from kpm.apps.homeworks.functions import *
 from django.utils import timezone
 
 
-#@swagger_auto_schema(method='POST', operation_summary="Создание работы.",
-#                     request_body=create_work_request_body,
-#                     responses=create_work_responses,
-#                     operation_description=operation_description)
+@swagger_auto_schema(method='POST', operation_summary="Создание домашней работы.",
+                     request_body=create_homework_request_body,
+                     responses=create_homework_responses)
 @api_view(["POST"])
 @permission_classes([IsAdmin])
 def create_homework(request):
@@ -78,10 +77,9 @@ def create_homework(request):
             ensure_ascii=False), status=404)
 
 
-#@swagger_auto_schema(method='DELETE', operation_summary="Удаление работы.",
-#                     manual_parameters=[id_param],
-#                     responses=delete_work_responses,
-#                     operation_description=operation_description)
+@swagger_auto_schema(method='DELETE', operation_summary="Удаление работы.",
+                     manual_parameters=[id_param],
+                     responses=delete_homework_responses)
 @api_view(["DELETE"])
 @permission_classes([IsAdmin])
 def delete_homework(request):
@@ -106,10 +104,9 @@ def delete_homework(request):
             ensure_ascii=False), status=404)
 
 
-#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
-#                     manual_parameters=[id_param],
-#                     responses=delete_work_responses,
-#                     operation_description=operation_description)
+@swagger_auto_schema(method='GET', operation_summary="Получение работы(админка).",
+                     manual_parameters=[id_param],
+                     responses=get_homework_responses)
 @api_view(["GET"])
 @permission_classes([IsAdmin])
 def get_homework(request):
@@ -152,10 +149,9 @@ def get_homework(request):
             ensure_ascii=False), status=404)
 
 
-#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
-#                     manual_parameters=[id_param],
-#                     responses=delete_work_responses,
-#                     operation_description=operation_description)
+@swagger_auto_schema(method='PATCH', operation_summary="Добавление работы ученику.",
+                     manual_parameters=[id_param],
+                     responses=add_to_homework_responses)
 @api_view(["PATCH"])
 @permission_classes([IsAdmin])
 def add_to_homework(request):
@@ -195,10 +191,9 @@ def add_to_homework(request):
             ensure_ascii=False), status=404)
 
 
-#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
-#                     manual_parameters=[id_param],
-#                     responses=delete_work_responses,
-#                     operation_description=operation_description)
+@swagger_auto_schema(method='PATCH', operation_summary="Удаление работы у ученика.",
+                     manual_parameters=[id_param],
+                     responses=delete_from_homework_responses)
 @api_view(["PATCH"])
 @permission_classes([IsAdmin])
 def delete_from_homework(request):
@@ -232,10 +227,9 @@ def delete_from_homework(request):
             ensure_ascii=False), status=404)
 
 
-#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
-#                     manual_parameters=[id_param],
-#                     responses=delete_work_responses,
-#                     operation_description=operation_description)
+@swagger_auto_schema(method='GET', operation_summary="Получение работы(пользователь).",
+                     manual_parameters=[id_param],
+                     responses=get_user_homework_responses)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_user_homework(request):
@@ -294,10 +288,9 @@ def get_user_homework(request):
             ensure_ascii=False), status=404)
 
 
-#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
-#                     manual_parameters=[id_param],
-#                     responses=delete_work_responses,
-#                     operation_description=operation_description)
+@swagger_auto_schema(method='POST', operation_summary="Ответ на домашнюю работу.",
+                     request_body=create_response_request_body,
+                     responses=create_response_responses)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_response(request):
@@ -310,7 +303,7 @@ def create_response(request):
                 json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {},
                             'instance': request.path},
                            ensure_ascii=False), status=400)
-        id_ = get_variable("id", request)
+        id_ = data['id']
         if (id_ is None) or (id_ == ''):
             return HttpResponse(
                 json.dumps(
@@ -367,10 +360,9 @@ def create_response(request):
             ensure_ascii=False), status=404)
 
 
-#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
-#                     manual_parameters=[id_param],
-#                     responses=delete_work_responses,
-#                     operation_description=operation_description)
+@swagger_auto_schema(method='PATCH', operation_summary="Проверка домашней работы(админка).",
+                     request_body=check_user_homework_request_body,
+                     responses=check_user_homework_responses)
 @api_view(["PATCH"])
 @permission_classes([IsAdmin])
 def check_user_homework(request):
@@ -428,10 +420,8 @@ def check_user_homework(request):
             ensure_ascii=False), status=404)
 
 
-#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
-#                     manual_parameters=[id_param],
-#                     responses=delete_work_responses,
-#                     operation_description=operation_description)
+@swagger_auto_schema(method='GET', operation_summary="Получение списка домашних(пользователь).",
+                     responses=get_my_homeworks_responses)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_my_homeworks(request):
@@ -460,42 +450,9 @@ def get_my_homeworks(request):
             ensure_ascii=False), status=404)
 
 
-#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
-#                     manual_parameters=[id_param],
-#                     responses=delete_work_responses,
-#                     operation_description=operation_description)
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def get_my_homeworks(request):
-    try:
-        student = User.objects.get(id=request.user.id)
-        homework_user = HomeworkUsers.objects.filter(user=student)
-        homeworks_list = []
-        for homework_ in homework_user:
-            homeworks_list.append(
-                {
-                    'id': homework_.homework.id,
-                    'name': homework_.homework.title,
-                    'is_done': homework_.is_done,
-                    'is_checked': homework_.is_checked
-                }
-            )
-        return HttpResponse(json.dumps({'homeworks': homeworks_list}, ensure_ascii=False), status=200)
-    except ObjectDoesNotExist as e:
-        return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
-    except Exception as e:
-        return HttpResponse(json.dumps(
-            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
-             'instance': request.path},
-            ensure_ascii=False), status=404)
-
-
-#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
-#                     manual_parameters=[id_param],
-#                     responses=delete_work_responses,
-#                     operation_description=operation_description)
+@swagger_auto_schema(method='GET', operation_summary="Получение списка всех работ(админка).",
+                     manual_parameters=[id_param],
+                     responses=get_all_homeworks_responses)
 @api_view(["GET"])
 @permission_classes([IsAdmin])
 def get_all_homeworks(request):
@@ -531,46 +488,34 @@ def get_all_homeworks(request):
             ensure_ascii=False), status=404)
 
 
-#@swagger_auto_schema(method='GET', operation_summary="Удаление работы.",
-#                     manual_parameters=[id_param],
-#                     responses=delete_work_responses,
-#                     operation_description=operation_description)
+@swagger_auto_schema(method='GET', operation_summary="Получение ответов на работу(для таблицы).",
+                     manual_parameters=[id_param],
+                     responses=get_all_answers_responses)
 @api_view(["GET"])
 @permission_classes([IsAdmin])
 def get_all_answers(request):
     try:
-        class_ = get_variable("class", request)
-        if not class_:
+        id_ = get_variable("id", request)
+        if (id_ is None) or (id_ == ''):
             return HttpResponse(
                 json.dumps(
-                    {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
+                    {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
-        else:
-            if class_ not in ['4', '5', '6', 4, 5, 6]:
-                return HttpResponse(
-                    json.dumps(
-                        {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
-                         'instance': request.path},
-                        ensure_ascii=False), status=404)
-        homeworks = Homework.objects.filter(homework__school_class=class_)
-        homeworks_data = []
-        for homework in homeworks:
-            data = {'id': homework.id, 'title': homework.title, 'answers': homework.grades.split("_._")}
-            homeworks_data.append(data)
-        students = User.objects.filter(school_class=class_)
+        homework = Homework.objects.get(id=id_)
+        response = {'id': homework.id, 'title': homework.title, 'answers': homework.grades.split("_._"), 'students': []}
+        students = User.objects.filter(school_class=homework.school_class)
         students_list = []
         for student in students:
             student_data = {'id': student.id, 'name': student.name, 'answers': []}
-            for homework_ in homeworks:
-                homework_id = homework_.id
-                homework_user = HomeworkUsers.objects.filter(homework=homework_, user=student)
-                if not homework_user:
-                    answers_list = [''] * homework_.fields
-                else:
-                    answers_list = homework_user[0].answers.split('_._')
-                student_data['answers'].append({'homework_id': homework_id, 'answers': answers_list})
+            homework_user = HomeworkUsers.objects.filter(homework=homework, user=student)
+            if not homework_user:
+                answers_list = [''] * homework.fields
+            else:
+                answers_list = homework_user[0].answers.split('_._')
+            student_data['answers'] = answers_list
             students_list.append(student_data)
-        return HttpResponse(json.dumps({'homeworks': homeworks_data, 'students': students_list}, ensure_ascii=False), status=200)
+        response['students'] = students_list
+        return HttpResponse(json.dumps(response, ensure_ascii=False), status=200)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
