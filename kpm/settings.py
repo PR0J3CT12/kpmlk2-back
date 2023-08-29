@@ -170,6 +170,8 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
+LOGIN_URL = '/api/user/login'
+
 SWAGGER_SETTINGS = {
     'DEFAULT_MODEL_RENDERING': 'example',
     'SECURITY_DEFINITIONS': {

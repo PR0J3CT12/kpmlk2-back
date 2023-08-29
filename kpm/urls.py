@@ -14,7 +14,7 @@ schema_view = swagger_get_schema_view(
         description="API documentation of KPM-LK",
     ),
     public=True,
-    #url='https://dev-hr-back.vniir-m.ru/api'
+    url='https://dev-hr-back.vniir-m.ru/api'
 )
 
 urlpatterns = [
