@@ -84,6 +84,10 @@ def insert_grades(request):
                 if work.type == 7:
                     coefficient_2007.append(cast / work_grades[i])
             new_score += cast
+        log_grades_string = grade.grades
+        new_grades_string = '_._'.join(new_grades)
+        if log_grades_string == new_grades_string:
+            return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
         if work_tech:
             grade_tech = Grade.objects.get(user=student, work=work_tech)
             work_tech_grades = list(map(float, work_tech.grades.split("_._")))
@@ -110,8 +114,6 @@ def insert_grades(request):
             grade_tech.grades = new_grades_string_tech
             grade_tech.score = score_tech
             grade_tech.save()
-        log_grades_string = grade.grades
-        new_grades_string = '_._'.join(new_grades)
         if grade.score != new_score:
             manas_delete = Mana.objects.filter(Q(user=student) & Q(work=work))
             manas_delete.delete()
