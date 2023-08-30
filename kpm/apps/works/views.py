@@ -39,7 +39,7 @@ def get_works(request):
                         ensure_ascii=False), status=404)
         filter_ = get_variable("filter", request)
         filter_value = get_variable("filter_value", request)
-        works = Work.objects.filter(school_class=int(class_)).select_related("theme").order_by('-updated_at')
+        works = Work.objects.filter(school_class=int(class_)).select_related("theme").order_by('-id')
         if filter_:
             if not filter_value:
                 return HttpResponse(
