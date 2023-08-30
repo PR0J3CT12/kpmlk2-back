@@ -203,7 +203,7 @@ def get_grades(request):
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        grades = Grade.objects.filter(user__school_class=int(class_)).select_related('work')
+        grades = Grade.objects.filter(user__school_class=int(class_)).exclude(work__type=5).select_related('work')
         if type_ in ['0', '1', '2', '3', '4', '7', '6', '8']:
             grades = grades.filter(work__type=int(type_))
         if (theme is not None) and (theme != ''):
