@@ -150,7 +150,7 @@ def get_homework(request):
 
 
 @swagger_auto_schema(method='PATCH', operation_summary="Добавление работы ученику.",
-                     manual_parameters=[id_param],
+                     manual_parameters=[id_param, student_param],
                      responses=add_to_homework_responses)
 @api_view(["PATCH"])
 @permission_classes([IsAdmin])
@@ -176,7 +176,7 @@ def add_to_homework(request):
                     {'state': 'error', 'message': f'Класс ученика не соответствует классу работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         fields = ['#'] * homework.fields
-        answers = fields.join('_._')
+        answers = '_._'.join(fields)
         homework_user = HomeworkUsers(homework=homework, user=student, answers=answers)
         homework_user.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
@@ -192,7 +192,7 @@ def add_to_homework(request):
 
 
 @swagger_auto_schema(method='PATCH', operation_summary="Удаление работы у ученика.",
-                     manual_parameters=[id_param],
+                     manual_parameters=[id_param, student_param],
                      responses=delete_from_homework_responses)
 @api_view(["PATCH"])
 @permission_classes([IsAdmin])
@@ -451,7 +451,7 @@ def get_my_homeworks(request):
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение списка всех работ(админка).",
-                     manual_parameters=[id_param],
+                     manual_parameters=[class_param],
                      responses=get_all_homeworks_responses)
 @api_view(["GET"])
 @permission_classes([IsAdmin])
