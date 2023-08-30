@@ -44,6 +44,7 @@ def create_homework(request):
                      'instance': request.path},
                     ensure_ascii=False), status=404)
         class_ = data["class"]
+        users = data.getlist("users")
         answers = data.getlist("answers")
         answers_string = '_._'.join(answers)
         fields = len(answers)
@@ -60,6 +61,14 @@ def create_homework(request):
             ext = file.content_type.split('/')[1]
             homework_file = HomeworkFile(homework=homework, file=file, ext=ext)
             homework_file.save()
+        users = User.objects.filter(id__in=users)
+        for user in users:
+            if user.school_class != homework.school_class:
+                pass
+            fields = ['#'] * homework.fields
+            answers = '_._'.join(fields)
+            homework_user = HomeworkUsers(homework=homework, user=user, answers=answers)
+            homework_user.save()
         homework.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
@@ -121,7 +130,9 @@ def get_homework(request):
         files = HomeworkFile.objects.filter(homework=homework)
         files_list = []
         for file in files:
-            files_list.append({'name': file.file.name, 'ext': file.ext})
+            link = file.file.name
+            name = link.split('/')[1]
+            files_list.append({'link': link, 'name': name, 'ext': file.ext})
         homework_users = HomeworkUsers.objects.filter(homework=homework)
         users_list = []
         for user in homework_users:
@@ -252,7 +263,9 @@ def get_user_homework(request):
         files = HomeworkFile.objects.filter(homework=homework)
         files_list = []
         for file in files:
-            files_list.append({'name': file.file.name, 'ext': file.ext})
+            link = file.file.name
+            name = link.split('/')[1]
+            files_list.append({'link': link, 'name': name, 'ext': file.ext})
         response = {
             'id': homework.id,
             'title': homework.title,
@@ -430,14 +443,16 @@ def get_my_homeworks(request):
         homework_user = HomeworkUsers.objects.filter(user=student)
         homeworks_list = []
         for homework_ in homework_user:
-            homeworks_list.append(
-                {
+            result = {
                     'id': homework_.homework.id,
                     'name': homework_.homework.title,
                     'is_done': homework_.is_done,
                     'is_checked': homework_.is_checked
                 }
-            )
+            if homework_.is_checked:
+                result['score'] = homework_.score
+                result['max_score'] = homework_.homework.score
+            homeworks_list.append(result)
         return HttpResponse(json.dumps({'homeworks': homeworks_list}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
@@ -473,10 +488,13 @@ def get_all_homeworks(request):
         homeworks = Homework.objects.filter(school_class=class_)
         homeworks_list = []
         for homework_ in homeworks:
+            homeworks_users = HomeworkUsers.objects.filter(homework=homework_)
+            amount = len(homeworks_users)
             homeworks_list.append(
                 {
                     'id': homework_.id,
                     'name': homework_.title,
+                    'amount': amount,
                     'created_at': str(homework_.created_at)
                 }
             )
@@ -502,7 +520,7 @@ def get_all_answers(request):
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         homework = Homework.objects.get(id=id_)
-        response = {'id': homework.id, 'title': homework.title, 'answers': homework.grades.split("_._"), 'students': []}
+        response = {'id': homework.id, 'title': homework.title, 'answers': homework.grades.split("_._"), 'students': [], 'max_score': homework.score}
         students = User.objects.filter(school_class=homework.school_class)
         students_list = []
         for student in students:
@@ -510,9 +528,15 @@ def get_all_answers(request):
             homework_user = HomeworkUsers.objects.filter(homework=homework, user=student)
             if not homework_user:
                 answers_list = [''] * homework.fields
+                score = None
             else:
                 answers_list = homework_user[0].answers.split('_._')
+                if homework_user[0].is_checked:
+                    score = homework_user[0].score
+                else:
+                    score = None
             student_data['answers'] = answers_list
+            student_data['score'] = score
             students_list.append(student_data)
         response['students'] = students_list
         return HttpResponse(json.dumps(response, ensure_ascii=False), status=200)

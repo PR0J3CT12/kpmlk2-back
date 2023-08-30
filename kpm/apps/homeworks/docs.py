@@ -15,8 +15,21 @@ create_homework_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                   'score': openapi.Schema(type=openapi.TYPE_INTEGER, example=100),
                                                   'text': openapi.Schema(type=openapi.TYPE_STRING,
                                                                          example="Условие домашней работы"),
-                                                  'files': ["file", "file", "file"],
-                                                  "answers": ["5", "5", "5", "10", "15"],
+                                                  'files': openapi.Schema(
+                                                      type=openapi.TYPE_ARRAY,
+                                                      items=openapi.Schema(
+                                                          type=openapi.TYPE_STRING)
+                                                  ),
+                                                  "answers": openapi.Schema(
+                                                      type=openapi.TYPE_ARRAY,
+                                                      items=openapi.Schema(
+                                                          type=openapi.TYPE_STRING)
+                                                  ),
+                                                  "users": openapi.Schema(
+                                                      type=openapi.TYPE_ARRAY,
+                                                      items=openapi.Schema(
+                                                          type=openapi.TYPE_INTEGER)
+                                                  )
                                               },
                                               operation_description='Создание домашней работы.')
 get_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
@@ -28,11 +41,37 @@ get_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                       example="Условие домашней работы"),
                                                'score': openapi.Schema(type=openapi.TYPE_INTEGER, example=100),
                                                'fields': openapi.Schema(type=openapi.TYPE_INTEGER, example=6),
-                                               "answers": ["5 1/2", "5.25", "5", "-10",
-                                                           "Катя - 2 яблока, Андрей - 7 яблок, Коля - 9"],
-                                               'files': [{"name": "file_name", "ext": "pdf"}],
+                                               "answers": openapi.Schema(
+                                                   type=openapi.TYPE_ARRAY,
+                                                   items=openapi.Schema(
+                                                       type=openapi.TYPE_STRING)
+                                               ),
+                                               'files': openapi.Schema(
+                                                   type=openapi.TYPE_ARRAY,
+                                                   items=openapi.Schema(
+                                                       type=openapi.TYPE_OBJECT,
+                                                       properties={
+                                                           "name": openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                  example="Название файла"),
+                                                           "link": openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                  example="Путь до файла"),
+                                                           "ext": openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                 example="Расширение файла"),
+                                                       }
+                                                   )
+                                               ),
                                                'class': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
-                                               'users': [{'id': 1, 'name': 'Иван Иванов'}],
+                                               'users': openapi.Schema(
+                                                   type=openapi.TYPE_ARRAY,
+                                                   items=openapi.Schema(
+                                                       type=openapi.TYPE_OBJECT,
+                                                       properties={
+                                                           "id": openapi.Schema(type=openapi.TYPE_INTEGER, example=1),
+                                                           "name": openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                  example="Имя Фамилия"),
+                                                       }
+                                                   )
+                                               ),
                                                'created_at': openapi.Schema(type=openapi.TYPE_STRING,
                                                                             example="2023-08-21 16:40:19.337147+03"),
                                            },
@@ -46,18 +85,50 @@ get_user_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                            example="Условие домашней работы"),
                                                     'score': openapi.Schema(type=openapi.TYPE_INTEGER, example=100),
                                                     'fields': openapi.Schema(type=openapi.TYPE_INTEGER, example=6),
-                                                    'files': [{"name": "file_name", "ext": "pdf"}],
+                                                    'files': openapi.Schema(
+                                                        type=openapi.TYPE_ARRAY,
+                                                        items=openapi.Schema(
+                                                            type=openapi.TYPE_OBJECT,
+                                                            properties={
+                                                                "name": openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                       example="Название файла"),
+                                                                "link": openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                       example="Путь до файла"),
+                                                                "ext": openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                      example="Расширение файла"),
+                                                            }
+                                                        )
+                                                    ),
                                                     'class': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
                                                     'is_done': openapi.Schema(type=openapi.TYPE_BOOLEAN, example=True),
                                                     'is_checked': openapi.Schema(type=openapi.TYPE_BOOLEAN,
                                                                                  example=True),
                                                     'created_at': openapi.Schema(type=openapi.TYPE_STRING,
                                                                                  example="2023-08-21 16:40:19.337147+03"),
-                                                    "answers": ["5 1/2", "5.25", "5", "-10",
-                                                                "Катя - 2 яблока, Андрей - 7 яблок, Коля - 9"],
-                                                    "user_answers": ["5 1/2", "5.25", "5", "-10",
-                                                                     "Катя - 2 яблока, Андрей - 7 яблок, Коля - 9"],
-                                                    'user_files': [{"name": "file_name", "ext": "pdf"}],
+                                                    "answers": openapi.Schema(
+                                                        type=openapi.TYPE_ARRAY,
+                                                        items=openapi.Schema(
+                                                            type=openapi.TYPE_STRING)
+                                                    ),
+                                                    "user_answers": openapi.Schema(
+                                                        type=openapi.TYPE_ARRAY,
+                                                        items=openapi.Schema(
+                                                            type=openapi.TYPE_STRING)
+                                                    ),
+                                                    'user_files': openapi.Schema(
+                                                        type=openapi.TYPE_ARRAY,
+                                                        items=openapi.Schema(
+                                                            type=openapi.TYPE_OBJECT,
+                                                            properties={
+                                                                "name": openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                       example="Название файла"),
+                                                                "link": openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                       example="Путь до файла"),
+                                                                "ext": openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                      example="Расширение файла"),
+                                                            }
+                                                        )
+                                                    ),
                                                     'answered_at': openapi.Schema(type=openapi.TYPE_STRING,
                                                                                   example="2023-08-21 16:40:19.337147+03"),
                                                     'user_score': openapi.Schema(type=openapi.TYPE_INTEGER, example=100)
@@ -67,8 +138,16 @@ create_response_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                               required=['id', 'answers'],
                                               properties={
                                                   'id': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
-                                                  "answers": ["5", "5", "5", "10", "15"],
-                                                  'files': ["file", "file", "file"],
+                                                  "answers": openapi.Schema(
+                                                      type=openapi.TYPE_ARRAY,
+                                                      items=openapi.Schema(
+                                                          type=openapi.TYPE_STRING)
+                                                  ),
+                                                  'files': openapi.Schema(
+                                                      type=openapi.TYPE_ARRAY,
+                                                      items=openapi.Schema(
+                                                          type=openapi.TYPE_STRING)
+                                                  ),
                                               },
                                               operation_description='Создание ответа на домашнюю работу.')
 check_user_homework_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
@@ -97,6 +176,12 @@ get_my_homeworks_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                "is_checked": openapi.Schema(
                                                                    type=openapi.TYPE_BOOLEAN,
                                                                    example=True),
+                                                               'score': openapi.Schema(
+                                                                   type=openapi.TYPE_INTEGER,
+                                                                   example=100),
+                                                               'max_score': openapi.Schema(
+                                                                   type=openapi.TYPE_INTEGER,
+                                                                   example=100),
                                                            }))
 
                                                })
@@ -112,6 +197,8 @@ get_all_homeworks_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                 "name": openapi.Schema(
                                                                     type=openapi.TYPE_STRING,
                                                                     example="Домашняя работа 1"),
+                                                                'amount': openapi.Schema(
+                                                                    type=openapi.TYPE_INTEGER, example=3),
                                                                 "created_at": openapi.Schema(
                                                                     type=openapi.TYPE_STRING,
                                                                     example="2023-08-21 16:40:19.337147+03"),
@@ -123,7 +210,13 @@ get_all_answers_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                   'id': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
                                                   'title': openapi.Schema(type=openapi.TYPE_STRING,
                                                                           example="Домашняя работа 1"),
-                                                  "answers": [],
+                                                  "answers": openapi.Schema(
+                                                      type=openapi.TYPE_ARRAY,
+                                                      items=openapi.Schema(
+                                                          type=openapi.TYPE_STRING)
+                                                  ),
+                                                  'max_score': openapi.Schema(
+                                                      type=openapi.TYPE_INTEGER, example=100),
                                                   'students': openapi.Schema(
                                                       type=openapi.TYPE_ARRAY,
                                                       items=openapi.Schema(
@@ -133,7 +226,14 @@ get_all_answers_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                   type=openapi.TYPE_INTEGER, example=3),
                                                               'name': openapi.Schema(type=openapi.TYPE_STRING,
                                                                                      example="Иван Иванов"),
-                                                              'answers': []}))})
+                                                              'answers': openapi.Schema(
+                                                                  type=openapi.TYPE_ARRAY,
+                                                                  items=openapi.Schema(
+                                                                      type=openapi.TYPE_STRING)
+                                                              ),
+                                                              'score': openapi.Schema(
+                                                                  type=openapi.TYPE_INTEGER, example=100)
+                                                          }))})
 create_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 add_to_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
