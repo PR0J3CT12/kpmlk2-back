@@ -270,7 +270,7 @@ def get_user_homework(request):
             'id': homework.id,
             'title': homework.title,
             'text': homework.text,
-            'score': homework.score,
+            'max_score': homework.score,
             'fields': homework.fields,
             'files': files_list,
             'class': homework.school_class,

@@ -83,7 +83,7 @@ get_user_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                             example="Домашняя работа 1"),
                                                     'text': openapi.Schema(type=openapi.TYPE_STRING,
                                                                            example="Условие домашней работы"),
-                                                    'score': openapi.Schema(type=openapi.TYPE_INTEGER, example=100),
+                                                    'max_score': openapi.Schema(type=openapi.TYPE_INTEGER, example=100),
                                                     'fields': openapi.Schema(type=openapi.TYPE_INTEGER, example=6),
                                                     'files': openapi.Schema(
                                                         type=openapi.TYPE_ARRAY,
