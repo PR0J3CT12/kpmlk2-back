@@ -530,7 +530,10 @@ def get_all_answers(request):
                 answers_list = [''] * homework.fields
                 score = None
             else:
-                answers_list = homework_user[0].answers.split('_._')
+                if homework_user[0].is_done:
+                    answers_list = homework_user[0].answers.split('_._')
+                else:
+                    answers_list = [''] * homework.fields
                 if homework_user[0].is_checked:
                     score = homework_user[0].score
                 else:
