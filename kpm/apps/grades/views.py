@@ -53,7 +53,6 @@ def insert_grades(request):
             if ',' in new_grades[i]:
                 new_grades[i] = new_grades[i].replace(',', '.')
             if new_grades[i] == '-':
-                work_grades[i] = 0
                 new_exercises -= 1
                 new_max_score -= work_grades[i]
                 if work.type == 7:

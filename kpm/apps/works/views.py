@@ -211,7 +211,7 @@ def create_work(request):
                 cast = float(grade)
                 max_score_2007 += cast
             grades_2007 = '_._'.join(grades_list_2007)
-            work_2007 = Work(name=request_body["name"], grades=grades_2007, theme=theme, max_score=max_score,
+            work_2007 = Work(name=request_body["name"], grades=grades_2007, theme=theme, max_score=max_score_2007,
                              exercises=len(grades_list_2007), school_class=request_body["class"], type=7,
                              is_homework=is_homework)
             work.save()
