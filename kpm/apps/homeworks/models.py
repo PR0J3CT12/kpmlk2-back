@@ -74,6 +74,7 @@ class HomeworkUsersFile(models.Model):
     id = models.AutoField('id файла пользователя', primary_key=True, editable=False)
     link = models.ForeignKey(HomeworkUsers, on_delete=models.CASCADE)
     file = models.FileField('Файл новости', upload_to=path_and_rename)
+    ext = models.CharField('Расширение файла', max_length=10)
 
     def __str__(self):
         return f'{str(self.id)}'
