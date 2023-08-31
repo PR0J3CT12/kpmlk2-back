@@ -204,7 +204,7 @@ def get_grades(request):
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        grades = Grade.objects.filter(user__school_class=int(class_)).exclude(work__type=5).select_related('work')
+        grades = Grade.objects.filter(user__school_class=int(class_)).exclude(work__type=5).order_by('work__added_at').select_related('work')
         if type_ in ['0', '1', '2', '3', '4', '7', '6', '8']:
             grades = grades.filter(work__type=int(type_))
         if (theme is not None) and (theme != ''):
@@ -212,9 +212,9 @@ def get_grades(request):
                 grades = grades.filter(work__theme__id=int(theme)).exclude(work__type=5)
             else:
                 grades = grades.filter(work__theme__id=int(theme))
-        works_list = grades.order_by('-work__added_at').values_list('work', flat=True)
+        works_list = grades.order_by('work__added_at').values_list('work', flat=True)
         works_list = custom_distinct(works_list)
-        works = Work.objects.filter(id__in=works_list)
+        works = Work.objects.filter(id__in=works_list).order_by('added_at')
         works_data = []
         links = None
         if (type_ == '7') or (theme == '8'):
