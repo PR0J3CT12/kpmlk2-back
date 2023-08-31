@@ -212,7 +212,7 @@ def get_grades(request):
                 grades = grades.filter(work__theme__id=int(theme)).exclude(work__type=5)
             else:
                 grades = grades.filter(work__theme__id=int(theme))
-        works_list = grades.order_by('work__added_at').values_list('work', flat=True)
+        works_list = grades.order_by('-work__added_at').values_list('work', flat=True)
         works_list = custom_distinct(works_list)
         works = Work.objects.filter(id__in=works_list)
         works_data = []
