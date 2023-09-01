@@ -64,7 +64,7 @@ def mana_generation(type_, is_homework, score, max_score):
             green = 0
             blue = 4
     elif mana == 3:
-        green = random.randint(0, 3)
+        green = random.randint(1, 2)
         blue = mana - green
     elif mana == 2:
         if type_ == 2:
