@@ -187,6 +187,8 @@ SWAGGER_SETTINGS = {
 
 AUTH_USER_MODEL = 'users.User'
 
+DEFAULT_CHARSET = 'utf-8'
+
 LANGUAGE_CODE = 'ru-RU'
 
 TIME_ZONE = 'Europe/Moscow'
