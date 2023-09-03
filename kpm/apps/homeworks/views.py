@@ -651,10 +651,9 @@ def get_all_answers(request):
                 answers_list = [''] * homework.fields
             if homework_user.is_checked:
                 score = homework_user.score
-                comment = homework_user.comment
             else:
                 score = None
-                comment = ""
+            comment = homework_user.comment
             student_data['answers'] = answers_list
             student_data['score'] = score
             student_data['comment'] = comment
