@@ -639,7 +639,7 @@ def get_all_answers(request):
             student_data = {'id': homework_user.user.id, 'name': homework_user.user.name, 'answers': [], 'files': []}
             if homework_user.is_done:
                 answers_list = homework_user.answers.split('_._')
-                files = HomeworkUsersFile.objects.filter(link=homework_user).select_related('file')
+                files = HomeworkUsersFile.objects.filter(link=homework_user)
                 if files:
                     for file in files:
                         link = file.file.name
