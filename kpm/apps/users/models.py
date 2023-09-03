@@ -21,7 +21,7 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.AutoField('user id', primary_key=True, editable=False)
-    name = models.CharField('user name', max_length=20)
+    name = models.CharField('user name', max_length=100)
     login = models.CharField('user login', max_length=20, unique=True)
     password = models.CharField('user password', max_length=200)
     experience = models.IntegerField('student experience', default=0, null=True, blank=True)
