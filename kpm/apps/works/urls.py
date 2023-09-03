@@ -8,5 +8,4 @@ urlpatterns = [
     path('update-work', views.update_work, name='update work'),
     path('delete-work', views.delete_work, name='delete work'),
     path('delete-all-works', views.delete_works, name='delete all works'),
-    #path('grades-update', views.update_work_grades, name='update work grades'),
 ]
