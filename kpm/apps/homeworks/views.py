@@ -387,7 +387,9 @@ def get_user_homework(request):
             user_files = HomeworkUsersFile.objects.filter(link=homework_user)
             user_files_list = []
             for file in user_files:
-                user_files_list.append({'name': file.file.name, 'ext': file.ext})
+                link = file.file.name
+                name = link.split('/')[1]
+                user_files_list.append({'link': link, 'name': name, 'ext': file.ext})
             response['user_files'] = user_files_list
             response['answered_at'] = str(homework_user.answered_at)
         if homework_user.is_checked:
