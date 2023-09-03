@@ -394,7 +394,7 @@ def get_user_homework(request):
             response['answered_at'] = str(homework_user.answered_at)
         if homework_user.is_checked:
             response['user_score'] = homework_user.score
-            response['comment'] = homework_user.comment
+        response['comment'] = homework_user.comment
         return HttpResponse(json.dumps(response, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
