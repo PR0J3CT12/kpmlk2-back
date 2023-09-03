@@ -514,21 +514,23 @@ def check_user_homework(request):
                     {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=403)
         homework_user = homework_user[0]
-        score = request_body['score']
-        if not is_number_float(score):
-            return HttpResponse(
-                json.dumps({'state': 'error', 'message': 'Некорректное значение score.', 'details': {},
-                            'instance': request.path},
-                           ensure_ascii=False), status=404)
-        if (float(score) < 0) or (float(score) > homework.score):
-            return HttpResponse(
-                json.dumps({'state': 'error', 'message': 'Некорректное значение score.', 'details': {},
-                            'instance': request.path},
-                           ensure_ascii=False), status=404)
-        homework_user.score = int(score)
-        comment = request_body['comment']
-        homework_user.comment = comment
-        homework_user.is_checked = True
+        if 'score' in request_body.keys():
+            score = request_body['score']
+            if not is_number_float(score):
+                return HttpResponse(
+                    json.dumps({'state': 'error', 'message': 'Некорректное значение score.', 'details': {},
+                                'instance': request.path},
+                               ensure_ascii=False), status=404)
+            if (float(score) < 0) or (float(score) > homework.score):
+                return HttpResponse(
+                    json.dumps({'state': 'error', 'message': 'Некорректное значение score.', 'details': {},
+                                'instance': request.path},
+                               ensure_ascii=False), status=404)
+            homework_user.is_checked = True
+            homework_user.score = int(score)
+        if 'comment' in request_body.keys():
+            comment = request_body['comment']
+            homework_user.comment = comment
         homework_user.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
