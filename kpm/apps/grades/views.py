@@ -50,12 +50,6 @@ def insert_grades(request):
         new_grades[int(request_body["cell_number"])] = request_body["value"]
         coefficient_2007 = []
         for i in range(len(new_grades)):
-            if new_grades[i] in ['#', '_._']:
-                return HttpResponse(
-                    json.dumps({'state': 'error', 'message': f'Запрещенные символы.',
-                                'details': {},
-                                'instance': request.path},
-                               ensure_ascii=False), status=400)
             if ',' in new_grades[i]:
                 new_grades[i] = new_grades[i].replace(',', '.')
             if new_grades[i] == '-':
