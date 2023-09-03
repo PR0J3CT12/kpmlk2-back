@@ -4,6 +4,8 @@ class_param = openapi.Parameter("class", in_=openapi.IN_QUERY, type=openapi.TYPE
                                 operation_description='Класс учеников.', example=4)
 id_param = openapi.Parameter("id", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
                              operation_description='ID работы.', example=1)
+file_param = openapi.Parameter("file", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
+                               operation_description='ID файла.', example=1)
 student_param = openapi.Parameter("student", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
                                   operation_description='ID ученика.', example=1)
 create_homework_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
@@ -32,6 +34,27 @@ create_homework_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                   )
                                               },
                                               operation_description='Создание домашней работы.')
+update_homework_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                              required=['id'],
+                                              properties={
+                                                  'title': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                          example="Домашняя работа 1"),
+                                                  'score': openapi.Schema(type=openapi.TYPE_INTEGER, example=100),
+                                                  'text': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                         example="Условие домашней работы"),
+                                                  'files': openapi.Schema(
+                                                      type=openapi.TYPE_ARRAY,
+                                                      items=openapi.Schema(
+                                                          type=openapi.TYPE_STRING)
+                                                  ),
+                                                  "answer": openapi.Schema(
+                                                      type=openapi.TYPE_STRING, example="Ответ"
+                                                  ),
+                                                  "cell": openapi.Schema(
+                                                      type=openapi.TYPE_INTEGER, example=0
+                                                  ),
+                                              },
+                                              operation_description='Изменение домашней работы.')
 get_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                            properties={
                                                'id': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
@@ -51,6 +74,8 @@ get_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                    items=openapi.Schema(
                                                        type=openapi.TYPE_OBJECT,
                                                        properties={
+                                                           "id": openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                                example=0),
                                                            "name": openapi.Schema(type=openapi.TYPE_STRING,
                                                                                   example="Название файла"),
                                                            "link": openapi.Schema(type=openapi.TYPE_STRING,
@@ -158,7 +183,8 @@ check_user_homework_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                       'id': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
                                                       'student': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
                                                       'score': openapi.Schema(type=openapi.TYPE_INTEGER, example=100),
-                                                      'comment': openapi.Schema(type=openapi.TYPE_STRING, example="Комментарий преподавателя"),
+                                                      'comment': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                example="Комментарий преподавателя"),
                                                   },
                                                   operation_description='Проверка домашней работы(админка).')
 get_my_homeworks_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
@@ -261,8 +287,10 @@ create_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 add_to_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 create_response_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
+update_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_from_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 check_user_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
+delete_file_from_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 create_homework_responses = {200: create_homework_response_200}
 delete_homework_responses = {200: delete_homework_response_200}
 get_homework_responses = {200: get_homework_response_200}
@@ -270,7 +298,9 @@ get_user_homework_responses = {200: get_user_homework_response_200}
 add_to_homework_responses = {200: add_to_homework_response_200}
 delete_from_homework_responses = {200: delete_from_homework_response_200}
 create_response_responses = {200: create_response_response_200}
+update_homework_responses = {200: update_homework_response_200}
 check_user_homework_responses = {200: check_user_homework_response_200}
 get_my_homeworks_responses = {200: get_my_homeworks_response_200}
 get_all_homeworks_responses = {200: get_all_homeworks_response_200}
 get_all_answers_responses = {200: get_all_answers_response_200}
+delete_file_from_homework_responses = {200: delete_file_from_homework_response_200}
