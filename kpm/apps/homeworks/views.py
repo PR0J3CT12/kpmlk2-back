@@ -537,8 +537,8 @@ def get_all_answers(request):
         students_list = []
         for homework_user in homework_users:
             student_data = {'id': homework_user.user.id, 'name': homework_user.user.name, 'answers': [], 'files': []}
-            if homework_user[0].is_done:
-                answers_list = homework_user[0].answers.split('_._')
+            if homework_user.is_done:
+                answers_list = homework_user.answers.split('_._')
                 files = HomeworkUsersFile.objects.filter(link=homework_user).select_related('file')
                 if files:
                     for file in files:
@@ -547,9 +547,9 @@ def get_all_answers(request):
                         student_data['files'].append({'link': link, 'name': name, 'ext': file.ext})
             else:
                 answers_list = [''] * homework.fields
-            if homework_user[0].is_checked:
-                score = homework_user[0].score
-                comment = homework_user[0].comment
+            if homework_user.is_checked:
+                score = homework_user.score
+                comment = homework_user.comment
             else:
                 score = None
                 comment = None
