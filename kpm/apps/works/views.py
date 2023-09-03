@@ -17,7 +17,7 @@ from django.utils import timezone
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение списка работ.",
-                     manual_parameters=[class_param],
+                     manual_parameters=[class_param, theme_param, type_param],
                      responses=get_works_responses,
                      operation_description=operation_description)
 @api_view(["GET"])
@@ -25,42 +25,19 @@ from django.utils import timezone
 def get_works(request):
     try:
         class_ = get_variable("class", request)
-        if not class_:
+        theme = get_variable("theme", request)
+        type_ = get_variable("type", request)
+        if class_ not in ['4', '5', '6', 4, 5, 6]:
             return HttpResponse(
                 json.dumps(
-                    {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=404)
-        else:
-            if class_ not in ['4', '5', '6', 4, 5, 6]:
-                return HttpResponse(
-                    json.dumps(
-                        {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
-                         'instance': request.path},
-                        ensure_ascii=False), status=404)
-        filter_ = get_variable("filter", request)
-        filter_value = get_variable("filter_value", request)
-        works = Work.objects.filter(school_class=int(class_)).select_related("theme").order_by('-id')
-        if filter_:
-            if not filter_value:
-                return HttpResponse(
-                    json.dumps(
-                        {'state': 'error', 'message': f'Указан фильтр, но не указано значение фильтра.', 'details': {},
-                         'instance': request.path},
-                        ensure_ascii=False), status=404)
-        if not filter_:
-            pass
-        elif filter_ == 'theme':
-            works = works.filter(theme_id=filter_value)
-        elif filter_ == 'type':
-            works = works.filter(type=filter_value)
-        elif filter_ == 'homework':
-            works = works.filter(is_homework=filter_value)
-        else:
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Некорректное значение фильтра.', 'details': {},
+                    {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
+        works = Work.objects.filter(school_class=int(class_)).exclude(type=5).select_related("theme").order_by('-id')
+        if (theme is not None) and (theme != ''):
+            works = works.filter(theme_id=theme)
+        if type_ in ['0', '1', '2', '3', '4', '7', '6', '8']:
+            works = works.filter(type=type_)
         works_list = []
         for work in works:
             works_list.append({
