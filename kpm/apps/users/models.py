@@ -24,7 +24,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     name = models.CharField('user name', max_length=20)
     login = models.CharField('user login', max_length=20, unique=True)
     password = models.CharField('user password', max_length=200)
-    experience = models.IntegerField('student experience', default=1, null=True, blank=True)
+    experience = models.IntegerField('student experience', default=0, null=True, blank=True)
     mana_earned = models.IntegerField('mana earned by student', default=0, null=True, blank=True)
     last_homework_id = models.IntegerField('last homework id', default=None, null=True, blank=True)
     last_classwork_id = models.IntegerField('last classwork id', default=None, null=True, blank=True)
