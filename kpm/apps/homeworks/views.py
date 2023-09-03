@@ -633,7 +633,7 @@ def get_all_answers(request):
         homework = Homework.objects.get(id=id_)
         response = {'id': homework.id, 'title': homework.title, 'answers': homework.answers.split("_._"),
                     'students': [], 'max_score': homework.score}
-        homework_users = HomeworkUsers.objects.filter(homework=homework).select_related('user')
+        homework_users = HomeworkUsers.objects.filter(homework=homework).order_by('user_id').select_related('user')
         students_list = []
         for homework_user in homework_users:
             student_data = {'id': homework_user.user.id, 'name': homework_user.user.name, 'answers': [], 'files': []}
