@@ -103,7 +103,7 @@ def get_users(request):
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
                          'instance': request.path},
                         ensure_ascii=False), status=404)
-        students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_)))
+        students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).order_by('name')
         students_list = []
         if not students:
             return HttpResponse(
