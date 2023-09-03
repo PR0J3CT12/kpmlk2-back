@@ -652,7 +652,7 @@ def get_all_answers(request):
                 comment = homework_user.comment
             else:
                 score = None
-                comment = None
+                comment = ""
             student_data['answers'] = answers_list
             student_data['score'] = score
             student_data['comment'] = comment
