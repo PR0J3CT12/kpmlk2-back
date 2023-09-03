@@ -227,7 +227,7 @@ def get_grades(request):
                     grades_tech = list(map(int, work_tech.work.grades.split("_._")))
                     data['grades_tech'] = grades_tech
                 works_data.append(data)
-            students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).order_by('name')
+            students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).order_by('id')
             students_data = []
             for student in students:
                 student_object = {'id': student.id, 'name': student.name, 'experience': student.experience, 'grades': []}

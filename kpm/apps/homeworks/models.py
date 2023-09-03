@@ -12,8 +12,6 @@ class PathRename(object):
         self.path = sub_path
 
     def __call__(self, instance, filename):
-        ext = filename.split('.')[-1]
-        filename = 'homework_{}.{}'.format(uuid4().hex, ext)
         return os.path.join(self.path, filename)
 
 

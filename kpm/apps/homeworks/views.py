@@ -496,7 +496,7 @@ def get_all_homeworks(request):
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
                          'instance': request.path},
                         ensure_ascii=False), status=404)
-        homeworks = Homework.objects.filter(school_class=class_)
+        homeworks = Homework.objects.filter(school_class=class_).order_by('-created_at')
         homeworks_list = []
         for homework_ in homeworks:
             homeworks_users = HomeworkUsers.objects.filter(homework=homework_)
