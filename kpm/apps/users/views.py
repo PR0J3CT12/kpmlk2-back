@@ -272,7 +272,6 @@ def change_password(request):
             return HttpResponse(
                 json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
                            ensure_ascii=False), status=400)
-        refresh = None
         is_default = False
         if 'id' not in request_body.keys():
             id_ = request.user.id

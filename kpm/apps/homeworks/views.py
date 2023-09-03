@@ -55,7 +55,8 @@ def create_homework(request):
                     json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
                                 'instance': request.path},
                                ensure_ascii=False), status=404)
-        homework = Homework(author=author, title=title, text=text, score=score, answers=answers_string, fields=fields, school_class=class_)
+        homework = Homework(author=author, title=title, text=text, score=score, answers=answers_string, fields=fields,
+                            school_class=class_)
         homework.save()
         for file in files:
             ext = file.content_type.split('/')[1]
@@ -77,8 +78,9 @@ def create_homework(request):
                        ensure_ascii=False), status=404)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
+            json.dumps(
+                {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -184,7 +186,8 @@ def add_to_homework(request):
         if student.school_class != homework.school_class:
             return HttpResponse(
                 json.dumps(
-                    {'state': 'error', 'message': f'Класс ученика не соответствует классу работы.', 'details': {}, 'instance': request.path},
+                    {'state': 'error', 'message': f'Класс ученика не соответствует классу работы.', 'details': {},
+                     'instance': request.path},
                     ensure_ascii=False), status=404)
         fields = ['#'] * homework.fields
         answers = '_._'.join(fields)
@@ -193,7 +196,8 @@ def add_to_homework(request):
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {}, 'instance': request.path},
+            json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {},
+                        'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
@@ -229,7 +233,8 @@ def delete_from_homework(request):
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {}, 'instance': request.path},
+            json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {},
+                        'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
@@ -289,6 +294,7 @@ def get_user_homework(request):
             response['answered_at'] = str(homework_user.answered_at)
         if homework_user.is_checked:
             response['user_score'] = homework_user.score
+            response['comment'] = homework_user.comment
         return HttpResponse(json.dumps(response, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
@@ -344,7 +350,8 @@ def create_response(request):
         if fields != homework.fields:
             return HttpResponse(
                 json.dumps(
-                    {'state': 'error', 'message': f'Некорректное количество ответов.', 'details': {}, 'instance': request.path},
+                    {'state': 'error', 'message': f'Некорректное количество ответов.', 'details': {},
+                     'instance': request.path},
                     ensure_ascii=False), status=403)
         files = files.getlist('files')
         for file in files:
@@ -419,12 +426,15 @@ def check_user_homework(request):
                             'instance': request.path},
                            ensure_ascii=False), status=404)
         homework_user.score = int(score)
+        comment = request_body['comment']
+        homework_user.comment = comment
         homework_user.is_checked = True
         homework_user.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {}, 'instance': request.path},
+            json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {},
+                        'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
@@ -444,11 +454,11 @@ def get_my_homeworks(request):
         homeworks_list = []
         for homework_ in homework_user:
             result = {
-                    'id': homework_.homework.id,
-                    'name': homework_.homework.title,
-                    'is_done': homework_.is_done,
-                    'is_checked': homework_.is_checked
-                }
+                'id': homework_.homework.id,
+                'name': homework_.homework.title,
+                'is_done': homework_.is_done,
+                'is_checked': homework_.is_checked
+            }
             if homework_.is_checked:
                 result['score'] = homework_.score
                 result['max_score'] = homework_.homework.score
@@ -456,7 +466,8 @@ def get_my_homeworks(request):
         return HttpResponse(json.dumps({'homeworks': homeworks_list}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {}, 'instance': request.path},
+            json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {},
+                        'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
@@ -520,26 +531,31 @@ def get_all_answers(request):
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         homework = Homework.objects.get(id=id_)
-        response = {'id': homework.id, 'title': homework.title, 'answers': homework.answers.split("_._"), 'students': [], 'max_score': homework.score}
-        students = User.objects.filter(school_class=homework.school_class)
+        response = {'id': homework.id, 'title': homework.title, 'answers': homework.answers.split("_._"),
+                    'students': [], 'max_score': homework.score}
+        homework_users = HomeworkUsers.objects.filter(homework=homework).select_related('user')
         students_list = []
-        for student in students:
-            student_data = {'id': student.id, 'name': student.name, 'answers': []}
-            homework_user = HomeworkUsers.objects.filter(homework=homework, user=student)
-            if not homework_user:
-                answers_list = [''] * homework.fields
-                score = None
+        for homework_user in homework_users:
+            student_data = {'id': homework_user.user.id, 'name': homework_user.user.name, 'answers': [], 'files': []}
+            if homework_user[0].is_done:
+                answers_list = homework_user[0].answers.split('_._')
+                files = HomeworkUsersFile.objects.filter(link=homework_user).select_related('file')
+                if files:
+                    for file in files:
+                        link = file.file.name
+                        name = link.split('/')[1]
+                        student_data['files'].append({'link': link, 'name': name, 'ext': file.ext})
             else:
-                if homework_user[0].is_done:
-                    answers_list = homework_user[0].answers.split('_._')
-                else:
-                    answers_list = [''] * homework.fields
-                if homework_user[0].is_checked:
-                    score = homework_user[0].score
-                else:
-                    score = None
+                answers_list = [''] * homework.fields
+            if homework_user[0].is_checked:
+                score = homework_user[0].score
+                comment = homework_user[0].comment
+            else:
+                score = None
+                comment = None
             student_data['answers'] = answers_list
             student_data['score'] = score
+            student_data['comment'] = comment
             students_list.append(student_data)
         response['students'] = students_list
         return HttpResponse(json.dumps(response, ensure_ascii=False), status=200)
