@@ -15,7 +15,7 @@ class PathRename(object):
         return os.path.join(self.path, filename)
 
 
-path_and_rename = PathRename("homeworks/")
+#path_and_rename = PathRename("homeworks/")
 
 
 class Homework(models.Model):
@@ -40,7 +40,7 @@ class Homework(models.Model):
 class HomeworkFile(models.Model):
     id = models.AutoField('id файла', primary_key=True, editable=False)
     homework = models.ForeignKey(Homework, on_delete=models.CASCADE)
-    file = models.FileField('Файл новости', upload_to=path_and_rename)
+    file = models.FileField('Файл новости', upload_to='homeworks/')
     ext = models.CharField('Расширение файла', max_length=10)
 
     def __str__(self):
@@ -72,7 +72,7 @@ class HomeworkUsers(models.Model):
 class HomeworkUsersFile(models.Model):
     id = models.AutoField('id файла пользователя', primary_key=True, editable=False)
     link = models.ForeignKey(HomeworkUsers, on_delete=models.CASCADE)
-    file = models.FileField('Файл новости', upload_to=path_and_rename)
+    file = models.FileField('Файл новости', upload_to='homeworks/')
     ext = models.CharField('Расширение файла', max_length=10)
 
     def __str__(self):
