@@ -1,4 +1,6 @@
 from django.utils.datastructures import MultiValueDictKeyError
+from PIL import Image
+from pillow_heif import register_heif_opener
 
 
 def get_variable(variable_name, source_request):
@@ -23,3 +25,19 @@ def is_number_float(value):
         return True
     except ValueError:
         return False
+
+
+def heif_to_jpeg(path):
+    try:
+        register_heif_opener()
+        image = Image.open(path)
+        path_wo_ext, ext = path.split('.')
+        new_path = f'{path_wo_ext}.jpeg'
+        image.convert('RGB').save(f'{path_wo_ext}.jpeg')
+        return new_path
+    except Exception:
+        return None
+
+
+if __name__ == "__main__":
+    heif_to_jpeg('C:/PythonProjects/kpm/media/homeworks/123.heic')

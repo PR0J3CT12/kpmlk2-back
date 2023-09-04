@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from kpm.apps.users.models import User, History
+from kpm.apps.users.models import User, History, Group, GroupUser
 from kpm.apps.users.permissions import *
 from kpm.apps.users.functions import *
 from kpm.apps.logs.models import Log
@@ -430,3 +430,233 @@ def get_all_logons(request):
                  'details': {'error': str(e)},
                  'instance': request.path},
                 ensure_ascii=False), status=404)
+
+
+#@swagger_auto_schema(method='GET', operation_summary="Получение групп.",
+#                     manual_parameters=[class_param],
+#                     responses=get_groups_responses)
+@api_view(["GET"])
+@permission_classes([IsAdmin])
+def get_groups(request):
+    try:
+        class_ = get_variable("class", request)
+        if class_ not in ['4', '5', '6', 4, 5, 6]:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=404)
+        groups = Group.objects.filter(school_class=class_)
+        groups_list = []
+        for group in groups:
+            group_students = GroupUser.objects.filter(group=group).order_by('user__name')
+            students_list = []
+            for student in group_students:
+                students_list.append({
+                    'id': student.user.id,
+                    'name': student.user.name,
+                })
+            groups_list.append({
+                'id': group.id,
+                'name': group.name,
+                'owner': group.owner.name,
+                'marker': group.marker,
+                'students': students_list
+            })
+        return HttpResponse(json.dumps({'groups': groups_list}, ensure_ascii=False), status=200)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+#@swagger_auto_schema(method='POST', operation_summary="Создание группы.",
+#                     request_body=create_group_request_body,
+#                     responses=create_group_responses)
+@api_view(["POST"])
+@permission_classes([IsAdmin])
+def create_group(request):
+    try:
+        if request.body:
+            request_body = json.loads(request.body)
+        else:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
+        if request_body["class"] not in ['4', '5', '6', 4, 5, 6]:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=404)
+        owner = User.objects.get(id=request_body['owner'])
+        group = Group(name=request_body['name'], school_class=int(request_body['class']), marker=request_body['marker'], owner=owner)
+        group.save()
+        log = Log(operation='INSERT', from_table='groups', details='Добавлена новая группа в таблицу groups.')
+        log.save()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except KeyError as e:
+        return HttpResponse(
+            json.dumps(
+                {'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps(
+                {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+"""
+@swagger_auto_schema(method='DELETE', operation_summary="Создание рейтинга.",
+                     manual_parameters=[id_param],
+                     responses=delete_rating_responses)
+@api_view(["DELETE"])
+@permission_classes([IsAdmin])
+def delete_rating(request):
+    try:
+        id_ = get_variable("id", request)
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id рейтинга.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        league = League.objects.get(id=id_)
+        log_details = f'Удален рейтинг из таблицы ratings. ["id": {league.id} | "name": "{league.name}"]'
+        league.delete()
+        log = Log(operation='DELETE', from_table='ratings', details=log_details)
+        log.save()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Рейтинг не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='PATCH', operation_summary="Добавление ученика в рейтинг.",
+                     manual_parameters=[id_param, user_param],
+                     responses=add_to_rating_responses)
+@api_view(["PATCH"])
+@permission_classes([IsAdmin])
+def add_to_rating(request):
+    try:
+        id_ = get_variable("id", request)
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id рейтинга.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        student_id = get_variable("student", request)
+        if (student_id is None) or (student_id == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        student = User.objects.get(id=student_id)
+        league = League.objects.get(id=id_)
+        current_league = LeagueUser.objects.filter(user=student)
+        if current_league:
+            current_league[0].delete()
+        new_league = LeagueUser(user=student, league=league)
+        new_league.save()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Рейтинг или пользователь не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='PATCH', operation_summary="Удаление ученика из рейтинга.",
+                     manual_parameters=[user_param],
+                     responses=delete_from_rating_responses)
+@api_view(["PATCH"])
+@permission_classes([IsAdmin])
+def delete_from_rating(request):
+    try:
+        student_id = get_variable("student", request)
+        if (student_id is None) or (student_id == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        student = User.objects.get(id=student_id)
+        current_league = LeagueUser.objects.filter(user=student)
+        if current_league:
+            current_league[0].delete()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='GET', operation_summary="Получение рейтинга ученика.",
+                     manual_parameters=[user_param],
+                     responses=get_user_rating_responses)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_user_rating(request):
+    try:
+        student_id = get_variable("student", request)
+        if (student_id is None) or (student_id == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        if not is_trusted(request, student_id):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=403)
+        student = User.objects.get(id=student_id)
+        league_ = LeagueUser.objects.filter(user=student)
+        if not league_:
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': f'Пользователь не состоит в рейтинге.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=404)
+        league = league_[0].league
+        students_in_league = LeagueUser.objects.filter(league=league).order_by('-user__experience')
+        rating = []
+        for student_ in students_in_league:
+            total_exp = student_.user.experience
+            lvl, exp, base_exp = count_lvl(total_exp)
+            rating.append({
+                'id': student_.user.id,
+                'name': student_.user.name,
+                'lvl': lvl,
+                'exp': exp,
+                'base_exp': base_exp,
+                'total_exp': total_exp
+            })
+        return HttpResponse(json.dumps({'rating': rating}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+"""

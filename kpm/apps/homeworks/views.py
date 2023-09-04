@@ -11,6 +11,11 @@ from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.homeworks.docs import *
 from kpm.apps.homeworks.functions import *
 from django.utils import timezone
+from django.conf import settings
+from django.core.files import File
+
+
+MEDIA_ROOT = settings.MEDIA_ROOT
 
 
 @swagger_auto_schema(method='POST', operation_summary="Создание домашней работы.",
@@ -50,7 +55,7 @@ def create_homework(request):
         fields = len(answers)
         files = files.getlist('files')
         for file in files:
-            if (file.content_type == 'application/pdf') or 'image' in file.content_type:
+            if (file.content_type == 'application/pdf') or 'image' not in file.content_type:
                 return HttpResponse(
                     json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
                                 'instance': request.path},
@@ -60,9 +65,18 @@ def create_homework(request):
         homework.save()
         for file in files:
             ext = file.content_type.split('/')[1]
-            if ext == 'octet-stream':
-                ext = 'heic'
+            to_jpeg = False
+            if ext in ('octet-stream', 'heif', 'heic'):
+                ext = 'jpeg'
+                to_jpeg = True
             homework_file = HomeworkFile(homework=homework, file=file, ext=ext)
+            if to_jpeg:
+                path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
+                new_path = heif_to_jpeg(path)
+                if new_path is not None:
+                    with open(new_path, 'rb') as f:
+                        django_file = File(f)
+                        homework_file.file = django_file
             homework_file.save()
         users = User.objects.filter(id__in=users)
         for user in users:
@@ -209,15 +223,24 @@ def update_homework(request):
         if 'files' in files:
             files = files.getlist('files')
             for file in files:
-                if (file.content_type == 'application/pdf') or 'image' in file.content_type:
+                if (file.content_type == 'application/pdf') or 'image' not in file.content_type:
                     return HttpResponse(
                         json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
                                     'instance': request.path},
                                    ensure_ascii=False), status=404)
                 ext = file.content_type.split('/')[1]
-                if ext == 'octet-stream':
-                    ext = 'heic'
+                to_jpeg = False
+                if ext in ('octet-stream', 'heif', 'heic'):
+                    ext = 'jpeg'
+                    to_jpeg = True
                 homework_file = HomeworkFile(homework=homework, file=file, ext=ext)
+                if to_jpeg:
+                    path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
+                    new_path = heif_to_jpeg(path)
+                    if new_path is not None:
+                        with open(new_path, 'rb') as f:
+                            django_file = File(f)
+                            homework_file.file = django_file
                 homework_file.save()
         homework.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
@@ -459,7 +482,7 @@ def create_response(request):
                     ensure_ascii=False), status=403)
         files = files.getlist('files')
         for file in files:
-            if (file.content_type == 'application/pdf') or 'image' in file.content_type:
+            if (file.content_type == 'application/pdf') or 'image' not in str(file.content_type):
                 return HttpResponse(
                     json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
                                 'instance': request.path},
@@ -469,9 +492,18 @@ def create_response(request):
         homework_user.answered_at = timezone.now()
         for file in files:
             ext = file.content_type.split('/')[1]
-            if ext == 'octet-stream':
-                ext = 'heic'
+            to_jpeg = False
+            if ext in ('octet-stream', 'heif', 'heic'):
+                ext = 'jpeg'
+                to_jpeg = True
             homework_file = HomeworkUsersFile(link=homework_user, file=file, ext=ext)
+            if to_jpeg:
+                path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
+                new_path = heif_to_jpeg(path)
+                if new_path is not None:
+                    with open(new_path, 'rb') as f:
+                        django_file = File(f)
+                        homework_file.file = django_file
             homework_file.save()
         homework_user.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)

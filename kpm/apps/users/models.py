@@ -51,3 +51,33 @@ class History(models.Model):
 
     class Meta:
         db_table = 'history'
+
+
+class Group(models.Model):
+    MARKER_CHOICES = (
+        (0, '#ffffff'),
+        (1, '#ff8282'),
+        (2, '#ffb875'),
+        (3, '#fdff96'),
+        (4, '#93ff91'),
+        (5, '#78ffef'),
+        (6, '#7776d6'),
+        (7, '#bfa0de'),
+    )
+    id = models.AutoField('id группы', primary_key=True, editable=False)
+    name = models.CharField('Название группы', max_length=100)
+    marker = models.IntegerField('Цвет группы', choices=MARKER_CHOICES, default=0)
+    school_class = models.IntegerField('student class', default=None, null=True, blank=True)
+    created_at = models.DateTimeField('Дата создания', auto_now_add=True)
+
+    class Meta:
+        db_table = 'groups'
+
+
+class GroupUser(models.Model):
+    id = models.AutoField('id группы', primary_key=True, editable=False)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True)
+
+    class Meta:
+        db_table = 'group_users'
