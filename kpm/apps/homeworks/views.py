@@ -482,7 +482,11 @@ def create_response(request):
                     ensure_ascii=False), status=403)
         files = files.getlist('files')
         for file in files:
-            if (file.content_type not in ('application/pdf', 'application/octet-stream')) or ('image' not in str(file.content_type)):
+            if 'image' in str(file.content_type):
+                pass
+            elif file.content_type in ('application/pdf', 'application/octet-stream'):
+                pass
+            else:
                 return HttpResponse(
                     json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {'ct': file.content_type},
                                 'instance': request.path},
