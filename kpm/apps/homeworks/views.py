@@ -55,9 +55,13 @@ def create_homework(request):
         fields = len(answers)
         files = files.getlist('files')
         for file in files:
-            if (file.content_type == 'application/pdf') or ('image' not in str(file.content_type)) or ('octet-stream' not in str(file.content_type)):
+            if 'image' in str(file.content_type):
+                pass
+            elif file.content_type in ('application/pdf', 'application/octet-stream'):
+                pass
+            else:
                 return HttpResponse(
-                    json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
+                    json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {'ct': file.content_type},
                                 'instance': request.path},
                                ensure_ascii=False), status=404)
         homework = Homework(author=author, title=title, text=text, score=score, answers=answers_string, fields=fields,
@@ -226,11 +230,16 @@ def update_homework(request):
         if 'files' in files:
             files = files.getlist('files')
             for file in files:
-                if (file.content_type == 'application/pdf') or ('image' not in str(file.content_type)) or ('octet-stream' not in str(file.content_type)):
+                if 'image' in str(file.content_type):
+                    pass
+                elif file.content_type in ('application/pdf', 'application/octet-stream'):
+                    pass
+                else:
                     return HttpResponse(
-                        json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
-                                    'instance': request.path},
-                                   ensure_ascii=False), status=404)
+                        json.dumps(
+                            {'state': 'error', 'message': 'Недопустимый файл.', 'details': {'ct': file.content_type},
+                             'instance': request.path},
+                            ensure_ascii=False), status=404)
                 ext = file.name.split('.')[1]
                 to_jpeg = False
                 if ext == 'heic':
