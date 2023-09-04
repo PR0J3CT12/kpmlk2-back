@@ -520,14 +520,11 @@ def create_response(request):
             if to_jpeg:
                 path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
                 new_path = heif_to_jpeg(path)
+                new_name = f'{str(homework_file.file).split(".")[0]}.jpeg'
                 if new_path is not None:
-                    homework_file.file.save(new_path, open(new_path, 'rb'))
-                    #with open(new_path, 'rb') as f:
-                    #    django_file = File(f)
-                    #    homework_file.file = django_file
-                    #    homework_file.save()
+                    homework_file.file = new_name
+                    homework_file.save()
                     os.remove(path)
-                    os.remove(new_path)
         homework_user.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
