@@ -521,10 +521,11 @@ def create_response(request):
                 path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
                 new_path = heif_to_jpeg(path)
                 if new_path is not None:
-                    with open(new_path, 'rb') as f:
-                        django_file = File(f)
-                        homework_file.file = django_file
-                        homework_file.save()
+                    homework_file.file.save(new_path, open(new_path, 'rb'))
+                    #with open(new_path, 'rb') as f:
+                    #    django_file = File(f)
+                    #    homework_file.file = django_file
+                    #    homework_file.save()
                     os.remove(path)
                     os.remove(new_path)
         homework_user.save()
