@@ -64,12 +64,13 @@ def create_homework(request):
                             school_class=class_)
         homework.save()
         for file in files:
-            ext = file.content_type.split('/')[1]
+            ext = file.name.split('.')[1]
             to_jpeg = False
-            if ext in ('octet-stream', 'heif', 'heic'):
+            if ext == 'heic':
                 ext = 'jpeg'
                 to_jpeg = True
             homework_file = HomeworkFile(homework=homework, file=file, ext=ext)
+            homework_file.save()
             if to_jpeg:
                 path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
                 new_path = heif_to_jpeg(path)
@@ -77,7 +78,9 @@ def create_homework(request):
                     with open(new_path, 'rb') as f:
                         django_file = File(f)
                         homework_file.file = django_file
-            homework_file.save()
+                        homework_file.save()
+                    os.remove(path)
+                    os.remove(new_path)
         users = User.objects.filter(id__in=users)
         for user in users:
             if user.school_class != homework.school_class:
@@ -228,12 +231,13 @@ def update_homework(request):
                         json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
                                     'instance': request.path},
                                    ensure_ascii=False), status=404)
-                ext = file.content_type.split('/')[1]
+                ext = file.name.split('.')[1]
                 to_jpeg = False
-                if ext in ('octet-stream', 'heif', 'heic'):
+                if ext == 'heic':
                     ext = 'jpeg'
                     to_jpeg = True
                 homework_file = HomeworkFile(homework=homework, file=file, ext=ext)
+                homework_file.save()
                 if to_jpeg:
                     path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
                     new_path = heif_to_jpeg(path)
@@ -241,7 +245,9 @@ def update_homework(request):
                         with open(new_path, 'rb') as f:
                             django_file = File(f)
                             homework_file.file = django_file
-                homework_file.save()
+                            homework_file.save()
+                        os.remove(path)
+                        os.remove(new_path)
         homework.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
@@ -497,10 +503,11 @@ def create_response(request):
         for file in files:
             ext = file.name.split('.')[1]
             to_jpeg = False
-            if ext in ['heif']:
+            if ext == 'heic':
                 ext = 'jpeg'
                 to_jpeg = True
             homework_file = HomeworkUsersFile(link=homework_user, file=file, ext=ext)
+            homework_file.save()
             if to_jpeg:
                 path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
                 new_path = heif_to_jpeg(path)
@@ -508,7 +515,9 @@ def create_response(request):
                     with open(new_path, 'rb') as f:
                         django_file = File(f)
                         homework_file.file = django_file
-            homework_file.save()
+                        homework_file.save()
+                    os.remove(path)
+                    os.remove(new_path)
         homework_user.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
