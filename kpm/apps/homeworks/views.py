@@ -495,9 +495,9 @@ def create_response(request):
         homework_user.answers = answers_string
         homework_user.answered_at = timezone.now()
         for file in files:
-            ext = file.ext
+            ext = file.name.split('.')[1]
             to_jpeg = False
-            if ext not in ['heif']:
+            if ext in ['heif']:
                 ext = 'jpeg'
                 to_jpeg = True
             homework_file = HomeworkUsersFile(link=homework_user, file=file, ext=ext)
