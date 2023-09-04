@@ -55,7 +55,7 @@ def create_homework(request):
         fields = len(answers)
         files = files.getlist('files')
         for file in files:
-            if (file.content_type == 'application/pdf') or 'image' not in file.content_type:
+            if (file.content_type == 'application/pdf') or ('image' not in str(file.content_type)) or ('octet-stream' not in str(file.content_type)):
                 return HttpResponse(
                     json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
                                 'instance': request.path},
@@ -223,7 +223,7 @@ def update_homework(request):
         if 'files' in files:
             files = files.getlist('files')
             for file in files:
-                if (file.content_type == 'application/pdf') or 'image' not in file.content_type:
+                if (file.content_type == 'application/pdf') or ('image' not in str(file.content_type)) or ('octet-stream' not in str(file.content_type)):
                     return HttpResponse(
                         json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
                                     'instance': request.path},
@@ -482,7 +482,7 @@ def create_response(request):
                     ensure_ascii=False), status=403)
         files = files.getlist('files')
         for file in files:
-            if (file.content_type == 'application/pdf') or 'image' not in str(file.content_type):
+            if (file.content_type == 'application/pdf') or ('image' not in str(file.content_type)) or ('octet-stream' not in str(file.content_type)):
                 return HttpResponse(
                     json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
                                 'instance': request.path},
