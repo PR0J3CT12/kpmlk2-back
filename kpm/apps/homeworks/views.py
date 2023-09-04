@@ -57,11 +57,11 @@ def create_homework(request):
         for file in files:
             if 'image' in str(file.content_type):
                 pass
-            elif file.content_type in ('application/pdf', 'application/octet-stream'):
+            elif file.content_type in ['application/pdf']:
                 pass
             else:
                 return HttpResponse(
-                    json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {'ct': file.content_type},
+                    json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
                                 'instance': request.path},
                                ensure_ascii=False), status=404)
         homework = Homework(author=author, title=title, text=text, score=score, answers=answers_string, fields=fields,
@@ -69,22 +69,22 @@ def create_homework(request):
         homework.save()
         for file in files:
             ext = file.name.split('.')[1]
-            to_jpeg = False
-            if ext == 'heic':
-                ext = 'jpeg'
-                to_jpeg = True
+            #to_jpeg = False
+            #if ext == 'heic':
+            #    ext = 'jpeg'
+            #    to_jpeg = True
             homework_file = HomeworkFile(homework=homework, file=file, ext=ext)
             homework_file.save()
-            if to_jpeg:
-                path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
-                new_path = heif_to_jpeg(path)
-                if new_path is not None:
-                    with open(new_path, 'rb') as f:
-                        django_file = File(f)
-                        homework_file.file = django_file
-                        homework_file.save()
-                    os.remove(path)
-                    os.remove(new_path)
+            #if to_jpeg:
+            #    path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
+            #    new_path = heif_to_jpeg(path)
+            #    if new_path is not None:
+            #        with open(new_path, 'rb') as f:
+            #            django_file = File(f)
+            #            homework_file.file = django_file
+            #            homework_file.save()
+            #        os.remove(path)
+            #        os.remove(new_path)
         users = User.objects.filter(id__in=users)
         for user in users:
             if user.school_class != homework.school_class:
@@ -232,31 +232,31 @@ def update_homework(request):
             for file in files:
                 if 'image' in str(file.content_type):
                     pass
-                elif file.content_type in ('application/pdf', 'application/octet-stream'):
+                elif file.content_type in ['application/pdf']:
                     pass
                 else:
                     return HttpResponse(
                         json.dumps(
-                            {'state': 'error', 'message': 'Недопустимый файл.', 'details': {'ct': file.content_type},
+                            {'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
                              'instance': request.path},
                             ensure_ascii=False), status=404)
                 ext = file.name.split('.')[1]
-                to_jpeg = False
-                if ext == 'heic':
-                    ext = 'jpeg'
-                    to_jpeg = True
+                #to_jpeg = False
+                #if ext == 'heic':
+                #    ext = 'jpeg'
+                #    to_jpeg = True
                 homework_file = HomeworkFile(homework=homework, file=file, ext=ext)
                 homework_file.save()
-                if to_jpeg:
-                    path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
-                    new_path = heif_to_jpeg(path)
-                    if new_path is not None:
-                        with open(new_path, 'rb') as f:
-                            django_file = File(f)
-                            homework_file.file = django_file
-                            homework_file.save()
-                        os.remove(path)
-                        os.remove(new_path)
+                #if to_jpeg:
+                #    path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
+                #    new_path = heif_to_jpeg(path)
+                #    if new_path is not None:
+                #        with open(new_path, 'rb') as f:
+                #            django_file = File(f)
+                #            homework_file.file = django_file
+                #            homework_file.save()
+                #        os.remove(path)
+                #        os.remove(new_path)
         homework.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
