@@ -484,7 +484,7 @@ def create_response(request):
         for file in files:
             if (file.content_type == 'application/pdf') or ('image' not in str(file.content_type)) or ('octet-stream' not in str(file.content_type)):
                 return HttpResponse(
-                    json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
+                    json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {'ct': file.content_type},
                                 'instance': request.path},
                                ensure_ascii=False), status=404)
         homework_user.is_done = True
