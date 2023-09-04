@@ -60,6 +60,8 @@ def create_homework(request):
         homework.save()
         for file in files:
             ext = file.content_type.split('/')[1]
+            if ext == 'octet-stream':
+                ext = 'heic'
             homework_file = HomeworkFile(homework=homework, file=file, ext=ext)
             homework_file.save()
         users = User.objects.filter(id__in=users)
@@ -213,6 +215,8 @@ def update_homework(request):
                                     'instance': request.path},
                                    ensure_ascii=False), status=404)
                 ext = file.content_type.split('/')[1]
+                if ext == 'octet-stream':
+                    ext = 'heic'
                 homework_file = HomeworkFile(homework=homework, file=file, ext=ext)
                 homework_file.save()
         homework.save()
@@ -465,6 +469,8 @@ def create_response(request):
         homework_user.answered_at = timezone.now()
         for file in files:
             ext = file.content_type.split('/')[1]
+            if ext == 'octet-stream':
+                ext = 'heic'
             homework_file = HomeworkUsersFile(link=homework_user, file=file, ext=ext)
             homework_file.save()
         homework_user.save()
