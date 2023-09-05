@@ -418,7 +418,7 @@ def get_all_logons(request):
             logons_list.append({
                 'user_id': logon.user.id,
                 'user_name': logon.user.name,
-                'date': logon.datetime.date(),
+                'date': str(logon.datetime.date()),
                 'hour': f'{logon.datetime.hour}:00',
                 'datetime': str(logon.datetime)
             })
