@@ -412,7 +412,7 @@ def logout(request):
 @permission_classes([IsAuthenticated])
 def get_all_logons(request):
     try:
-        logons = History.objects.all()
+        logons = History.objects.all().order_by('-datetime')
         logons_list = []
         for logon in logons:
             logons_list.append({
