@@ -55,6 +55,23 @@ def get_user(request):
         else:
             login_obj = History(user=student)
             login_obj.save()
+        name_splitted = student.name.split(' ')
+        if len(name_splitted) == 2:
+            name = name_splitted[1]
+        else:
+            name = student.name
+        result = {
+            "id": student.id,
+            "name": name,
+            "login": student.login,
+            "default_password": student.default_password,
+            "class": student.school_class,
+            "is_default": student.is_default,
+            "experience": student.experience,
+            "mana_earned": student.mana_earned,
+            "last_homework_id": student.last_homework_id,
+            "last_classwork_id": student.last_classwork_id
+        }
         return HttpResponse(
             json.dumps({
                 "id": student.id,
