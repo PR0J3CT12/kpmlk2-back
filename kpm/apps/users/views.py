@@ -73,17 +73,7 @@ def get_user(request):
             "last_classwork_id": student.last_classwork_id
         }
         return HttpResponse(
-            json.dumps({
-                "id": student.id,
-                "name": student.name,
-                "login": student.login,
-                "default_password": student.default_password,
-                "class": student.school_class,
-                "is_default": student.is_default,
-                "experience": student.experience,
-                "mana_earned": student.mana_earned,
-                "last_homework_id": student.last_homework_id,
-                "last_classwork_id": student.last_classwork_id}, ensure_ascii=False),
+            json.dumps(result, ensure_ascii=False),
             status=200)
     except KeyError as e:
         return HttpResponse(
