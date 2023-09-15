@@ -281,7 +281,10 @@ get_all_answers_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                   type=openapi.TYPE_INTEGER, example=100),
                                                               'comment': openapi.Schema(
                                                                   type=openapi.TYPE_STRING,
-                                                                  example="Комментарий от преподавателя")
+                                                                  example="Комментарий от преподавателя"),
+                                                              'checker': openapi.Schema(
+                                                                  type=openapi.TYPE_STRING,
+                                                                  example="Имя Фамилия преподавателя"),
                                                           }))})
 create_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
