@@ -565,6 +565,7 @@ def check_user_homework(request):
                     ensure_ascii=False), status=404)
         homework = Homework.objects.get(id=id_)
         student = User.objects.get(id=student_id)
+        admin = User.objects.get(id=request.user.id)
         homework_user = HomeworkUsers.objects.filter(user=student, homework=homework)
         if not homework_user:
             return HttpResponse(
@@ -585,6 +586,7 @@ def check_user_homework(request):
                                 'instance': request.path},
                                ensure_ascii=False), status=404)
             homework_user.is_checked = True
+            homework_user.checker = admin
             homework_user.score = int(score)
         if 'comment' in request_body.keys():
             comment = request_body['comment']
@@ -711,10 +713,15 @@ def get_all_answers(request):
                 score = homework_user.score
             else:
                 score = None
+            if homework_user.checker:
+                checker = homework_user.checker.name
+            else:
+                checker = ""
             comment = homework_user.comment
             student_data['answers'] = answers_list
             student_data['score'] = score
             student_data['comment'] = comment
+            student_data['checker'] = checker
             students_list.append(student_data)
         response['students'] = students_list
         return HttpResponse(json.dumps(response, ensure_ascii=False), status=200)

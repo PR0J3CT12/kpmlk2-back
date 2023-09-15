@@ -57,6 +57,7 @@ class HomeworkUsers(models.Model):
     is_done = models.BooleanField('Сдал ли работу ученик', default=False)
     comment = models.TextField('Комментарий преподавателя', default="")
     is_checked = models.BooleanField('Проверена ли работа', default=False)
+    checker = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='checker', null=True)
     score = models.IntegerField('Оценка за работу', default=0)
     answers = models.CharField('Форма с ответами', max_length=5000)
     answered_at = models.DateTimeField('Дата ответа', default=None, null=True)
