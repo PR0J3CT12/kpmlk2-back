@@ -50,7 +50,7 @@ class IsTierTwo(permissions.BasePermission):
         try:
             user = User.objects.get(id=request.user.id)
             tier = Admin.objects.get(user=user).tier
-            if tier in [0, 1, 2]:
+            if tier == 2:
                 return True
             return False
         except Exception:
