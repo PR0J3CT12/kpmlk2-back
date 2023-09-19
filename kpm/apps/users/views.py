@@ -19,7 +19,6 @@ from kpm.apps.users.docs import *
 from django.utils import timezone
 from datetime import datetime, timedelta
 
-
 SECRET_KEY = settings.SECRET_KEY
 
 
@@ -81,8 +80,9 @@ def get_user(request):
                        ensure_ascii=False), status=404)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
+            json.dumps(
+                {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -216,8 +216,9 @@ def delete_user(request):
                        ensure_ascii=False), status=404)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
+            json.dumps(
+                {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -277,8 +278,9 @@ def change_password(request):
             request_body = json.loads(request.body)
         else:
             return HttpResponse(
-                json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
-                           ensure_ascii=False), status=400)
+                json.dumps(
+                    {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=400)
         is_default = False
         if 'id' not in request_body.keys():
             id_ = request.user.id
@@ -318,8 +320,9 @@ def change_password(request):
                 ensure_ascii=False), status=400)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
+            json.dumps(
+                {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -351,7 +354,7 @@ def login(request):
                 id_ = user.id
                 tokens = get_tokens_for_user(user)
                 return HttpResponse(json.dumps(
-                        {'id': id_, 'tokens': tokens, 'is_admin': user.is_admin}, ensure_ascii=False), status=200)
+                    {'id': id_, 'tokens': tokens, 'is_admin': user.is_admin}, ensure_ascii=False), status=200)
             else:
                 return HttpResponse(
                     json.dumps({'state': 'error', 'message': 'Неверный пароль.', 'details': {},
@@ -364,7 +367,7 @@ def login(request):
                 id_ = user.id
                 tokens = get_tokens_for_user(user)
                 return HttpResponse(json.dumps(
-                        {'id': id_, 'tokens': tokens, 'is_admin': user.is_admin}, ensure_ascii=False), status=200)
+                    {'id': id_, 'tokens': tokens, 'is_admin': user.is_admin}, ensure_ascii=False), status=200)
             else:
                 return HttpResponse(
                     json.dumps({'state': 'error', 'message': 'Неверный пароль.', 'details': {},
@@ -439,10 +442,10 @@ def get_all_logons(request):
                 ensure_ascii=False), status=404)
 
 
-#@swagger_auto_schema(method='GET', operation_summary="Получение групп.",
-#                     manual_parameters=[class_param],
-#                     responses=get_groups_responses,
-#                      operation_description=operation_description)
+@swagger_auto_schema(method='GET', operation_summary="Получение групп.",
+                     manual_parameters=[class_param],
+                     responses=get_groups_responses,
+                     operation_description=operation_description)
 @api_view(["GET"])
 @permission_classes([IsAdmin])
 def get_groups(request):
@@ -459,11 +462,11 @@ def get_groups(request):
         for row in groups_users:
             if row.group_id not in groups_dict:
                 groups_dict[row.group_id] = {
-                        'id': row.group.id,
-                        'name': row.group.name,
-                        'marker': row.group.marker,
-                        'students_ids': [],
-                        'students': []
+                    'id': row.group.id,
+                    'name': row.group.name,
+                    'marker': row.group.marker,
+                    'students_ids': [],
+                    'students': []
                 }
             if row.user_id not in groups_dict[row.group_id]['students_ids']:
                 groups_dict[row.group_id]['students_ids'].append(row.user_id)
@@ -471,6 +474,8 @@ def get_groups(request):
                     'id': row.user.id,
                     'name': row.user.name
                 })
+        for group in groups_dict:
+            del groups_dict[group]['students_ids']
         return HttpResponse(json.dumps({'groups': groups_dict}, ensure_ascii=False), status=200)
     except Exception as e:
         return HttpResponse(json.dumps(
@@ -582,7 +587,8 @@ def add_to_group(request):
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Группа или пользователь не существует.', 'details': {}, 'instance': request.path},
+            json.dumps({'state': 'error', 'message': f'Группа или пользователь не существует.', 'details': {},
+                        'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
@@ -613,8 +619,9 @@ def delete_from_group(request):
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
+            json.dumps(
+                {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
