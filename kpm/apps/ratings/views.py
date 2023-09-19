@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from kpm.apps.users.permissions import IsAdmin
+from kpm.apps.users.permissions import *
 from kpm.apps.users.functions import is_trusted
 from .functions import *
 from kpm.apps.ratings.models import *
@@ -96,7 +96,7 @@ def create_rating(request):
                      manual_parameters=[id_param],
                      responses=delete_rating_responses)
 @api_view(["DELETE"])
-@permission_classes([IsAdmin])
+@permission_classes([IsTierTwo])
 def delete_rating(request):
     try:
         id_ = get_variable("id", request)

@@ -6,7 +6,7 @@ from kpm.apps.logs.models import Log
 from kpm.apps.homeworks.models import *
 import json
 from django.db.models import Sum, Q, Count
-from kpm.apps.users.permissions import IsAdmin
+from kpm.apps.users.permissions import *
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.homeworks.docs import *
 from kpm.apps.homeworks.functions import *
@@ -100,7 +100,7 @@ def create_homework(request):
                      manual_parameters=[id_param],
                      responses=delete_homework_responses)
 @api_view(["DELETE"])
-@permission_classes([IsAdmin])
+@permission_classes([IsTierTwo])
 def delete_homework(request):
     try:
         id_ = get_variable("id", request)

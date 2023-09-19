@@ -212,7 +212,7 @@ def create_user(request):
                      manual_parameters=[id_param],
                      responses=delete_user_responses)
 @api_view(["DELETE"])
-@permission_classes([IsAdmin])
+@permission_classes([IsTierTwo])
 def delete_user(request):
     try:
         id_ = get_variable("id", request)
@@ -247,7 +247,7 @@ def delete_user(request):
                      manual_parameters=[class_param],
                      responses=delete_users_responses)
 @api_view(["DELETE"])
-@permission_classes([IsAdmin])
+@permission_classes([IsTierTwo])
 def delete_users(request):
     try:
         class_ = get_variable("class", request)
@@ -547,7 +547,7 @@ def create_group(request):
                      manual_parameters=[group_param],
                      responses=delete_group_responses)
 @api_view(["DELETE"])
-@permission_classes([IsAdmin])
+@permission_classes([IsTierTwo])
 def delete_group(request):
     try:
         id_ = get_variable("group", request)

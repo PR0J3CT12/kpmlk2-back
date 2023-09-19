@@ -6,7 +6,7 @@ from .functions import get_variable
 from kpm.apps.logs.models import Log
 import json
 from kpm.apps.themes.models import Theme
-from kpm.apps.users.permissions import IsAdmin
+from kpm.apps.users.permissions import *
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.themes.docs import *
 
@@ -118,7 +118,7 @@ def create_theme(request):
                      manual_parameters=[id_param],
                      responses=delete_theme_responses)
 @api_view(["DELETE"])
-@permission_classes([IsAdmin])
+@permission_classes([IsTierTwo])
 def delete_theme(request):
     try:
         id_ = get_variable("id", request)
@@ -148,7 +148,7 @@ def delete_theme(request):
                      manual_parameters=[class_param],
                      responses=delete_themes_responses)
 @api_view(["DELETE"])
-@permission_classes([IsAdmin])
+@permission_classes([IsTierTwo])
 def delete_themes(request):
     try:
         class_ = get_variable("class", request)

@@ -9,7 +9,7 @@ from kpm.apps.themes.models import Theme
 from kpm.apps.grades.models import Grade
 import json
 from django.db.models import Sum, Q, Count
-from kpm.apps.users.permissions import IsAdmin
+from kpm.apps.users.permissions import *
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.works.docs import *
 from kpm.apps.works.functions import *
@@ -297,7 +297,7 @@ def update_work(request):
                      responses=delete_work_responses,
                      operation_description=operation_description)
 @api_view(["DELETE"])
-@permission_classes([IsAdmin])
+@permission_classes([IsTierTwo])
 def delete_work(request):
     try:
         id_ = get_variable("id", request)
@@ -349,7 +349,7 @@ def delete_work(request):
                      responses=delete_work_responses,
                      operation_description=operation_description)
 @api_view(["DELETE"])
-@permission_classes([IsAdmin])
+@permission_classes([IsTierTwo])
 def delete_works(request):
     try:
         class_ = get_variable("class", request)
