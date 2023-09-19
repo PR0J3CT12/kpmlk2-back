@@ -222,6 +222,13 @@ def get_grades(request):
         links = None
         if (type_ == '7') or (theme == '8'):
             links = Exam.objects.filter(work_2007__in=works)
+        if (group is not None) and (group != ''):
+            students = User.objects.filter(
+                Q(is_admin=0) & Q(school_class=int(class_)) & Q(group=int(group))).select_related('group').order_by(
+                'group', 'id')
+        else:
+            students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).select_related(
+                'group').order_by('group', 'id')
         if works:
             for work in works:
                 data = {'id': work.id, 'name': work.name, 'max_score': work.max_score, 'grades': list(map(int, work.grades.split("_._")))}
@@ -230,10 +237,6 @@ def get_grades(request):
                     grades_tech = list(map(int, work_tech.work.grades.split("_._")))
                     data['grades_tech'] = grades_tech
                 works_data.append(data)
-            if (group is not None) and (group != ''):
-                students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_)) & Q(group=int(group))).select_related('group').order_by('group', 'id')
-            else:
-                students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).select_related('group').order_by('group', 'id')
             students_data = []
             MARKER_CHOICES = {
                 0: '#ff8282',
