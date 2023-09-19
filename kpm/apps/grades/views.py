@@ -231,9 +231,9 @@ def get_grades(request):
                     data['grades_tech'] = grades_tech
                 works_data.append(data)
             if (group is not None) and (group != ''):
-                students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_)) & Q(group=int(group))).order_by('group', 'id')
+                students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_)) & Q(group=int(group))).select_related('group').order_by('group', 'id')
             else:
-                students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).order_by('group', 'id')
+                students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).select_related('group').order_by('group', 'id')
             students_data = []
             MARKER_CHOICES = {
                 0: '#ff8282',
@@ -243,9 +243,13 @@ def get_grades(request):
                 4: '#78ffef',
                 5: '#7776d6',
                 6: '#bfa0de',
+                7: None
             }
             for student in students:
-                marker = student.group.marker
+                if student.group:
+                    marker = student.group.marker
+                else:
+                    marker = 7
                 student_object = {'id': student.id, 'name': student.name, 'experience': student.experience, 'grades': [], 'color': MARKER_CHOICES[marker]}
                 full_score = grades.filter(user=student).aggregate(Sum('score'))['score__sum']
                 max_full_score = grades.filter(user=student).aggregate(Sum('max_score'))['max_score__sum']
@@ -322,13 +326,17 @@ def get_mana_waiters(request):
             4: '#78ffef',
             5: '#7776d6',
             6: '#bfa0de',
+            7: None
         }
         if (group is not None) and (group != ''):
-            students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_)) & Q(group=int(group))).order_by('group', 'id')
+            students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_)) & Q(group=int(group))).select_related('group').order_by('group', 'id')
         else:
-            students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).order_by('group', 'id')
+            students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).select_related('group').order_by('group', 'id')
         for student in students:
-            marker = student.group.marker
+            if student.group:
+                marker = student.group.marker
+            else:
+                marker = 7
             manas = Mana.objects.filter(Q(user=student) & Q(is_given=0))
             green = manas.filter(color='green').aggregate(Count('id'))
             blue = manas.filter(color='blue').aggregate(Count('id'))
