@@ -6,6 +6,10 @@ id_param_group = openapi.Parameter("id", in_=openapi.IN_QUERY, type=openapi.TYPE
                                    operation_description='ID группы.', example=1)
 class_param = openapi.Parameter("class", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
                                 operation_description='Класс учеников.', example=4)
+group_param = openapi.Parameter("group", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
+                                operation_description='ID группы.', example=1)
+user_param = openapi.Parameter("student", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
+                               operation_description='ID ученика.', example=1)
 login_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                     required=['login', 'password'],
                                     properties={
@@ -24,9 +28,11 @@ create_group_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                            required=['name', 'class'],
                                            properties={
                                                'name': openapi.Schema(type=openapi.TYPE_STRING, example="Группа1"),
-                                               'class': openapi.Schema(type=openapi.TYPE_INTEGER, example=4)
+                                               'class': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
+                                               'marker': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
                                            },
                                            operation_description='Создание группы')
+operation_description = "Marker: 0 - #ff8282, 1 - #ffb875, 2 - #fdff96, 3 - #93ff91, 4 - #78ffef, 5 - #7776d6, 6 - #bfa0de"
 change_password_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                               required=['password'],
                                               properties={
@@ -133,7 +139,8 @@ create_user_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 change_password_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 create_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
-set_user_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
+add_to_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
+delete_from_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 logout_responses = {200: logout_response_200}
 login_responses = {200: login_response_200}
 delete_users_responses = {200: delete_users_response_200}
@@ -144,6 +151,7 @@ get_users_responses = {200: get_users_response_200}
 change_password_responses = {200: change_password_response_200}
 create_group_responses = {200: create_group_response_200}
 delete_group_responses = {200: delete_group_response_200}
-set_user_group_responses = {200: set_user_group_response_200}
+add_to_group_responses = {200: add_to_group_response_200}
+delete_from_group_responses = {200: delete_from_group_response_200}
 get_groups_responses = {200: get_groups_response_200}
 get_all_logons_responses = {200: get_all_logons_response_200}

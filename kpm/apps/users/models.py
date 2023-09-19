@@ -32,6 +32,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     school_class = models.IntegerField('student class', default=None, null=True, blank=True)
     default_password = models.CharField('default password', max_length=5, null=True, blank=True)
     is_default = models.BooleanField('is default password', default=True)
+    group = models.ForeignKey('Group', on_delete=models.SET_NULL, null=True, default=None)
 
     USERNAME_FIELD = 'login'
     REQUIRED_FIELDS = ['name', 'default_password', 'is_admin']

@@ -189,7 +189,7 @@ def insert_grades(request):
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получить оценки.",
-                     manual_parameters=[class_param, theme_param, type_param],
+                     manual_parameters=[class_param, theme_param, type_param, group_param],
                      responses=get_grades_responses)
 @api_view(["GET"])
 @permission_classes([IsAdmin])
@@ -198,6 +198,7 @@ def get_grades(request):
         class_ = get_variable("class", request)
         theme = get_variable("theme", request)
         type_ = get_variable("type", request)
+        group = get_variable("group", request)
         if class_ not in ['4', '5', '6', 4, 5, 6]:
             return HttpResponse(
                 json.dumps(
@@ -212,6 +213,8 @@ def get_grades(request):
                 grades = grades.filter(work__theme__id=int(theme)).exclude(work__type=5)
             else:
                 grades = grades.filter(work__theme__id=int(theme))
+        if (group is not None) and (group != ''):
+            grades = grades.filter(user__group=int(group))
         works_list = grades.order_by('work__added_at').values_list('work', flat=True)
         works_list = custom_distinct(works_list)
         works = Work.objects.filter(id__in=works_list).order_by('added_at')
@@ -227,10 +230,23 @@ def get_grades(request):
                     grades_tech = list(map(int, work_tech.work.grades.split("_._")))
                     data['grades_tech'] = grades_tech
                 works_data.append(data)
-            students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).order_by('id')
+            if (group is not None) and (group != ''):
+                students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_)) & Q(group=int(group))).order_by('group', 'id')
+            else:
+                students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).order_by('group', 'id')
             students_data = []
+            MARKER_CHOICES = {
+                0: '#ff8282',
+                1: '#ffb875',
+                2: '#fdff96',
+                3: '#93ff91',
+                4: '#78ffef',
+                5: '#7776d6',
+                6: '#bfa0de',
+            }
             for student in students:
-                student_object = {'id': student.id, 'name': student.name, 'experience': student.experience, 'grades': []}
+                marker = student.group.marker
+                student_object = {'id': student.id, 'name': student.name, 'experience': student.experience, 'grades': [], 'color': MARKER_CHOICES[marker]}
                 full_score = grades.filter(user=student).aggregate(Sum('score'))['score__sum']
                 max_full_score = grades.filter(user=student).aggregate(Sum('max_score'))['max_score__sum']
                 if max_full_score != 0:
@@ -278,12 +294,13 @@ def get_grades(request):
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получить список ожидающих ману.",
-                     manual_parameters=[class_param],
+                     manual_parameters=[class_param, group_param],
                      responses=get_mana_waiters_responses)
 @api_view(["GET"])
 @permission_classes([IsAdmin])
 def get_mana_waiters(request):
     try:
+        group = get_variable("group", request)
         class_ = get_variable("class", request)
         if not class_:
             return HttpResponse(
@@ -297,12 +314,25 @@ def get_mana_waiters(request):
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {}, 'instance': request.path},
                         ensure_ascii=False), status=404)
         waiters = []
-        students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_)))
+        MARKER_CHOICES = {
+            0: '#ff8282',
+            1: '#ffb875',
+            2: '#fdff96',
+            3: '#93ff91',
+            4: '#78ffef',
+            5: '#7776d6',
+            6: '#bfa0de',
+        }
+        if (group is not None) and (group != ''):
+            students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_)) & Q(group=int(group))).order_by('group', 'id')
+        else:
+            students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).order_by('group', 'id')
         for student in students:
+            marker = student.group.marker
             manas = Mana.objects.filter(Q(user=student) & Q(is_given=0))
             green = manas.filter(color='green').aggregate(Count('id'))
             blue = manas.filter(color='blue').aggregate(Count('id'))
-            waiter = {"id": student.id, "name": student.name, "green": green["id__count"], "blue": blue["id__count"]}
+            waiter = {"id": student.id, "name": student.name, "green": green["id__count"], "blue": blue["id__count"], 'color': MARKER_CHOICES[marker]}
             if int(green["id__count"]) + int(blue["id__count"]) > 0:
                 waiters.append(waiter)
         return HttpResponse(json.dumps({'waiters': waiters}, ensure_ascii=False), status=200)

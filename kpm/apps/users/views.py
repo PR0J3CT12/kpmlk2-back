@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from kpm.apps.users.models import User, History, Group, GroupUser
+from kpm.apps.users.models import *
 from kpm.apps.users.permissions import *
 from kpm.apps.users.functions import *
 from kpm.apps.logs.models import Log
@@ -441,7 +441,8 @@ def get_all_logons(request):
 
 #@swagger_auto_schema(method='GET', operation_summary="Получение групп.",
 #                     manual_parameters=[class_param],
-#                     responses=get_groups_responses)
+#                     responses=get_groups_responses,
+#                      operation_description=operation_description)
 @api_view(["GET"])
 @permission_classes([IsAdmin])
 def get_groups(request):
@@ -453,24 +454,24 @@ def get_groups(request):
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        groups = Group.objects.filter(school_class=class_)
-        groups_list = []
-        for group in groups:
-            group_students = GroupUser.objects.filter(group=group).order_by('user__name')
-            students_list = []
-            for student in group_students:
-                students_list.append({
-                    'id': student.user.id,
-                    'name': student.user.name,
+        groups_users = GroupUser.objects.filter(group__school_class=class_).select_related('group', 'user')
+        groups_dict = {}
+        for row in groups_users:
+            if row.group_id not in groups_dict:
+                groups_dict[row.group_id] = {
+                        'id': row.group.id,
+                        'name': row.group.name,
+                        'marker': row.group.marker,
+                        'students_ids': [],
+                        'students': []
+                }
+            if row.user_id not in groups_dict[row.group_id]['students_ids']:
+                groups_dict[row.group_id]['students_ids'].append(row.user_id)
+                groups_dict[row.group_id]['students'].append({
+                    'id': row.user.id,
+                    'name': row.user.name
                 })
-            groups_list.append({
-                'id': group.id,
-                'name': group.name,
-                'owner': group.owner.name,
-                'marker': group.marker,
-                'students': students_list
-            })
-        return HttpResponse(json.dumps({'groups': groups_list}, ensure_ascii=False), status=200)
+        return HttpResponse(json.dumps({'groups': groups_dict}, ensure_ascii=False), status=200)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -478,9 +479,10 @@ def get_groups(request):
             ensure_ascii=False), status=404)
 
 
-#@swagger_auto_schema(method='POST', operation_summary="Создание группы.",
-#                     request_body=create_group_request_body,
-#                     responses=create_group_responses)
+@swagger_auto_schema(method='POST', operation_summary="Создание группы.",
+                     request_body=create_group_request_body,
+                     responses=create_group_responses,
+                     operation_description=operation_description)
 @api_view(["POST"])
 @permission_classes([IsAdmin])
 def create_group(request):
@@ -497,8 +499,7 @@ def create_group(request):
                     {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        owner = User.objects.get(id=request_body['owner'])
-        group = Group(name=request_body['name'], school_class=int(request_body['class']), marker=request_body['marker'], owner=owner)
+        group = Group(name=request_body['name'], school_class=int(request_body['class']), marker=request_body['marker'])
         group.save()
         log = Log(operation='INSERT', from_table='groups', details='Добавлена новая группа в таблицу groups.')
         log.save()
@@ -519,29 +520,29 @@ def create_group(request):
              'instance': request.path},
             ensure_ascii=False), status=404)
 
-"""
-@swagger_auto_schema(method='DELETE', operation_summary="Создание рейтинга.",
-                     manual_parameters=[id_param],
-                     responses=delete_rating_responses)
+
+@swagger_auto_schema(method='DELETE', operation_summary="Удаление группы.",
+                     manual_parameters=[group_param],
+                     responses=delete_group_responses)
 @api_view(["DELETE"])
 @permission_classes([IsAdmin])
-def delete_rating(request):
+def delete_group(request):
     try:
-        id_ = get_variable("id", request)
+        id_ = get_variable("group", request)
         if (id_ is None) or (id_ == ''):
             return HttpResponse(
                 json.dumps(
-                    {'state': 'error', 'message': f'Не указан id рейтинга.', 'details': {}, 'instance': request.path},
+                    {'state': 'error', 'message': f'Не указан id группы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
-        league = League.objects.get(id=id_)
-        log_details = f'Удален рейтинг из таблицы ratings. ["id": {league.id} | "name": "{league.name}"]'
-        league.delete()
-        log = Log(operation='DELETE', from_table='ratings', details=log_details)
+        group = Group.objects.get(id=id_)
+        log_details = f'Удалена группа из таблицы groups. ["id": {group.id} | "name": "{group.name}" | "marker": "{group.marker}" | "school_class": "{group.school_class}"]'
+        group.delete()
+        log = Log(operation='DELETE', from_table='groups', details=log_details)
         log.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Рейтинг не существует.', 'details': {}, 'instance': request.path},
+            json.dumps({'state': 'error', 'message': f'Группа не существует.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
@@ -550,18 +551,18 @@ def delete_rating(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='PATCH', operation_summary="Добавление ученика в рейтинг.",
-                     manual_parameters=[id_param, user_param],
-                     responses=add_to_rating_responses)
+@swagger_auto_schema(method='PATCH', operation_summary="Добавление ученика в группу.",
+                     manual_parameters=[group_param, user_param],
+                     responses=add_to_group_responses)
 @api_view(["PATCH"])
 @permission_classes([IsAdmin])
-def add_to_rating(request):
+def add_to_group(request):
     try:
-        id_ = get_variable("id", request)
+        id_ = get_variable("group", request)
         if (id_ is None) or (id_ == ''):
             return HttpResponse(
                 json.dumps(
-                    {'state': 'error', 'message': f'Не указан id рейтинга.', 'details': {}, 'instance': request.path},
+                    {'state': 'error', 'message': f'Не указан id группы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         student_id = get_variable("student", request)
         if (student_id is None) or (student_id == ''):
@@ -570,16 +571,18 @@ def add_to_rating(request):
                     {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         student = User.objects.get(id=student_id)
-        league = League.objects.get(id=id_)
-        current_league = LeagueUser.objects.filter(user=student)
-        if current_league:
-            current_league[0].delete()
-        new_league = LeagueUser(user=student, league=league)
-        new_league.save()
+        group = Group.objects.get(id=id_)
+        current_group = GroupUser.objects.filter(user=student)
+        if current_group:
+            current_group[0].delete()
+        new_group = GroupUser(user=student, group=group)
+        new_group.save()
+        student.group = group
+        student.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Рейтинг или пользователь не существует.', 'details': {}, 'instance': request.path},
+            json.dumps({'state': 'error', 'message': f'Группа или пользователь не существует.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
@@ -588,12 +591,12 @@ def add_to_rating(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='PATCH', operation_summary="Удаление ученика из рейтинга.",
+@swagger_auto_schema(method='PATCH', operation_summary="Удаление ученика из группы.",
                      manual_parameters=[user_param],
-                     responses=delete_from_rating_responses)
+                     responses=delete_from_group_responses)
 @api_view(["PATCH"])
 @permission_classes([IsAdmin])
-def delete_from_rating(request):
+def delete_from_group(request):
     try:
         student_id = get_variable("student", request)
         if (student_id is None) or (student_id == ''):
@@ -602,9 +605,11 @@ def delete_from_rating(request):
                     {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         student = User.objects.get(id=student_id)
-        current_league = LeagueUser.objects.filter(user=student)
-        if current_league:
-            current_league[0].delete()
+        current_group = GroupUser.objects.filter(user=student)
+        if current_group:
+            current_group[0].delete()
+        student.group = None
+        student.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
@@ -615,55 +620,3 @@ def delete_from_rating(request):
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
              'instance': request.path},
             ensure_ascii=False), status=404)
-
-
-@swagger_auto_schema(method='GET', operation_summary="Получение рейтинга ученика.",
-                     manual_parameters=[user_param],
-                     responses=get_user_rating_responses)
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def get_user_rating(request):
-    try:
-        student_id = get_variable("student", request)
-        if (student_id is None) or (student_id == ''):
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=404)
-        if not is_trusted(request, student_id):
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=403)
-        student = User.objects.get(id=student_id)
-        league_ = LeagueUser.objects.filter(user=student)
-        if not league_:
-            return HttpResponse(
-                json.dumps({'state': 'error', 'message': f'Пользователь не состоит в рейтинге.', 'details': {},
-                            'instance': request.path},
-                           ensure_ascii=False), status=404)
-        league = league_[0].league
-        students_in_league = LeagueUser.objects.filter(league=league).order_by('-user__experience')
-        rating = []
-        for student_ in students_in_league:
-            total_exp = student_.user.experience
-            lvl, exp, base_exp = count_lvl(total_exp)
-            rating.append({
-                'id': student_.user.id,
-                'name': student_.user.name,
-                'lvl': lvl,
-                'exp': exp,
-                'base_exp': base_exp,
-                'total_exp': total_exp
-            })
-        return HttpResponse(json.dumps({'rating': rating}, ensure_ascii=False), status=200)
-    except ObjectDoesNotExist as e:
-        return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
-    except Exception as e:
-        return HttpResponse(json.dumps(
-            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
-             'instance': request.path},
-            ensure_ascii=False), status=404)
-"""

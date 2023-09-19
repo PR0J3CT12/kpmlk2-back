@@ -8,19 +8,21 @@ theme_param = openapi.Parameter("theme", in_=openapi.IN_QUERY, type=openapi.TYPE
                                 operation_description='ID темы.', example=4)
 type_param = openapi.Parameter("type", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
                                operation_description='Тип темы.', example=4)
+group_param = openapi.Parameter("group", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
+                                operation_description='ID группы.', example=0)
 insert_grades_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                             required=['changes'],
                                             properties={
-                                                                              "work_id": openapi.Schema(
-                                                                                  type=openapi.TYPE_INTEGER, example=1),
-                                                                              "user_id": openapi.Schema(
-                                                                                  type=openapi.TYPE_INTEGER, example=1),
-                                                                              "cell_number": openapi.Schema(
-                                                                                  type=openapi.TYPE_INTEGER, example=1),
-                                                                              "value": openapi.Schema(
-                                                                                  type=openapi.TYPE_STRING,
-                                                                                  example="15.0"),
-                                                                          })
+                                                "work_id": openapi.Schema(
+                                                    type=openapi.TYPE_INTEGER, example=1),
+                                                "user_id": openapi.Schema(
+                                                    type=openapi.TYPE_INTEGER, example=1),
+                                                "cell_number": openapi.Schema(
+                                                    type=openapi.TYPE_INTEGER, example=1),
+                                                "value": openapi.Schema(
+                                                    type=openapi.TYPE_STRING,
+                                                    example="15.0"),
+                                            })
 get_mana_waiters_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                properties={
                                                    "waiters": openapi.Schema(type=openapi.TYPE_OBJECT,
@@ -37,6 +39,9 @@ get_mana_waiters_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                                  "blue": openapi.Schema(
                                                                                      type=openapi.TYPE_INTEGER,
                                                                                      example=8),
+                                                                                 "color": openapi.Schema(
+                                                                                     type=openapi.TYPE_STRING,
+                                                                                     example='#bfa0de'),
                                                                              })})
 get_grades_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                          properties={
@@ -70,6 +75,7 @@ get_grades_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                      'percentage': 100
                                                                  }
                                                              ],
+                                                             'color': '#bfa0de'
                                                          }
                                                      ])),
                                          })

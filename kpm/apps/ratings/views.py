@@ -92,7 +92,7 @@ def create_rating(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='DELETE', operation_summary="Создание рейтинга.",
+@swagger_auto_schema(method='DELETE', operation_summary="Удаление рейтинга.",
                      manual_parameters=[id_param],
                      responses=delete_rating_responses)
 @api_view(["DELETE"])
