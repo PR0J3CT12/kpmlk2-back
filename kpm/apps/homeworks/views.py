@@ -12,7 +12,6 @@ from kpm.apps.homeworks.docs import *
 from kpm.apps.homeworks.functions import *
 from django.utils import timezone
 from django.conf import settings
-from django.core.files import File
 
 
 MEDIA_ROOT = settings.MEDIA_ROOT
@@ -69,22 +68,8 @@ def create_homework(request):
         homework.save()
         for file in files:
             ext = file.name.split('.')[1]
-            #to_jpeg = False
-            #if ext == 'heic':
-            #    ext = 'jpeg'
-            #    to_jpeg = True
             homework_file = HomeworkFile(homework=homework, file=file, ext=ext)
             homework_file.save()
-            #if to_jpeg:
-            #    path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
-            #    new_path = heif_to_jpeg(path)
-            #    if new_path is not None:
-            #        with open(new_path, 'rb') as f:
-            #            django_file = File(f)
-            #            homework_file.file = django_file
-            #            homework_file.save()
-            #        os.remove(path)
-            #        os.remove(new_path)
         users = User.objects.filter(id__in=users)
         for user in users:
             if user.school_class != homework.school_class:
@@ -125,6 +110,14 @@ def delete_homework(request):
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         homework = Homework.objects.get(id=id_)
+        homework_files = HomeworkFile.objects.filter(homework=homework)
+        for file in homework_files:
+            path = os.path.join(MEDIA_ROOT, f'{file.file}')
+            if path is not None:
+                try:
+                    os.remove(path)
+                except:
+                    pass
         homework.delete()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
@@ -241,22 +234,8 @@ def update_homework(request):
                              'instance': request.path},
                             ensure_ascii=False), status=404)
                 ext = file.name.split('.')[1]
-                #to_jpeg = False
-                #if ext == 'heic':
-                #    ext = 'jpeg'
-                #    to_jpeg = True
                 homework_file = HomeworkFile(homework=homework, file=file, ext=ext)
                 homework_file.save()
-                #if to_jpeg:
-                #    path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
-                #    new_path = heif_to_jpeg(path)
-                #    if new_path is not None:
-                #        with open(new_path, 'rb') as f:
-                #            django_file = File(f)
-                #            homework_file.file = django_file
-                #            homework_file.save()
-                #        os.remove(path)
-                #        os.remove(new_path)
         homework.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
@@ -288,6 +267,12 @@ def delete_file_from_homework(request):
                     {'state': 'error', 'message': f'Не указан id файла.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         homework_file = HomeworkFile.objects.get(id=file_id)
+        path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
+        if path is not None:
+            try:
+                os.remove(path)
+            except:
+                pass
         homework_file.delete()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
