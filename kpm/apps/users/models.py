@@ -82,3 +82,17 @@ class GroupUser(models.Model):
 
     class Meta:
         db_table = 'group_users'
+
+
+class Admin(models.Model):
+    TIER_LIST = (
+        (0, 'Стажер'),
+        (1, 'Администратор'),
+        (2, 'Супер-администратор'),
+    )
+    id = models.AutoField('id админа', primary_key=True, editable=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True)
+    tier = models.IntegerField('Цвет группы', choices=TIER_LIST, default=0)
+
+    class Meta:
+        db_table = 'admins'
