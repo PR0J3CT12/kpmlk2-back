@@ -71,6 +71,9 @@ def get_user(request):
             "last_homework_id": student.last_homework_id,
             "last_classwork_id": student.last_classwork_id
         }
+        if student.is_admin:
+            tier = Admin.objects.get(user=student).tier
+            result['admin_tier'] = tier
         return HttpResponse(
             json.dumps(result, ensure_ascii=False),
             status=200)

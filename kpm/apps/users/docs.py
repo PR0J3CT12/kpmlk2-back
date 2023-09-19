@@ -107,6 +107,7 @@ get_user_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                            "mana_earned": openapi.Schema(type=openapi.TYPE_INTEGER, example=100),
                                            "last_homework_id": openapi.Schema(type=openapi.TYPE_INTEGER, example=12),
                                            "last_classwork_id": openapi.Schema(type=openapi.TYPE_INTEGER, example=12),
+                                           "admin_tier": openapi.Schema(type=openapi.TYPE_INTEGER, example=2),
                                        })
 get_groups_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                          properties={
