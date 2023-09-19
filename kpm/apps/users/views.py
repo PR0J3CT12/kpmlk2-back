@@ -110,7 +110,17 @@ def get_users(request):
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
                          'instance': request.path},
                         ensure_ascii=False), status=404)
-        students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).order_by('name')
+        students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).select_related('group').order_by('name')
+        MARKER_CHOICES = {
+            0: '#ff8282',
+            1: '#ffb875',
+            2: '#fdff96',
+            3: '#93ff91',
+            4: '#78ffef',
+            5: '#7776d6',
+            6: '#bfa0de',
+            7: None
+        }
         students_list = []
         if not students:
             return HttpResponse(
@@ -120,6 +130,10 @@ def get_users(request):
                 default_password = ""
             else:
                 default_password = student.default_password
+            if student.group:
+                marker = student.group.marker
+            else:
+                marker = 7
             student_info = {"id": student.id,
                             "name": student.name,
                             "login": student.login,
@@ -127,7 +141,10 @@ def get_users(request):
                             "experience": student.experience,
                             "mana_earned": student.mana_earned,
                             "last_homework_id": student.last_homework_id,
-                            "last_classwork_id": student.last_classwork_id}
+                            "last_classwork_id": student.last_classwork_id,
+                            "group": student.group,
+                            "color": MARKER_CHOICES[marker]
+                            }
             students_list.append(student_info)
         return HttpResponse(
             json.dumps({'students': students_list}, ensure_ascii=False), status=200)
