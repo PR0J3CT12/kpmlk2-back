@@ -726,15 +726,15 @@ def get_all_answers(request):
             student_data['comment'] = comment
             student_data['checker'] = checker
             if homework_user.checked_at:
-                checked_at = homework_user.checked_at
+                checked_at = str(homework_user.checked_at)
             else:
                 checked_at = None
             if homework_user.answered_at:
-                answered_at = homework_user.answered_at
+                answered_at = str(homework_user.answered_at)
             else:
                 answered_at = None
             if homework_user.added_at:
-                added_at = homework_user.added_at
+                added_at = str(homework_user.added_at)
             else:
                 added_at = None
             student_data['checked_at'] = checked_at
