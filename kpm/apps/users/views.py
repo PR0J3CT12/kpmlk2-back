@@ -477,17 +477,18 @@ def get_groups(request):
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        groups_users = GroupUser.objects.filter(group__school_class=class_).select_related('group', 'user')
         groups_dict = {}
+        groups = Group.objects.filter(school_class=class_).order_by('created_at')
+        for group in groups:
+            groups_dict[group.id] = {
+                'id': group.id,
+                'name': group.name,
+                'marker': group.marker,
+                'students_ids': [],
+                'students': []
+            }
+        groups_users = GroupUser.objects.filter(group__school_class=class_).select_related('group', 'user')
         for row in groups_users:
-            if row.group_id not in groups_dict:
-                groups_dict[row.group_id] = {
-                    'id': row.group.id,
-                    'name': row.group.name,
-                    'marker': row.group.marker,
-                    'students_ids': [],
-                    'students': []
-                }
             if row.user_id not in groups_dict[row.group_id]['students_ids']:
                 groups_dict[row.group_id]['students_ids'].append(row.user_id)
                 groups_dict[row.group_id]['students'].append({
