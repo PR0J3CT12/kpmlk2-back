@@ -467,7 +467,7 @@ def get_all_logons(request):
                      responses=get_groups_responses,
                      operation_description=operation_description)
 @api_view(["GET"])
-#@permission_classes([IsAdmin])
+@permission_classes([IsAdmin])
 def get_groups(request):
     try:
         class_ = get_variable("class", request)

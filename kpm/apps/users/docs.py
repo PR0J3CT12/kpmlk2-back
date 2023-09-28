@@ -111,8 +111,9 @@ get_user_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                        })
 get_groups_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                          properties={
-                                             "groups": openapi.Schema(type=openapi.TYPE_OBJECT,
-                                                                      properties={
+                                             "groups": openapi.Schema(
+                                                      type=openapi.TYPE_ARRAY,
+                                                      items=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
                                                                           "id": openapi.Schema(
                                                                               type=openapi.TYPE_INTEGER, example=1),
                                                                           "name": openapi.Schema(
@@ -133,7 +134,7 @@ get_groups_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                                           type=openapi.TYPE_STRING,
                                                                                           example="Левин Михаил"),
                                                                                   }))
-                                                                      }),
+                                                                      }))
 
                                          })
 get_all_logons_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
