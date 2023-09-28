@@ -467,7 +467,7 @@ def get_all_logons(request):
                      responses=get_groups_responses,
                      operation_description=operation_description)
 @api_view(["GET"])
-@permission_classes([IsAdmin])
+#@permission_classes([IsAdmin])
 def get_groups(request):
     try:
         class_ = get_variable("class", request)
@@ -494,9 +494,11 @@ def get_groups(request):
                     'id': row.user.id,
                     'name': row.user.name
                 })
+        group_list = []
         for group in groups_dict:
             del groups_dict[group]['students_ids']
-        return HttpResponse(json.dumps({'groups': groups_dict}, ensure_ascii=False), status=200)
+            group_list.append(groups_dict[group])
+        return HttpResponse(json.dumps({'groups': group_list}, ensure_ascii=False), status=200)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
