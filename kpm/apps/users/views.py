@@ -145,7 +145,7 @@ def get_users(request):
                             "mana_earned": student.mana_earned,
                             "last_homework_id": student.last_homework_id,
                             "last_classwork_id": student.last_classwork_id,
-                            "group": student.group,
+                            "group": student.group.id,
                             "color": MARKER_CHOICES[marker]
                             }
             students_list.append(student_info)
