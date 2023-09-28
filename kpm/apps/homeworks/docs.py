@@ -246,6 +246,8 @@ get_all_answers_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                   ),
                                                   'max_score': openapi.Schema(
                                                       type=openapi.TYPE_INTEGER, example=100),
+                                                  'color': openapi.Schema(
+                                                      type=openapi.TYPE_STRING, example="#bfa0de"),
                                                   'students': openapi.Schema(
                                                       type=openapi.TYPE_ARRAY,
                                                       items=openapi.Schema(
