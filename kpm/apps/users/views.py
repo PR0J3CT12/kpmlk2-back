@@ -135,8 +135,12 @@ def get_users(request):
                 default_password = student.default_password
             if student.group:
                 marker = student.group.marker
+                group_name = student.group.name
+                group_id = student.group.id
             else:
                 marker = 7
+                group_name = None
+                group_id = None
             student_info = {"id": student.id,
                             "name": student.name,
                             "login": student.login,
@@ -145,7 +149,8 @@ def get_users(request):
                             "mana_earned": student.mana_earned,
                             "last_homework_id": student.last_homework_id,
                             "last_classwork_id": student.last_classwork_id,
-                            "group": student.group.id,
+                            "group_id": group_id,
+                            "group_name": group_name,
                             "color": MARKER_CHOICES[marker]
                             }
             students_list.append(student_info)

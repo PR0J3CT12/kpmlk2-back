@@ -88,8 +88,10 @@ get_users_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                                type=openapi.TYPE_INTEGER, example=12),
                                                                            "last_classwork_id": openapi.Schema(
                                                                                type=openapi.TYPE_INTEGER, example=12),
-                                                                           "group": openapi.Schema(
+                                                                           "group_id": openapi.Schema(
                                                                                type=openapi.TYPE_INTEGER, example=1),
+                                                                           "group_name": openapi.Schema(
+                                                                               type=openapi.TYPE_INTEGER, example="Название группы"),
                                                                            "color": openapi.Schema(
                                                                                type=openapi.TYPE_STRING, example="#bfa0de"),
                                                                        }),

@@ -56,14 +56,14 @@ class History(models.Model):
 
 class Group(models.Model):
     MARKER_CHOICES = (
-        (0, '#ffffff'),
-        (1, '#ff8282'),
-        (2, '#ffb875'),
-        (3, '#fdff96'),
-        (4, '#93ff91'),
-        (5, '#78ffef'),
-        (6, '#7776d6'),
-        (7, '#bfa0de'),
+        (None, '#ffffff'),
+        (0, '#ff8282'),
+        (1, '#ffb875'),
+        (2, '#fdff96'),
+        (3, '#93ff91'),
+        (4, '#78ffef'),
+        (5, '#7776d6'),
+        (6, '#bfa0de'),
     )
     id = models.AutoField('id группы', primary_key=True, editable=False)
     name = models.CharField('Название группы', max_length=100)
