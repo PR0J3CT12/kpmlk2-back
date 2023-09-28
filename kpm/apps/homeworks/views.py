@@ -714,7 +714,9 @@ def get_all_answers(request):
             else:
                 score = None
             if homework_user.checker:
-                if admin.tier == 0:
+                if admin.user_id == homework_user.checker_id:
+                    checker = homework_user.checker.name
+                elif admin.tier == 0:
                     checker = ""
                 else:
                     checker = homework_user.checker.name
