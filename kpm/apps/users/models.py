@@ -56,7 +56,6 @@ class History(models.Model):
 
 class Group(models.Model):
     MARKER_CHOICES = (
-        (None, '#ffffff'),
         (0, '#ff8282'),
         (1, '#ffb875'),
         (2, '#fdff96'),
@@ -64,10 +63,11 @@ class Group(models.Model):
         (4, '#78ffef'),
         (5, '#7776d6'),
         (6, '#bfa0de'),
+        (7, None)
     )
     id = models.AutoField('id группы', primary_key=True, editable=False)
     name = models.CharField('Название группы', max_length=100)
-    marker = models.IntegerField('Цвет группы', choices=MARKER_CHOICES, default=0)
+    marker = models.IntegerField('Цвет группы', choices=MARKER_CHOICES, default=7, null=True)
     school_class = models.IntegerField('student class', default=None, null=True, blank=True)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
 
