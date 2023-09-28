@@ -500,8 +500,6 @@ def create_response(request):
             if ext == 'heic':
                 ext = 'jpeg'
                 to_jpeg = True
-            homework_file = HomeworkUsersFile(link=homework_user, file=file, ext=ext)
-            homework_file.save()
             if to_jpeg:
                 path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
                 new_path = heif_to_jpeg(path)
@@ -510,6 +508,9 @@ def create_response(request):
                     homework_file.file = new_name
                     homework_file.save()
                     os.remove(path)
+            else:
+                homework_file = HomeworkUsersFile(link=homework_user, file=file, ext=ext)
+                homework_file.save()
         homework_user.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
