@@ -597,7 +597,7 @@ def check_user_homework(request):
 def get_my_homeworks(request):
     try:
         student = User.objects.get(id=request.user.id)
-        homework_user = HomeworkUsers.objects.filter(user=student)
+        homework_user = HomeworkUsers.objects.filter(user=student).order_by('-created_at')
         homeworks_list = []
         for homework_ in homework_user:
             result = {
