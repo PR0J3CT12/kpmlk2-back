@@ -677,6 +677,7 @@ def get_all_answers(request):
                 json.dumps(
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
+        admin = Admin.objects.get(user_id=request.user.id)
         homework = Homework.objects.get(id=id_)
         response = {'id': homework.id, 'title': homework.title, 'answers': homework.answers.split("_._"),
                     'students': [], 'max_score': homework.score}
@@ -713,7 +714,10 @@ def get_all_answers(request):
             else:
                 score = None
             if homework_user.checker:
-                checker = homework_user.checker.name
+                if admin.tier == 0:
+                    checker = ""
+                else:
+                    checker = homework_user.checker.name
             else:
                 checker = ""
             comment = homework_user.comment
