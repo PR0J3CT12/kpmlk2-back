@@ -447,9 +447,7 @@ def logout(request):
 @permission_classes([IsAuthenticated])
 def get_all_logons(request):
     try:
-        border_date = timezone.now().strftime('%Y-%m-%d')
-        border_date = datetime.strptime(str(border_date), "%Y-%m-%d") - timedelta(days=7)
-        logons = History.objects.filter(datetime__gte=border_date).select_related('user').order_by('-datetime')
+        logons = History.objects.all().select_related('user').order_by('-datetime')
         logons_list = []
         for logon in logons:
             logons_list.append({
