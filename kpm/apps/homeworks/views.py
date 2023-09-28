@@ -693,8 +693,8 @@ def get_all_answers(request):
             7: None
         }
         for homework_user in homework_users:
-            if homework_user.group:
-                marker = homework_user.group.marker
+            if homework_user.user.group:
+                marker = homework_user.user.group.marker
             else:
                 marker = 7
             student_data = {'id': homework_user.user.id, 'name': homework_user.user.name, 'answers': [], 'files': [], 'color': MARKER_CHOICES[marker]}
