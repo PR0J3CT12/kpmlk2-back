@@ -682,8 +682,22 @@ def get_all_answers(request):
                     'students': [], 'max_score': homework.score}
         homework_users = HomeworkUsers.objects.filter(homework=homework).order_by('user_id').select_related('user')
         students_list = []
+        MARKER_CHOICES = {
+            0: '#ff8282',
+            1: '#ffb875',
+            2: '#fdff96',
+            3: '#93ff91',
+            4: '#78ffef',
+            5: '#7776d6',
+            6: '#bfa0de',
+            7: None
+        }
         for homework_user in homework_users:
-            student_data = {'id': homework_user.user.id, 'name': homework_user.user.name, 'answers': [], 'files': []}
+            if homework_user.group:
+                marker = homework_user.group.marker
+            else:
+                marker = 7
+            student_data = {'id': homework_user.user.id, 'name': homework_user.user.name, 'answers': [], 'files': [], 'color': MARKER_CHOICES[marker]}
             if homework_user.is_done:
                 answers_list = homework_user.answers.split('_._')
                 files = HomeworkUsersFile.objects.filter(link=homework_user)
