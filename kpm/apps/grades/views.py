@@ -9,7 +9,7 @@ from kpm.apps.works.models import Work, Exam
 from kpm.apps.themes.models import Theme
 from kpm.apps.grades.models import Grade, Mana
 import json
-from django.db.models import Sum, Q, Count
+from django.db.models import Sum, Max, F, Func, Value, CharField, Subquery, OuterRef, Min, Count, Q
 import random
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.grades.docs import *
@@ -205,7 +205,7 @@ def get_grades(request):
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        grades = Grade.objects.filter(user__school_class=int(class_)).exclude(work__type=5).order_by('work__added_at').select_related('work')
+        grades = Grade.objects.filter(user__school_class=int(class_)).exclude(work__type=5).order_by('work__added_at').select_related('work', 'user')
         if type_ in ['0', '1', '2', '3', '4', '7', '6', '8']:
             grades = grades.filter(work__type=int(type_))
         if (theme is not None) and (theme != ''):
@@ -215,6 +215,43 @@ def get_grades(request):
                 grades = grades.filter(work__theme__id=int(theme))
         if (group is not None) and (group != ''):
             grades = grades.filter(user__group=int(group))
+        grades_dict = {}
+        MARKER_CHOICES = {
+            0: '#ff8282',
+            1: '#ffb875',
+            2: '#fdff96',
+            3: '#93ff91',
+            4: '#78ffef',
+            5: '#7776d6',
+            6: '#bfa0de',
+            7: None
+        }
+        for grade in grades:
+            if grade.user_id not in grades_dict:
+                if grade.user.group:
+                    marker = grade.user.group.marker
+                else:
+                    marker = 7
+                grades_dict[grade.user_id] = {
+                    'total_score': 0,
+                    'total_max_score': 0,
+                    'student_data': {
+                        'id': grade.user.id,
+                        'name': grade.user.name,
+                        'experience': grade.user.experience,
+                        'grades': [],
+                        'color': MARKER_CHOICES[marker]
+                    }
+                }
+            if grade.work_id not in grades_dict[grade.user_id]:
+                grades_dict[grade.user_id][grade.work_id] = {
+                    'score': grade.score,
+                    'max_score': grade.max_score,
+                    'grades': grade.grades,
+                    'exercises': grade.exercises,
+                }
+                grades_dict[grade.user_id]['total_score'] += grade.score
+                grades_dict[grade.user_id]['total_max_score'] += grade.max_score
         works_list = grades.order_by('work__added_at').values_list('work', flat=True)
         works_list = custom_distinct(works_list)
         works = Work.objects.filter(id__in=works_list).order_by('added_at')
@@ -230,6 +267,7 @@ def get_grades(request):
             students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).select_related(
                 'group').order_by('group', 'id')
         if works:
+            works_dict = {}
             for work in works:
                 data = {'id': work.id, 'name': work.name, 'max_score': work.max_score, 'grades': list(map(int, work.grades.split("_._")))}
                 if (type_ == '7') or (theme == '8'):
@@ -237,39 +275,30 @@ def get_grades(request):
                     grades_tech = list(map(int, work_tech.work.grades.split("_._")))
                     data['grades_tech'] = grades_tech
                 works_data.append(data)
+                if work.id not in works_dict:
+                    works_dict[work.id] = data
+
             students_data = []
-            MARKER_CHOICES = {
-                0: '#ff8282',
-                1: '#ffb875',
-                2: '#fdff96',
-                3: '#93ff91',
-                4: '#78ffef',
-                5: '#7776d6',
-                6: '#bfa0de',
-                7: None
-            }
-            for student in students:
-                if student.group:
-                    marker = student.group.marker
-                else:
-                    marker = 7
-                student_object = {'id': student.id, 'name': student.name, 'experience': student.experience, 'grades': [], 'color': MARKER_CHOICES[marker]}
-                full_score = grades.filter(user=student).aggregate(Sum('score'))['score__sum']
-                max_full_score = grades.filter(user=student).aggregate(Sum('max_score'))['max_score__sum']
+            for student_ in students:
+                student = grades_dict[student_.id]
+                student_object = student['student_data']
+                full_score = student['total_score']
+                max_full_score = student['total_max_score']
                 if max_full_score != 0:
                     percentage_full_score = round(full_score / max_full_score * 100, 1)
                 else:
                     percentage_full_score = ""
                 student_object['percentage_full_score'] = percentage_full_score
-                for work in works:
-                    current_student_grades = grades.get(work=work, user=student)
-                    score = current_student_grades.score
-                    max_score = current_student_grades.max_score
+                for work_ in works:
+                    work_id = work_.id
+                    current_student_grades = student[work_id]
+                    score = current_student_grades['score']
+                    max_score = current_student_grades['max_score']
                     if float(max_score) != 0:
                         percentage = str(round(float(score) / float(max_score) * 100, 1))
                     else:
                         percentage = ""
-                    current_student_grades_list = current_student_grades.grades.split("_._")
+                    current_student_grades_list = current_student_grades['grades'].split("_._")
                     is_empty = True
                     for i in range(len(current_student_grades_list)):
                         if current_student_grades_list[i] == '#':
@@ -279,7 +308,7 @@ def get_grades(request):
                     if is_empty:
                         score = ""
                         percentage = ""
-                    student_result = {"work_id": work.id, "grades": current_student_grades_list, "score": score, "percentage": percentage}
+                    student_result = {"work_id": work_id, "grades": current_student_grades_list, "score": score, "percentage": percentage}
                     student_object['grades'].append(student_result)
                 students_data.append(student_object)
         else:
