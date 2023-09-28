@@ -61,6 +61,8 @@ class HomeworkUsers(models.Model):
     score = models.IntegerField('Оценка за работу', default=0)
     answers = models.CharField('Форма с ответами', max_length=5000)
     answered_at = models.DateTimeField('Дата ответа', default=None, null=True)
+    checked_at = models.DateTimeField('Дата проверки', default=None, null=True)
+    added_at = models.DateTimeField('Дата выдачи работы', null=True, auto_now_add=True)
 
     def __str__(self):
         return f'{str(self.id)}'

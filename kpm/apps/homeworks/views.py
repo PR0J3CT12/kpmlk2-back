@@ -681,7 +681,7 @@ def get_all_answers(request):
         homework = Homework.objects.get(id=id_)
         response = {'id': homework.id, 'title': homework.title, 'answers': homework.answers.split("_._"),
                     'students': [], 'max_score': homework.score}
-        homework_users = HomeworkUsers.objects.filter(homework=homework).order_by('user_id').select_related('user')
+        homework_users = HomeworkUsers.objects.filter(homework=homework).order_by('user_id').select_related('user', 'checker')
         students_list = []
         MARKER_CHOICES = {
             0: '#ff8282',
@@ -725,6 +725,21 @@ def get_all_answers(request):
             student_data['score'] = score
             student_data['comment'] = comment
             student_data['checker'] = checker
+            if homework_user.checked_at:
+                checked_at = homework_user.checked_at
+            else:
+                checked_at = None
+            if homework_user.answered_at:
+                answered_at = homework_user.answered_at
+            else:
+                answered_at = None
+            if homework_user.added_at:
+                added_at = homework_user.added_at
+            else:
+                added_at = None
+            student_data['checked_at'] = checked_at
+            student_data['answered_at'] = answered_at
+            student_data['added_at'] = added_at
             students_list.append(student_data)
         response['students'] = students_list
         return HttpResponse(json.dumps(response, ensure_ascii=False), status=200)
