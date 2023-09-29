@@ -709,9 +709,15 @@ def get_all_answers(request):
                         student_data['files'].append({'link': link, 'name': name, 'ext': file.ext})
             else:
                 answers_list = [''] * homework.fields
+            if homework_user.is_done:
+                is_done = True
+            else:
+                is_done = False
             if homework_user.is_checked:
+                is_checked = True
                 score = homework_user.score
             else:
+                is_checked = False
                 score = None
             if homework_user.checker:
                 if admin.user_id == homework_user.checker_id:
@@ -743,6 +749,13 @@ def get_all_answers(request):
             student_data['answered_at'] = answered_at
             student_data['added_at'] = added_at
             students_list.append(student_data)
+            if is_checked and is_done:
+                color = '#93ff91'
+            elif is_done and not is_checked:
+                color = '#ff8282'
+            else:
+                color = None
+            student_data['color'] = color
         response['students'] = students_list
         return HttpResponse(json.dumps(response, ensure_ascii=False), status=200)
     except Exception as e:
