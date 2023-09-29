@@ -755,7 +755,7 @@ def get_all_answers(request):
                 color = '#ff8282'
             else:
                 color = None
-            student_data['color'] = color
+            student_data['row_color'] = color
         response['students'] = students_list
         return HttpResponse(json.dumps(response, ensure_ascii=False), status=200)
     except Exception as e:

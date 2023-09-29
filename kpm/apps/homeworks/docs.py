@@ -290,7 +290,7 @@ get_all_answers_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                               'checked_at': openapi.Schema(type=openapi.TYPE_STRING, example=None),
                                                               'answered_at': openapi.Schema(type=openapi.TYPE_STRING, example="2023-09-08 17:21:45.279285+03"),
                                                               'added_at': openapi.Schema(type=openapi.TYPE_STRING, example="2023-09-08 17:21:45.279285+03"),
-                                                              'color': openapi.Schema(type=openapi.TYPE_STRING, example=None),
+                                                              'row_color': openapi.Schema(type=openapi.TYPE_STRING, example=None),
                                                           }))})
 create_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
