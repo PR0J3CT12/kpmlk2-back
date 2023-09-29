@@ -226,8 +226,8 @@ get_all_homeworks_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                 "name": openapi.Schema(
                                                                     type=openapi.TYPE_STRING,
                                                                     example="Домашняя работа 1"),
-                                                                'amount': openapi.Schema(
-                                                                    type=openapi.TYPE_INTEGER, example=3),
+                                                                'amount': openapi.Schema(type=openapi.TYPE_INTEGER, example=3),
+                                                                'not_checked': openapi.Schema(type=openapi.TYPE_INTEGER, example=1),
                                                                 "created_at": openapi.Schema(
                                                                     type=openapi.TYPE_STRING,
                                                                     example="2023-08-21 16:40:19.337147+03"),

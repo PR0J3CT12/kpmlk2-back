@@ -648,11 +648,14 @@ def get_all_homeworks(request):
         for homework_ in homeworks:
             homeworks_users = HomeworkUsers.objects.filter(homework=homework_)
             amount = len(homeworks_users)
+            homeworks_users_red = homeworks_users.filter(is_done=True, is_checked=False)
+            amount_red = len(homeworks_users_red)
             homeworks_list.append(
                 {
                     'id': homework_.id,
                     'name': homework_.title,
                     'amount': amount,
+                    'not_checked': amount_red,
                     'created_at': str(homework_.created_at)
                 }
             )
