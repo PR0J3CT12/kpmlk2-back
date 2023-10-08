@@ -753,9 +753,9 @@ def get_all_answers(request):
             student_data['added_at'] = added_at
             students_list.append(student_data)
             if is_checked and is_done:
-                color = '#93ff91'
+                color = '#b9ffbb'
             elif is_done and not is_checked:
-                color = '#ff8282'
+                color = '#ffa3a7'
             else:
                 color = None
             student_data['row_color'] = color
