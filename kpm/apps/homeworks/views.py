@@ -571,6 +571,7 @@ def check_user_homework(request):
                                 'instance': request.path},
                                ensure_ascii=False), status=404)
             homework_user.is_checked = True
+            homework_user.is_done = True
             homework_user.checker = admin
             homework_user.score = int(score)
         if 'comment' in request_body.keys():
