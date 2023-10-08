@@ -211,7 +211,7 @@ def update_homework(request):
         if 'answer' in data:
             cell = data['cell']
             value = data['answer']
-            if int(cell) >= homework.fields:
+            if int(cell) > homework.fields:
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Неверное поле ответа.', 'details': {}, 'instance': request.path},
