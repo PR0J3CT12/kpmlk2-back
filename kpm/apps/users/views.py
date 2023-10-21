@@ -655,3 +655,14 @@ def delete_from_group(request):
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
              'instance': request.path},
             ensure_ascii=False), status=404)
+
+
+@api_view(["GET"])
+def tmp(request):
+    try:
+        return HttpResponse(json.dumps({"test": "ok"}, ensure_ascii=False), status=200)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
