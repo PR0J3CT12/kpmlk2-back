@@ -20,6 +20,8 @@ class Mana(models.Model):
     work = models.ForeignKey(Work, on_delete=models.CASCADE)
     color = models.CharField('mana color(green or blue)', max_length=5)
     is_given = models.BooleanField('is mana given', default=0)
+    created = models.DateTimeField(auto_now_add=True)
+    changed = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'mana'
