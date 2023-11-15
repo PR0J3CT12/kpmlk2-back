@@ -257,7 +257,7 @@ def update_homework(request):
                      manual_parameters=[file_param],
                      responses=delete_file_from_homework_responses)
 @api_view(["PATCH"])
-@permission_classes([IsAdmin])
+@permission_classes([IsTierOne])
 def delete_file_from_homework(request):
     try:
         file_id = get_variable("file", request)
@@ -335,7 +335,7 @@ def add_to_homework(request):
                      manual_parameters=[id_param, student_param],
                      responses=delete_from_homework_responses)
 @api_view(["PATCH"])
-@permission_classes([IsAdmin])
+@permission_classes([IsTierTwo])
 def delete_from_homework(request):
     try:
         id_ = get_variable("id", request)
