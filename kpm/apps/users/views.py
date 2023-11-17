@@ -359,7 +359,7 @@ def change_password(request):
                      request_body=login_request_body,
                      responses=login_responses)
 @api_view(["POST"])
-@permission_classes([IsNotAuthenticated])
+#@permission_classes([IsNotAuthenticated])
 def login(request):
     try:
         if request.body:
