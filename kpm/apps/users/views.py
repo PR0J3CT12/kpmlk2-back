@@ -427,8 +427,11 @@ def logout(request):
                 json.dumps({'state': 'error', 'message': 'Отсутствует refresh токен.', 'details': {},
                             'instance': request.path},
                            ensure_ascii=False), status=400)
-        token = RefreshToken(refresh)
-        token.blacklist()
+        try:
+            token = RefreshToken(refresh)
+            token.blacklist()
+        except:
+            pass
         return HttpResponse(
             json.dumps({'state': 'success', 'message': f'Успешный выход.', 'details': {},
                         'instance': request.path},
