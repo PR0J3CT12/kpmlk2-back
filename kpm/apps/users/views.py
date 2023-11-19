@@ -418,7 +418,7 @@ def login(request):
 @swagger_auto_schema(method='POST', operation_summary="Выход из аккаунта.",
                      responses=logout_responses)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+#@permission_classes([IsAuthenticated])
 def logout(request):
     try:
         refresh = request.data.get('refresh')
