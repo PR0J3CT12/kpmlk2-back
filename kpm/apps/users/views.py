@@ -426,7 +426,7 @@ def logout(request):
             return HttpResponse(
                 json.dumps({'state': 'error', 'message': 'Отсутствует refresh токен.', 'details': {},
                             'instance': request.path},
-                           ensure_ascii=False), status=400)
+                           ensure_ascii=False), status=200)
         try:
             token = RefreshToken(refresh)
             token.blacklist()
