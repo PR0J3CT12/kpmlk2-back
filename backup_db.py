@@ -29,7 +29,7 @@ def upload_file(file):
     try:
         file_name = file.split('/')[-1]
         y_ = yadisk.YaDisk(token=YANDEX_TOKEN)
-        y_.upload(file, f'/{file_name}')
+        y_.upload(file, f'/backups/{file_name}')
         return True
     except Exception as e:
         return str(e)
