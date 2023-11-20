@@ -12,6 +12,8 @@ YANDEX_ID = os.environ.get("YANDEX_ID")
 YANDEX_PASSWORD = os.environ.get("YANDEX_PASSWORD")
 YANDEX_TOKEN = os.environ.get("YANDEX_TOKEN")
 DB_NAME = os.environ.get("DB_NAME")
+DB_USER = os.environ.get("DB_USER")
+DB_USER_PASSWORD = os.environ.get("DB_USER_PASSWORD")
 
 now = datetime.now()
 day = now.day
@@ -55,4 +57,4 @@ def yandex_accept_token(code_):
 
 
 if __name__ == '__main__':
-    os.system(f'pg_dump {DB_NAME} > {BACKUP_PATH}/{day}-{month}-{year}.dump')
+    os.system(f'pg_dump --dbname=postgresql://{DB_USER}:{DB_USER_PASSWORD}@127.0.0.1:5432/{DB_NAME} > {BACKUP_PATH}/{day}-{month}-{year}.dump')
