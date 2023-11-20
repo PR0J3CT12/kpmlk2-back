@@ -148,7 +148,7 @@ SIMPLE_JWT = {
     'UPDATE_LAST_LOGIN': False,
 
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY + 'jwt',
+    'SIGNING_KEY': SECRET_KEY + 'jwtoken',
     'VERIFYING_KEY': None,
     'AUDIENCE': None,
     'ISSUER': None,
