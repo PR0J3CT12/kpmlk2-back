@@ -63,8 +63,9 @@ def yandex_accept_token(code_):
 
 
 def main():
-    os.system(
-        f'pg_dump --dbname=postgresql://{DB_USER}:{DB_USER_PASSWORD}@127.0.0.1:5432/{DB_NAME} > {BACKUP_FILE_PATH}')
+    os.system('echo "Test"')
+    os.system(f'pg_dump --dbname=postgresql://{DB_USER}:{DB_USER_PASSWORD}@127.0.0.1:5432/{DB_NAME} > {BACKUP_FILE_PATH}')
+    os.system('echo "Test2"')
     backup_file = Path(f'{BACKUP_FILE_PATH}')
     if backup_file.is_file():
         with open(BACKUP_LOG_FILE_PATH, 'a') as f:
