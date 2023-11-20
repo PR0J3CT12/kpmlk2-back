@@ -2,6 +2,7 @@ import os
 import yadisk
 import dotenv
 from datetime import datetime
+from pathlib import Path
 
 
 PROJECT_ROOT = os.path.dirname(__file__)
@@ -20,13 +21,16 @@ day = now.day
 month = now.month
 year = now.year
 
+BACKUP_FILE_PATH = f'{BACKUP_PATH}/{day}-{month}-{year}.dump'
 
-def upload_file():
+def upload_file(file):
     try:
+        file_name = file.split('/')[-1]
         y_ = yadisk.YaDisk(token=YANDEX_TOKEN)
-        return ""
+        y_.upload(file, f'/{file_name}')
+        return True
     except Exception as e:
-        return ""
+        return False
 
 
 def get_url_for_token():
@@ -57,4 +61,10 @@ def yandex_accept_token(code_):
 
 
 if __name__ == '__main__':
-    os.system(f'pg_dump --dbname=postgresql://{DB_USER}:{DB_USER_PASSWORD}@127.0.0.1:5432/{DB_NAME} > {BACKUP_PATH}/{day}-{month}-{year}.dump')
+    os.system(f'pg_dump --dbname=postgresql://{DB_USER}:{DB_USER_PASSWORD}@127.0.0.1:5432/{DB_NAME} > {BACKUP_FILE_PATH}')
+    backup_file = Path(f'{BACKUP_FILE_PATH}')
+    if backup_file.is_file():
+        x = upload_file(BACKUP_FILE_PATH)
+        print(x)
+    else:
+        pass
