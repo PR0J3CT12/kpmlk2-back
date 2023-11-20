@@ -23,6 +23,7 @@ year = now.year
 
 BACKUP_FILE_PATH = f'{BACKUP_PATH}/{day}-{month}-{year}.dump'
 
+
 def upload_file(file):
     try:
         file_name = file.split('/')[-1]
@@ -30,7 +31,7 @@ def upload_file(file):
         y_.upload(file, f'/{file_name}')
         return True
     except Exception as e:
-        return False
+        return str(e)
 
 
 def get_url_for_token():
