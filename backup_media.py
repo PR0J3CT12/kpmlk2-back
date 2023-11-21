@@ -26,9 +26,9 @@ def upload_file(file):
         file_name = file.split('/')[-1]
         y_ = yadisk.YaDisk(token=YANDEX_TOKEN)
         y_.upload(file, f'/backups/{file_name}')
-        return True
+        return {'state': 'success'}
     except Exception as e:
-        return str(e)
+        return {'state': 'error', 'message': str(e)}
 
 
 def main():
@@ -37,13 +37,13 @@ def main():
     if backup_file.is_file():
         with open(BACKUP_LOG_FILE_PATH, 'a') as f:
             f.write(f'{datetime.now()} | backup media V | upload ')
-        try:
-            upload_file(BACKUP_FILE_PATH)
+        uploaded = upload_file(BACKUP_FILE_PATH)
+        if uploaded['state'] == 'success':
             with open(BACKUP_LOG_FILE_PATH, 'a') as f:
                 f.write(f'V\n')
-        except Exception as e:
+        else:
             with open(BACKUP_LOG_FILE_PATH, 'a') as f:
-                f.write(f'X | {e}\n')
+                f.write(f'X | {uploaded["message"]}\n')
     else:
         with open(BACKUP_LOG_FILE_PATH, 'a') as f:
             f.write(f'{datetime.now()} | backup X | upload X\n')
