@@ -77,7 +77,7 @@ def main():
                 f.write(f'X | {uploaded["message"]}\n')
     else:
         with open(BACKUP_LOG_FILE_PATH, 'a') as f:
-            f.write(f'{datetime.now()} | backup X | upload X\n')
+            f.write(f'{datetime.now()} | backup db X | upload X\n')
 
 
 if __name__ == '__main__':

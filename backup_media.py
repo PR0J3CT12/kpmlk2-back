@@ -48,7 +48,7 @@ def main():
         #        f.write(f'X | {uploaded["message"]}\n')
     else:
         with open(BACKUP_LOG_FILE_PATH, 'a') as f:
-            f.write(f'{datetime.now()} | backup X\n')
+            f.write(f'{datetime.now()} | backup media X\n')
 
 
 if __name__ == '__main__':
