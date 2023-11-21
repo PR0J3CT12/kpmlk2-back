@@ -38,17 +38,17 @@ def main():
     backup_file = Path(f'{BACKUP_FILE_PATH}')
     if backup_file.is_file():
         with open(BACKUP_LOG_FILE_PATH, 'a') as f:
-            f.write(f'{datetime.now()} | backup media V | upload ')
-        uploaded = upload_file(BACKUP_FILE_PATH)
-        if uploaded['state'] == 'success':
-            with open(BACKUP_LOG_FILE_PATH, 'a') as f:
-                f.write(f'V\n')
-        else:
-            with open(BACKUP_LOG_FILE_PATH, 'a') as f:
-                f.write(f'X | {uploaded["message"]}\n')
+            f.write(f'{datetime.now()} | backup media V\n')
+        #uploaded = upload_file(BACKUP_FILE_PATH)
+        #if uploaded['state'] == 'success':
+        #    with open(BACKUP_LOG_FILE_PATH, 'a') as f:
+        #        f.write(f'V\n')
+        #else:
+        #    with open(BACKUP_LOG_FILE_PATH, 'a') as f:
+        #        f.write(f'X | {uploaded["message"]}\n')
     else:
         with open(BACKUP_LOG_FILE_PATH, 'a') as f:
-            f.write(f'{datetime.now()} | backup X | upload X\n')
+            f.write(f'{datetime.now()} | backup X\n')
 
 
 if __name__ == '__main__':
