@@ -1,5 +1,6 @@
 import os
 import yadisk
+import dotenv
 from datetime import datetime
 from pathlib import Path
 
@@ -7,6 +8,7 @@ from pathlib import Path
 PROJECT_ROOT = os.path.dirname(__file__)
 DOTENV_PATH = os.path.join(PROJECT_ROOT, '.env')
 BACKUP_PATH = os.path.join(PROJECT_ROOT, '../backups')
+dotenv.load_dotenv(DOTENV_PATH)
 MEDIA_PATH = os.path.join(PROJECT_ROOT, 'media')
 YANDEX_ID = os.environ.get("YANDEX_ID")
 YANDEX_PASSWORD = os.environ.get("YANDEX_PASSWORD")
