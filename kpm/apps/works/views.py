@@ -159,11 +159,22 @@ def create_work(request):
         else:
             is_homework = False
         students = User.objects.filter(Q(is_admin=0) & Q(school_class=request_body["class"]))
-        work = Work(name=request_body["name"], grades=grades, theme=theme, max_score=max_score,
-                    exercises=len(grades_list), school_class=request_body["class"], type=request_body["type"],
-                    is_homework=is_homework)
-        log = Log(operation='INSERT', from_table='works', details='Добавлена новая работа в таблицу works.')
-        if request_body["type"] == 5:
+        if request_body["type"] != 5:
+            work = Work(name=request_body["name"], grades=grades, theme=theme, max_score=max_score,
+                        exercises=len(grades_list), school_class=request_body["class"], type=request_body["type"],
+                        is_homework=is_homework)
+            log = Log(operation='INSERT', from_table='works', details='Добавлена новая работа в таблицу works.')
+            work.save()
+            log.save()
+            for student in students:
+                empty_grades = '_._'.join(list('#' * len(grades_list)))
+                grade = Grade(user=student, work_id=work.id, grades=empty_grades, max_score=0, score=0, exercises=0)
+                grade.save()
+        else:
+            work = Work(name=request_body["name"], grades=grades, theme=theme, max_score=max_score,
+                        exercises=len(grades_list), school_class=request_body["class"], type=request_body["type"],
+                        is_homework=is_homework)
+            log = Log(operation='INSERT', from_table='works', details='Добавлена новая работа в таблицу works.')
             grades_list_2007 = request_body["grades_2007"]
             if len(grades_list_2007) != len(grades_list):
                 return HttpResponse(
@@ -201,13 +212,10 @@ def create_work(request):
                 grade.save()
             link = Exam(work=work, work_2007=work_2007)
             link.save()
-        else:
-            work.save()
-            log.save()
-        for student in students:
-            empty_grades = '_._'.join(list('#' * len(grades_list)))
-            grade = Grade(user=student, work_id=work.id, grades=empty_grades, max_score=0, score=0, exercises=0)
-            grade.save()
+            for student in students:
+                empty_grades = '_._'.join(list('#' * len(grades_list)))
+                grade = Grade(user=student, work_id=work.id, grades=empty_grades, max_score=0, score=0, exercises=0)
+                grade.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(

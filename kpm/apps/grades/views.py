@@ -103,7 +103,7 @@ def insert_grades(request):
                     new_grades_list_tech.append('#')
                 else:
                     exercises_tech += 1
-                    current_grade_tech = math.ceil(coefficient_2007[i] * work_tech_grades[i])
+                    current_grade_tech = round(coefficient_2007[i] * work_tech_grades[i])
                     max_score_tech += work_tech_grades[i]
                     score_tech += current_grade_tech
                     new_grades_list_tech.append(str(current_grade_tech))
