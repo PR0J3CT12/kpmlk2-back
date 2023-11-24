@@ -26,7 +26,7 @@ class IsTierZero(permissions.BasePermission):
         try:
             user = User.objects.get(id=request.user.id)
             tier = Admin.objects.get(user=user).tier
-            if tier == 0:
+            if tier in [0, 1, 2]:
                 return True
             return False
         except Exception:
@@ -38,7 +38,7 @@ class IsTierOne(permissions.BasePermission):
         try:
             user = User.objects.get(id=request.user.id)
             tier = Admin.objects.get(user=user).tier
-            if tier in [0, 1]:
+            if tier in [1, 2]:
                 return True
             return False
         except Exception:
