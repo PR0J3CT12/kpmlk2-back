@@ -36,7 +36,7 @@ def insert_grades(request):
                 ensure_ascii=False), status=400)
         student = User.objects.get(id=int(request_body["user_id"]))
         work_tech = None
-        if work.type == 7:
+        if work.type in [7, 8]:
             link = Exam.objects.get(work_2007=work)
             work_tech = link.work
         grade = Grade.objects.get(user=student, work=work)
@@ -55,12 +55,12 @@ def insert_grades(request):
             if new_grades[i] == '-':
                 new_exercises -= 1
                 new_max_score -= work_grades[i]
-                if work.type == 7:
+                if work.type in [7, 8]:
                     coefficient_2007.append('-')
                 continue
             elif new_grades[i] == '#':
                 cast = 0
-                if work.type == 7:
+                if work.type in [7, 8]:
                     coefficient_2007.append('#')
             else:
                 cast = float(new_grades[i])
@@ -80,7 +80,7 @@ def insert_grades(request):
                                                 "cell_name": f'{request_body["user_id"]}_{request_body["work_id"]}_{request_body["cell_number"]}'},
                                     'instance': request.path},
                                    ensure_ascii=False), status=400)
-                if work.type == 7:
+                if work.type in [7, 8]:
                     coefficient_2007.append(cast / work_grades[i])
             new_score += cast
         log_grades_string = grade.grades
@@ -140,7 +140,7 @@ def insert_grades(request):
         grade.exercises = new_exercises
         log_details = f'Обновлены оценки для ученика {student.id} в работе {work.id}. ["old_grades": {log_grades_string}, "new_grades": {new_grades_string}]'
         grade.save()
-        if work.type in [0, 1, 3, 4, 6, 7]:
+        if work.type in [0, 1, 4, 6, 7, 8]:
             if work.is_homework:
                 if student.last_homework_id is None:
                     student.last_homework_id = work.id
@@ -206,11 +206,11 @@ def get_grades(request):
                      'instance': request.path},
                     ensure_ascii=False), status=404)
         grades = Grade.objects.filter(user__school_class=int(class_)).exclude(work__type=5).order_by('work__added_at').select_related('work', 'user')
-        if type_ in ['0', '1', '2', '3', '4', '7', '6', '8']:
+        if type_ in ['0', '1', '2', '4', '7', '6', '8', '9']:
             grades = grades.filter(work__type=int(type_))
         if (theme is not None) and (theme != ''):
             if theme == '8':
-                grades = grades.filter(work__theme__id=int(theme)).exclude(work__type=5)
+                grades = grades.filter(work__theme__id=int(theme)).exclude(work__type=5).exclude(work__type=3)
             else:
                 grades = grades.filter(work__theme__id=int(theme))
         if (group is not None) and (group != ''):
@@ -257,7 +257,7 @@ def get_grades(request):
         works = Work.objects.filter(id__in=works_list).order_by('added_at')
         works_data = []
         links = None
-        if (type_ == '7') or (theme == '8'):
+        if ((type_ == '7') or (type_ == '8')) or (theme == '8'):
             links = Exam.objects.filter(work_2007__in=works)
         if (group is not None) and (group != ''):
             students = User.objects.filter(
@@ -270,7 +270,7 @@ def get_grades(request):
             works_dict = {}
             for work in works:
                 data = {'id': work.id, 'name': work.name, 'max_score': work.max_score, 'grades': list(map(int, work.grades.split("_._")))}
-                if (type_ == '7') or (theme == '8'):
+                if ((type_ == '7') or (type_ == '8')) or (theme == '8'):
                     work_tech = links.get(work_2007=work)
                     grades_tech = list(map(int, work_tech.work.grades.split("_._")))
                     data['grades_tech'] = grades_tech
