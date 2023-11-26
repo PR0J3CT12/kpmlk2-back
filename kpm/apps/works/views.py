@@ -362,7 +362,7 @@ def delete_work(request):
                     ensure_ascii=False), status=404)
         work = Work.objects.get(id=id_)
         type_ = work.type
-        if type_ == 5:
+        if type_ in [3, 5]:
             link = Exam.objects.get(work=work)
             work_ = link.work_2007
             link.delete()
@@ -370,7 +370,7 @@ def delete_work(request):
             log_details = f'Удалена работа из таблицы works. ["id": {work_.id} | "name": "{work_.name}" | "grades": {", ".join(map(str, work_.grades.split("_._")))} | "max_score": "{work_.max_score}" | "exercises": "{work_.exercises}" | "theme_id": {work_.theme_id} | "school_class": {work_.school_class} | "type": {work_.type} | "is_homework": {work_.is_homework}]'
             log = Log(operation='DELETE', from_table='works', details=log_details)
             log.save()
-        elif type_ == 7:
+        elif type_ in [7, 8]:
             link = Exam.objects.get(work_2007=work)
             work_ = link.work
             link.delete()
