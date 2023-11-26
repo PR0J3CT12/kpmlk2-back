@@ -33,7 +33,7 @@ def get_works(request):
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        works = Work.objects.filter(school_class=int(class_)).exclude(type=5).select_related("theme").order_by('-id')
+        works = Work.objects.filter(school_class=int(class_)).exclude(type=5).exclude(type=3).select_related("theme").order_by('-id')
         if (theme is not None) and (theme != ''):
             works = works.filter(theme_id=theme)
         if type_ in ['0', '1', '2', '3', '4', '5', '6', '9']:
