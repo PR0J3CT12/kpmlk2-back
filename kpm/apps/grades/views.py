@@ -205,14 +205,14 @@ def get_grades(request):
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        grades = Grade.objects.filter(user__school_class=int(class_)).exclude(work__type=5).order_by('work__added_at').select_related('work', 'user')
-        if type_ in ['0', '1', '2', '4', '7', '6', '8', '9']:
-            grades = grades.filter(work__type=int(type_))
+        grades = Grade.objects.filter(user__school_class=int(class_)).exclude(work__type=5).exclude(work__type=3).order_by('work__added_at').select_related('work', 'user')
         if (theme is not None) and (theme != ''):
             if theme == '8':
-                grades = grades.filter(work__theme__id=int(theme)).exclude(work__type=5).exclude(work__type=3)
+                grades = grades.filter(work__theme__id=int(theme))
             else:
                 grades = grades.filter(work__theme__id=int(theme))
+        if type_ in ['0', '1', '2', '4', '7', '6', '8', '9']:
+            grades = grades.filter(work__type=int(type_))
         if (group is not None) and (group != ''):
             grades = grades.filter(user__group=int(group))
         grades_dict = {}
