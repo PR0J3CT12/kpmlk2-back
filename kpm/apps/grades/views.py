@@ -211,7 +211,7 @@ def get_grades(request):
                 grades = grades.filter(work__theme__id=int(theme))
             else:
                 grades = grades.filter(work__theme__id=int(theme))
-        if type_ in ['0', '1', '2', '4', '7', '6', '8', '9']:
+        if type_ in ['0', '1', '2', '4', '6', '7', '8', '9']:
             grades = grades.filter(work__type=int(type_))
         if (group is not None) and (group != ''):
             grades = grades.filter(user__group=int(group))
