@@ -12,7 +12,8 @@ class Work(models.Model):
         (5, 'Письменный экзамен дз'),
         (6, 'Устный экзамен дз'),
         (7, 'Письменный экзамен дз(баллы 2007)'),
-        (8, 'Вне статистики'),
+        (8, 'Письменный экзамен(баллы 2007)'),
+        (9, 'Вне статистики'),
     )
     id = models.AutoField('work id', primary_key=True, editable=False)
     name = models.CharField('work name', max_length=100)

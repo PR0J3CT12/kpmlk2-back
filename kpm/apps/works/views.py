@@ -36,7 +36,7 @@ def get_works(request):
         works = Work.objects.filter(school_class=int(class_)).exclude(type=5).select_related("theme").order_by('-id')
         if (theme is not None) and (theme != ''):
             works = works.filter(theme_id=theme)
-        if type_ in ['0', '1', '2', '3', '4', '7', '6', '8']:
+        if type_ in ['0', '1', '2', '3', '4', '5', '6', '9']:
             works = works.filter(type=type_)
         works_list = []
         for work in works:
@@ -119,7 +119,7 @@ def create_work(request):
             return HttpResponse(json.dumps(
                 {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=400)
-        if request_body["type"] not in [0, 1, 2, 3, 4, 5, 6, 8]:
+        if request_body["type"] not in [0, 1, 2, 3, 4, 5, 6, 9]:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс тип работы.', 'details': {},
@@ -159,13 +159,59 @@ def create_work(request):
         else:
             is_homework = False
         students = User.objects.filter(Q(is_admin=0) & Q(school_class=request_body["class"]))
-        if request_body["type"] != 5:
+        if request_body["type"] not in [3, 5]:
             work = Work(name=request_body["name"], grades=grades, theme=theme, max_score=max_score,
                         exercises=len(grades_list), school_class=request_body["class"], type=request_body["type"],
                         is_homework=is_homework)
             log = Log(operation='INSERT', from_table='works', details='Добавлена новая работа в таблицу works.')
             work.save()
             log.save()
+            for student in students:
+                empty_grades = '_._'.join(list('#' * len(grades_list)))
+                grade = Grade(user=student, work_id=work.id, grades=empty_grades, max_score=0, score=0, exercises=0)
+                grade.save()
+        elif request_body["type"] == 5:
+            work = Work(name=request_body["name"], grades=grades, theme=theme, max_score=max_score,
+                        exercises=len(grades_list), school_class=request_body["class"], type=request_body["type"],
+                        is_homework=is_homework)
+            log = Log(operation='INSERT', from_table='works', details='Добавлена новая работа в таблицу works.')
+            grades_list_2007 = request_body["grades_2007"]
+            if len(grades_list_2007) != len(grades_list):
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Введено разное количество оценок.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=404)
+            max_score_2007 = 0
+            for grade in grades_list_2007:
+                if not is_number(grade):
+                    return HttpResponse(
+                        json.dumps(
+                            {'state': 'error', 'message': f'Введены некорректные оценки.', 'details': {},
+                             'instance': request.path},
+                            ensure_ascii=False), status=404)
+                if float(grade) < 0:
+                    return HttpResponse(
+                        json.dumps(
+                            {'state': 'error', 'message': f'Введены некорректные оценки.', 'details': {},
+                             'instance': request.path},
+                            ensure_ascii=False), status=404)
+                cast = float(grade)
+                max_score_2007 += cast
+            grades_2007 = '_._'.join(grades_list_2007)
+            work_2007 = Work(name=request_body["name"], grades=grades_2007, theme=theme, max_score=max_score_2007,
+                             exercises=len(grades_list_2007), school_class=request_body["class"], type=7,
+                             is_homework=is_homework)
+            work.save()
+            work_2007.save()
+            log.save()
+            for student in students:
+                empty_grades_2007 = '_._'.join(list('#' * len(grades_list_2007)))
+                grade = Grade(user=student, work_id=work_2007.id, grades=empty_grades_2007, max_score=0, score=0,
+                              exercises=0)
+                grade.save()
+            link = Exam(work=work, work_2007=work_2007)
+            link.save()
             for student in students:
                 empty_grades = '_._'.join(list('#' * len(grades_list)))
                 grade = Grade(user=student, work_id=work.id, grades=empty_grades, max_score=0, score=0, exercises=0)
@@ -200,7 +246,7 @@ def create_work(request):
                 max_score_2007 += cast
             grades_2007 = '_._'.join(grades_list_2007)
             work_2007 = Work(name=request_body["name"], grades=grades_2007, theme=theme, max_score=max_score_2007,
-                             exercises=len(grades_list_2007), school_class=request_body["class"], type=7,
+                             exercises=len(grades_list_2007), school_class=request_body["class"], type=8,
                              is_homework=is_homework)
             work.save()
             work_2007.save()
