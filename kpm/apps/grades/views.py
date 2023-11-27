@@ -162,7 +162,7 @@ def insert_grades(request):
                     except ObjectDoesNotExist:
                         student.last_classwork_id = work.id
             student.save()
-        scores = Grade.objects.filter(user=student, work__type__in=[0, 2, 5, 6]).aggregate(sum_score=Sum('score'))
+        scores = Grade.objects.filter(user=student, work__type__in=[5]).aggregate(sum_score=Sum('score'))
         experience = int(scores['sum_score'])
         student.experience = experience
         student.save()
