@@ -49,7 +49,6 @@ def insert_grades(request):
             request_body["value"] = '#'
         new_grades[int(request_body["cell_number"])] = request_body["value"]
         coefficient_2007 = []
-        work_is_empty = True
         for i in range(len(new_grades)):
             if ',' in new_grades[i]:
                 new_grades[i] = new_grades[i].replace(',', '.')
@@ -64,7 +63,6 @@ def insert_grades(request):
                 if work.type in [7, 8]:
                     coefficient_2007.append('#')
             else:
-                work_is_empty = True
                 cast = float(new_grades[i])
                 if cast < 0:
                     return HttpResponse(
@@ -86,6 +84,10 @@ def insert_grades(request):
                     coefficient_2007.append(cast / work_grades[i])
             new_score += cast
         log_grades_string = grade.grades
+        work_is_empty = True
+        for grade in new_grades:
+            if grade != '#'
+                work_is_empty = False
         new_grades_string = '_._'.join(new_grades)
         if log_grades_string == new_grades_string:
             return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
