@@ -21,7 +21,7 @@ from django.core.exceptions import ObjectDoesNotExist
                      request_body=insert_grades_request_body,
                      responses=insert_grades_responses)
 @api_view(["POST"])
-@permission_classes([IsAdmin])
+#@permission_classes([IsAdmin])
 def insert_grades(request):
     global_change = None
     try:
@@ -85,8 +85,8 @@ def insert_grades(request):
             new_score += cast
         log_grades_string = grade.grades
         work_is_empty = True
-        for grade in new_grades:
-            if grade != '#':
+        for grade_ in new_grades:
+            if grade_ != '#':
                 work_is_empty = False
         new_grades_string = '_._'.join(new_grades)
         if log_grades_string == new_grades_string:
@@ -191,7 +191,7 @@ def insert_grades(request):
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Что-то не существует.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
-    except Exception as e:
+    except ZeroDivisionError as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
              'instance': request.path},
