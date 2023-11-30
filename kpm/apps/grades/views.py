@@ -21,7 +21,7 @@ from django.core.exceptions import ObjectDoesNotExist
                      request_body=insert_grades_request_body,
                      responses=insert_grades_responses)
 @api_view(["POST"])
-#@permission_classes([IsAdmin])
+@permission_classes([IsAdmin])
 def insert_grades(request):
     global_change = None
     try:
@@ -191,7 +191,7 @@ def insert_grades(request):
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Что-то не существует.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
-    except ZeroDivisionError as e:
+    except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
              'instance': request.path},
