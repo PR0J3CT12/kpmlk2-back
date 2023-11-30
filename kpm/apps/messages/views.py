@@ -6,7 +6,7 @@ from kpm.apps.users.functions import is_trusted
 from .functions import get_variable
 from kpm.apps.logs.models import Log
 from kpm.apps.users.models import User
-from kpm.apps.messages.models import Message
+from kpm.apps.messages.models import Message, MessageGroup
 import json
 from django.core.exceptions import ObjectDoesNotExist
 from drf_yasg.utils import swagger_auto_schema
@@ -30,8 +30,10 @@ def send_message(request):
         receivers = User.objects.filter(id__in=receivers_ids)
         sender = User.objects.get(id=request.user.id)
         text = request_body['text']
+        messages_group = MessageGroup()
+        messages_group.save()
         for receiver in receivers:
-            message = Message(user_to=receiver, user_from=sender, text=text)
+            message = Message(user_to=receiver, user_from=sender, text=text, group=messages_group)
             message.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
@@ -102,7 +104,7 @@ def get_message(request):
             'user_from_name': message.user_from.name,
             'text': message.text,
             'is_viewed': message.is_viewed,
-            'datetime': str(message.datetime)
+            'datetime': str(message.group.datetime)
         }, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
@@ -141,9 +143,50 @@ def get_messages(request):
                     'user_from_name': message.user_from.name,
                     'text': message.text,
                     'is_viewed': message.is_viewed,
-                    'datetime': str(message.datetime)
+                    'datetime': str(message.group.datetime)
                 }
             )
+        return HttpResponse(json.dumps({'messages': messages_list}, ensure_ascii=False), status=200)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='GET', operation_summary="Получить отправленные сообщения.",
+                     responses=get_sent_messages_responses)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_sent_messages(request):
+    try:
+        id_ = request.user.id
+        messages = Message.objects.filter(user_from=id_).order_by('user_to__name', '-group__datetime')
+        if not is_trusted(request, id_):
+            return HttpResponse(json.dumps(
+                    {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=401)
+        if not messages:
+            return HttpResponse(json.dumps({'messages': []}, ensure_ascii=False), status=200)
+        messages_dict = {}
+        for message in messages:
+            if message.group_id not in messages_dict:
+                messages_dict[message.group_id] = {
+                    'id': message.id,
+                    'user_from': message.user_from.id,
+                    'user_from_name': message.user_from.name,
+                    'text': message.text,
+                    'datetime': str(message.group.datetime),
+                    'recipients': []
+                }
+            messages_dict[message.group_id]['recipients'].append(
+                {
+                    'user_to': message.user_to.id,
+                    'user_to_name': message.user_to.name,
+                    'is_viewed': message.is_viewed
+                }
+            )
+        messages_list = list(messages_dict.values())
         return HttpResponse(json.dumps({'messages': messages_list}, ensure_ascii=False), status=200)
     except Exception as e:
         return HttpResponse(json.dumps(
