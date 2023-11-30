@@ -150,7 +150,8 @@ def get_homework(request):
         for file in files:
             link = file.file.name
             name = link.split('/')[1]
-            files_list.append({'id': file.id, 'link': link, 'name': name, 'ext': file.ext})
+            ext = name.split('.')[-1]
+            files_list.append({'id': file.id, 'link': link, 'name': name, 'ext': ext})
         homework_users = HomeworkUsers.objects.filter(homework=homework)
         users_list = []
         for user in homework_users:
@@ -395,7 +396,8 @@ def get_user_homework(request):
         for file in files:
             link = file.file.name
             name = link.split('/')[1]
-            files_list.append({'link': link, 'name': name, 'ext': file.ext})
+            ext = name.split('.')[-1]
+            files_list.append({'link': link, 'name': name, 'ext': ext})
         response = {
             'id': homework.id,
             'title': homework.title,
