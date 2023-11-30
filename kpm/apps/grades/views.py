@@ -86,7 +86,7 @@ def insert_grades(request):
         log_grades_string = grade.grades
         work_is_empty = True
         for grade in new_grades:
-            if grade != '#'
+            if grade != '#':
                 work_is_empty = False
         new_grades_string = '_._'.join(new_grades)
         if log_grades_string == new_grades_string:
