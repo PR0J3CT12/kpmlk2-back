@@ -49,6 +49,7 @@ def insert_grades(request):
             request_body["value"] = '#'
         new_grades[int(request_body["cell_number"])] = request_body["value"]
         coefficient_2007 = []
+        work_is_empty = True
         for i in range(len(new_grades)):
             if ',' in new_grades[i]:
                 new_grades[i] = new_grades[i].replace(',', '.')
@@ -63,6 +64,7 @@ def insert_grades(request):
                 if work.type in [7, 8]:
                     coefficient_2007.append('#')
             else:
+                work_is_empty = True
                 cast = float(new_grades[i])
                 if cast < 0:
                     return HttpResponse(
@@ -107,6 +109,9 @@ def insert_grades(request):
                     max_score_tech += work_tech_grades[i]
                     score_tech += current_grade_tech
                     new_grades_list_tech.append(str(current_grade_tech))
+            if work_is_empty:
+                max_score_tech = 0
+                exercises_tech = 0
             grade_tech.exercises = exercises_tech
             grade_tech.max_score = max_score_tech
             new_grades_string_tech = '_._'.join(new_grades_list_tech)
@@ -134,6 +139,9 @@ def insert_grades(request):
             for i in range(0, blue):
                 mana = Mana(user=student, work=work, color='blue')
                 mana.save()
+        if work_is_empty:
+            new_max_score = 0
+            new_exercises = 0
         grade.grades = new_grades_string
         grade.max_score = new_max_score
         grade.score = new_score
