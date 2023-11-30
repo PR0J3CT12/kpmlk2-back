@@ -125,7 +125,7 @@ def get_message(request):
 def get_messages(request):
     try:
         id_ = get_variable('id', request)
-        messages = Message.objects.filter(user_to=id_).order_by('-datetime')
+        messages = Message.objects.filter(user_to=id_).order_by('-group__datetime')
         if not is_trusted(request, id_):
             return HttpResponse(json.dumps(
                     {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
