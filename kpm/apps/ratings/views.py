@@ -331,8 +331,8 @@ def get_user_rating(request):
                     {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=403)
         student = User.objects.get(id=student_id)
-        league = LeagueUser.objects.get(league_id=id_, user=student)
-        students_in_league = LeagueUser.objects.filter(league=league)
+        league = LeagueUser.objects.get(league__id=id_, user=student)
+        students_in_league = LeagueUser.objects.filter(league__id=id_)
         current_type = league.league.rating_type
         if current_type == 0:
             students_in_league = students_in_league.order_by('-user__experience')
