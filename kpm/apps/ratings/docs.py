@@ -31,6 +31,7 @@ get_ratings_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                           'description': openapi.Schema(type=openapi.TYPE_STRING,
                                                                                         example="Описание рейтинга"),
                                                           'type': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
+                                                          'students': openapi.Schema(type=openapi.TYPE_INTEGER, example=35),
                                                       })),
                                           })
 get_rating_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
