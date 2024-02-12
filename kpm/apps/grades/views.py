@@ -9,7 +9,7 @@ from kpm.apps.works.models import Work, Exam
 from kpm.apps.themes.models import Theme
 from kpm.apps.grades.models import Grade, Mana
 import json
-from django.db.models import Sum, Max, F, Func, Value, CharField, Subquery, OuterRef, Min, Count, Q
+from django.db.models import Sum, Case, When, IntegerField, Count, Q
 import random
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.grades.docs import *
@@ -172,9 +172,34 @@ def insert_grades(request):
                     except ObjectDoesNotExist:
                         student.last_classwork_id = work.id
             student.save()
-        scores = Grade.objects.filter(user=student, work__type__in=[5]).aggregate(sum_score=Sum('score'))
-        experience = int(scores['sum_score'])
+        #total_scores = Grade.objects.filter(user=student, work__type__in=[0, 5, 6]).aggregate(sum_score=Sum('score'))
+        #total_experience = int(total_scores['sum_score'])
+        aggregated_data = Grade.objects.filter(
+            user=student,
+            work__type__in=[0, 5, 6]
+        ).aggregate(
+            total_experience=Sum('score'),
+            exam_experience=Sum(
+                Case(
+                    When(work__type=5, then='score'),
+                    default=0,
+                    output_field=IntegerField(),
+                )
+            ),
+            oral_exam_experience=Sum(
+                Case(
+                    When(work__type=6, then='score'),
+                    default=0,
+                    output_field=IntegerField(),
+                )
+            )
+        )
+        experience = aggregated_data['total_experience'] if aggregated_data else 0
+        exam_experience = aggregated_data['exam_experience'] if aggregated_data else 0
+        oral_exam_experience = aggregated_data['oral_exam_experience'] if aggregated_data else 0
         student.experience = experience
+        student.exam_experience = exam_experience
+        student.oral_exam_experience = oral_exam_experience
         student.save()
         log = Log(operation='UPDATE', from_table='grades', details=log_details)
         log.save()

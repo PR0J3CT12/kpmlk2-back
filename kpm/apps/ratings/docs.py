@@ -13,6 +13,10 @@ create_rating_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                     type=openapi.TYPE_STRING, example="Лига сентябрь"),
                                                 "class": openapi.Schema(
                                                     type=openapi.TYPE_INTEGER, example=4),
+                                                "type": openapi.Schema(
+                                                    type=openapi.TYPE_INTEGER, example=0),
+                                                "description": openapi.Schema(
+                                                    type=openapi.TYPE_STRING, example="Описание рейтинга"),
                                             })
 get_ratings_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                           properties={
@@ -24,35 +28,56 @@ get_ratings_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                           'id': openapi.Schema(type=openapi.TYPE_INTEGER, example=1),
                                                           'name': openapi.Schema(type=openapi.TYPE_STRING,
                                                                                  example="Лига сентябрь"),
-                                                          'students': openapi.Schema(
-                                                              type=openapi.TYPE_ARRAY,
-                                                              items=openapi.Schema(
-                                                                  type=openapi.TYPE_OBJECT,
-                                                                  properties={
-                                                                      'id': openapi.Schema(type=openapi.TYPE_INTEGER,
-                                                                                           example=2),
-                                                                      'name': openapi.Schema(type=openapi.TYPE_STRING,
-                                                                                             example="Левин Михаил"),
-                                                                      'lvl': openapi.Schema(type=openapi.TYPE_INTEGER,
-                                                                                            example=3),
-                                                                      'exp': openapi.Schema(type=openapi.TYPE_INTEGER,
-                                                                                            example=59),
-                                                                      'base_exp': openapi.Schema(
-                                                                          type=openapi.TYPE_INTEGER,
-                                                                          example=60),
-                                                                      'total_exp': openapi.Schema(
-                                                                          type=openapi.TYPE_INTEGER,
-                                                                          example=164),
-                                                                  }))
+                                                          'description': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                        example="Описание рейтинга"),
+                                                          'type': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
                                                       })),
                                           })
+get_rating_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                         properties={
+                                             'id': openapi.Schema(type=openapi.TYPE_INTEGER, example=1),
+                                             'name': openapi.Schema(type=openapi.TYPE_STRING, example="Лига сентябрь"),
+                                             'description': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                           example="Описание рейтинга"),
+                                             'type': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
+                                             'students': openapi.Schema(
+                                                 type=openapi.TYPE_ARRAY,
+                                                 items=openapi.Schema(
+                                                     type=openapi.TYPE_OBJECT,
+                                                     properties={
+                                                         'id': openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                              example=2),
+                                                         'name': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                example="Левин Михаил"),
+                                                         'lvl': openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                               example=3),
+                                                         'exp': openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                               example=59),
+                                                         'base_exp': openapi.Schema(
+                                                             type=openapi.TYPE_INTEGER,
+                                                             example=60),
+                                                         'total_exp': openapi.Schema(
+                                                             type=openapi.TYPE_INTEGER,
+                                                             example=164),
+                                                     }))
+                                         })
 get_user_rating_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                               properties={
-                                                  'rating': openapi.Schema(
+                                                  'id': openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                       example=1),
+                                                  'name': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                         example="Лига сентябрь"),
+                                                  'description': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                example="Описание рейтинга"),
+                                                  'type': openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                         example=0),
+                                                  'students': openapi.Schema(
                                                       type=openapi.TYPE_ARRAY,
                                                       items=openapi.Schema(
                                                           type=openapi.TYPE_OBJECT,
                                                           properties={
+                                                              'id': openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                                   example=1),
                                                               'name': openapi.Schema(type=openapi.TYPE_STRING,
                                                                                      example="Левин Михаил"),
                                                               'lvl': openapi.Schema(type=openapi.TYPE_INTEGER,
@@ -67,6 +92,23 @@ get_user_rating_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                   example=164),
                                                           }))
                                               })
+get_user_ratings_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                               properties={
+                                                   'ratings': openapi.Schema(
+                                                       type=openapi.TYPE_ARRAY,
+                                                       items=openapi.Schema(
+                                                           type=openapi.TYPE_OBJECT,
+                                                           properties={
+                                                               'id': openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                                    example=1),
+                                                               'name': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                      example="Лига сентябрь"),
+                                                               'description': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                             example="Описание рейтинга"),
+                                                               'type': openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                                      example=0),
+                                                           }))
+                                               })
 create_rating_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_rating_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_from_rating_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
@@ -76,4 +118,6 @@ delete_rating_responses = {200: delete_rating_response_200}
 delete_from_rating_responses = {200: delete_from_rating_response_200}
 add_to_rating_responses = {200: add_to_rating_response_200}
 get_ratings_responses = {200: get_ratings_response_200}
+get_rating_responses = {200: get_rating_response_200}
+get_user_ratings_responses = {200: get_user_ratings_response_200}
 get_user_rating_responses = {200: get_user_rating_response_200}
