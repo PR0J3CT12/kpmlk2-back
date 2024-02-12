@@ -39,6 +39,7 @@ def get_ratings(request):
                 'name': rating['name'],
                 'description': rating['description'],
                 'type': rating['rating_type'],
+                'students': 0
             }
         users_per_league = LeagueUser.objects.filter(league__id__in=rating_ids).values('league').annotate(user_count=Count('user'))
         for item in users_per_league:
