@@ -11,6 +11,7 @@ import json
 from django.core.exceptions import ObjectDoesNotExist
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.ratings.docs import *
+from django.db.models import Count
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение рейтингов.",
@@ -28,31 +29,21 @@ def get_ratings(request):
                      'instance': request.path},
                     ensure_ascii=False), status=404)
         ratings = League.objects.filter(school_class=class_).values('id', 'name', 'description', 'rating_type')
-        ratings_list = []
+        ratings_dict = {}
+        rating_ids = []
         for rating in ratings:
-            """
-            rating_students = LeagueUser.objects.filter(league__id=rating['id']).select_related('user')
-            if rating['type'] == 0:
-                rating_students = rating_students.order_by('-user__experience')
-            students_list = []
-            for student in rating_students:
-                total_exp = student.user.experience
-                lvl, exp, base_exp = count_lvl(total_exp)
-                students_list.append({
-                    'id': student.user.id,
-                    'name': student.user.name,
-                    'lvl': lvl,
-                    'exp': exp,
-                    'base_exp': base_exp,
-                    'total_exp': total_exp
-                })
-            """
-            ratings_list.append({
+            if rating['id'] not in rating_ids:
+                rating_ids.append(rating['id'])
+            ratings_dict[rating['id']] = {
                 'id': rating['id'],
                 'name': rating['name'],
                 'description': rating['description'],
                 'type': rating['rating_type'],
-            })
+            }
+        users_per_league = LeagueUser.objects.filter(league__id__in=rating_ids).values('league').annotate(user_count=Count('user'))
+        for item in users_per_league:
+            ratings_dict[item['league']]['students'] = item['user_count']
+        ratings_list = list(ratings_dict.values())
         return HttpResponse(json.dumps({'ratings': ratings_list}, ensure_ascii=False), status=200)
     except Exception as e:
         return HttpResponse(json.dumps(
@@ -75,7 +66,7 @@ def get_rating(request):
                     {'state': 'error', 'message': f'Не указан id рейтинга.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         rating = League.objects.get(id=id_)
-        rating_students = LeagueUser.objects.filter(league__id=rating['id']).select_related('user')
+        rating_students = LeagueUser.objects.filter(league=rating).select_related('user')
         students_list = []
         if rating.rating_type == 0:
             rating_students = rating_students.order_by('-user__experience')
