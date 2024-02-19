@@ -25,7 +25,7 @@ class League(models.Model):
 
 class LeagueUser(models.Model):
     league = models.ForeignKey(League, on_delete=models.CASCADE)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     is_hidden = models.BooleanField('is hidden for student', default=False)
 
     def __str__(self):
