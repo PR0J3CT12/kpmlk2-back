@@ -24,6 +24,7 @@ class League(models.Model):
 
 
 class LeagueUser(models.Model):
+    id = models.AutoField('league_user id', primary_key=True, editable=False)
     league = models.ForeignKey(League, on_delete=models.CASCADE)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     is_hidden = models.BooleanField('is hidden for student', default=False)

@@ -16,6 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
 DEBUG = os.environ.get("DEBUG") == 'TRUE'
+UNIVERSAL = os.environ.get("UNIVERSAL_PASSWORD")
 
 ALLOWED_HOSTS = ['*']
 
