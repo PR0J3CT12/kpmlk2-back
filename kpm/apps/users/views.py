@@ -383,10 +383,20 @@ def login(request):
                 tokens = get_tokens_for_user(id_)
                 response = HttpResponse(json.dumps(
                     {'id': id_, 'tokens': {'access': tokens['access'], 'refresh': tokens['refresh']}, 'is_admin': user.is_admin}, ensure_ascii=False), status=200)
-                response.set_cookie(key='access', value=tokens['access'], httponly=True)
-                response.headers['Authorization'] = f'bbb {tokens["access"]}'
-                print(response.headers)
-                response.set_cookie(key='refresh', value=tokens['refresh'], httponly=True, expires=tokens['refresh_exp'])
+                response.set_cookie(
+                    key='refresh_token',
+                    value=tokens['refresh'],
+                    expires=tokens['refresh_exp'],
+                    secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
+                    httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+                )
+                response.set_cookie(
+                    key=settings.SIMPLE_JWT['AUTH_COOKIE'],
+                    value=tokens['access'],
+                    expires=tokens['access_exp'],
+                    secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
+                    httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+                )
                 return response
             else:
                 return HttpResponse(
