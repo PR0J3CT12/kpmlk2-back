@@ -1,16 +1,32 @@
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.datastructures import MultiValueDictKeyError
 from transliterate import translit
 import random
 from kpm.apps.users.models import User
+from datetime import datetime
 
 
 def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-    return {
-        'refresh': str(refresh),
-        'access': str(refresh.access_token),
-    }
+    try:
+        user = User.objects.get(id=user)
+        refresh = RefreshToken.for_user(user)
+        access = refresh.access_token
+        refresh_exp = datetime.utcfromtimestamp(refresh['exp'])
+        access_exp = datetime.utcfromtimestamp(access['exp'])
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'refresh_exp': refresh_exp,
+            'access_exp': access_exp,
+        }
+    except ObjectDoesNotExist:
+        return {
+            'refresh': None,
+            'access': None,
+            'refresh_exp': None,
+            'access_exp': None,
+        }
 
 
 def get_variable(variable_name, source_request):
@@ -49,7 +65,10 @@ def password_creator():
 
 
 def is_trusted(request, id_):
-    user = User.objects.get(id=request.user.id)
-    if not (user.is_admin == 1 or int(user.id) == int(id_)):
+    try:
+        user = User.objects.get(id=request.user.id)
+        if not (user.is_admin == 1 or int(user.id) == int(id_)):
+            return False
+        return True
+    except:
         return False
-    return True
