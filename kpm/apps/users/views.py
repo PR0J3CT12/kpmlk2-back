@@ -27,7 +27,7 @@ UNIVERSAL = settings.UNIVERSAL
                      manual_parameters=[id_param],
                      responses=get_user_responses)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+#@permission_classes([IsAuthenticated])
 def get_user(request):
     try:
         id_ = get_variable("id", request)
@@ -36,6 +36,8 @@ def get_user(request):
                 json.dumps(
                     {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
+        print(request.headers)
+        print(request.user)
         if not is_trusted(request, id_):
             return HttpResponse(
                 json.dumps(
@@ -378,9 +380,24 @@ def login(request):
                 request.session['login'] = login_
                 request.session['id'] = user.id
                 id_ = user.id
-                tokens = get_tokens_for_user(user)
-                return HttpResponse(json.dumps(
-                    {'id': id_, 'tokens': tokens, 'is_admin': user.is_admin}, ensure_ascii=False), status=200)
+                tokens = get_tokens_for_user(id_)
+                response = HttpResponse(json.dumps(
+                    {'id': id_, 'tokens': {'access': tokens['access'], 'refresh': tokens['refresh']}, 'is_admin': user.is_admin}, ensure_ascii=False), status=200)
+                response.set_cookie(
+                    key='refresh_token',
+                    value=tokens['refresh'],
+                    expires=tokens['refresh_exp'],
+                    secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
+                    httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+                )
+                response.set_cookie(
+                    key=settings.SIMPLE_JWT['AUTH_COOKIE'],
+                    value=tokens['access'],
+                    expires=tokens['access_exp'],
+                    secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
+                    httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+                )
+                return response
             else:
                 return HttpResponse(
                     json.dumps({'state': 'error', 'message': 'Неверный пароль.', 'details': {},
@@ -392,9 +409,14 @@ def login(request):
                 request.session['login'] = login_
                 request.session['id'] = user.id
                 id_ = user.id
-                tokens = get_tokens_for_user(user)
-                return HttpResponse(json.dumps(
-                    {'id': id_, 'tokens': tokens, 'is_admin': user.is_admin}, ensure_ascii=False), status=200)
+                tokens = get_tokens_for_user(id_)
+                response = HttpResponse(json.dumps(
+                    {'id': id_, 'tokens': {'access': tokens['access'], 'refresh': tokens['refresh']}, 'is_admin': user.is_admin}, ensure_ascii=False), status=200)
+                #response.set_cookie(key='access', value=tokens['access'], httponly=True)
+                response.headers['Authorization'] = f'bbb {tokens["access"]}'
+                print(response.headers)
+                #response.set_cookie(key='refresh', value=tokens['refresh'], httponly=True, expires=tokens['refresh_exp'])
+                return response
             else:
                 return HttpResponse(
                     json.dumps({'state': 'error', 'message': 'Неверный пароль.', 'details': {},
@@ -423,21 +445,16 @@ def login(request):
 #@permission_classes([IsAuthenticated])
 def logout(request):
     try:
-        refresh = request.data.get('refresh')
-        if not refresh:
-            return HttpResponse(
-                json.dumps({'state': 'error', 'message': 'Отсутствует refresh токен.', 'details': {},
-                            'instance': request.path},
-                           ensure_ascii=False), status=200)
         try:
+            refresh = request.COOKIES['refresh']
             token = RefreshToken(refresh)
             token.blacklist()
         except:
             pass
-        return HttpResponse(
-            json.dumps({'state': 'success', 'message': f'Успешный выход.', 'details': {},
-                        'instance': request.path},
-                       ensure_ascii=False), status=200)
+        response = HttpResponse(status=200)
+        response.delete_cookie('refresh')
+        response.delete_cookie('access')
+        return response
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
