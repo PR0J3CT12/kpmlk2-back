@@ -12,6 +12,7 @@ from django.core.exceptions import ObjectDoesNotExist
 EXCLUDE_FROM_MIDDLEWARE = [
     reverse('login'),
     reverse('logout'),
+    reverse('swagger-schema')
 ]
 
 
