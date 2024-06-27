@@ -17,7 +17,6 @@ import os
 from django.conf import settings
 from kpm.apps.grades.functions import validate_grade
 
-
 MEDIA_ROOT = settings.MEDIA_ROOT
 
 
@@ -85,18 +84,18 @@ def get_work(request):
                     ensure_ascii=False), status=404)
         work = Work.objects.get(id=id_).select_related("theme")
         result = {
-                "id": work.id,
-                "name": work.name,
-                "grades": work.grades,
-                "max_score": work.max_score,
-                "exercises": work.exercises,
-                "theme_id": work.theme_id,
-                "theme_name": work.theme.name,
-                "type": work.type,
-                "is_homework": work.is_homework,
-                "created_at": str(work.created_at),
-                "has_attachments": work.has_attachments
-            }
+            "id": work.id,
+            "name": work.name,
+            "grades": work.grades,
+            "max_score": work.max_score,
+            "exercises": work.exercises,
+            "theme_id": work.theme_id,
+            "theme_name": work.theme.name,
+            "type": work.type,
+            "is_homework": work.is_homework,
+            "created_at": str(work.created_at),
+            "has_attachments": work.has_attachments
+        }
         if work.has_attachments:
             files = WorkFile.objects.filter(work=work)
             files_list = []
@@ -592,9 +591,10 @@ def delete_from_work(request):
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Работа, объект работы или пользователь не существует.', 'details': {},
-                        'instance': request.path},
-                       ensure_ascii=False), status=404)
+            json.dumps(
+                {'state': 'error', 'message': f'Работа, объект работы или пользователь не существует.', 'details': {},
+                 'instance': request.path},
+                ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -669,6 +669,7 @@ def get_user_work(request):
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
              'instance': request.path},
             ensure_ascii=False), status=404)
+
 
 @swagger_auto_schema(method='POST', operation_summary="Ответ на домашнюю работу.",
                      request_body=create_response_request_body,
@@ -818,9 +819,11 @@ def check_user_homework(request):
                     score += float(grade_)
             if score > work.max_score:
                 return HttpResponse(
-                    json.dumps({'state': 'error', 'message': 'Некорректное значение оценок. Сумма вышла больше максимума.', 'details': {},
-                                'instance': request.path},
-                               ensure_ascii=False), status=404)
+                    json.dumps(
+                        {'state': 'error', 'message': 'Некорректное значение оценок. Сумма вышла больше максимума.',
+                         'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=404)
             if is_empty:
                 exercises = 0
                 max_score = 0
@@ -875,7 +878,8 @@ def get_my_homeworks(request):
                 'is_done': work.is_done,
                 'is_checked': work.is_checked,
             }
-        grades = Grade.objects.filter(work_id__in=list(works_list.keys()), work__is_homework=True).select_related('work')
+        grades = Grade.objects.filter(work_id__in=list(works_list.keys()), work__is_homework=True).select_related(
+            'work')
         for grade in grades:
             if grade.max_score:
                 works_list[grade.work_id]['max_score'] = grade.max_score
