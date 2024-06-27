@@ -37,7 +37,7 @@ class Work(models.Model):
     school_class = models.IntegerField('student class', default=4)
     is_homework = models.BooleanField('is homework')
     type = models.IntegerField('theme type', choices=TYPE_CHOICES, default=0)
-    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='author')
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='author', default=None)
 
     # Grades fields
     grades = models.JSONField('work grades')
@@ -106,8 +106,8 @@ class WorkUser(models.Model):
         return f'{str(self.id)}'
 
     class Meta:
-        db_table = 'works_objects_users'
-        unique_together = ('work_object', 'user')
+        db_table = 'works_users'
+        unique_together = ('work', 'user')
 
 
 class WorkUserFile(models.Model):
