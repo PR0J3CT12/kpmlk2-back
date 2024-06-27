@@ -4,7 +4,8 @@ from django.utils.datastructures import MultiValueDictKeyError
 from transliterate import translit
 import random
 from kpm.apps.users.models import User
-from datetime import datetime
+from datetime import datetime, timezone
+import jwt
 
 
 def get_tokens_for_user(user):
@@ -12,8 +13,8 @@ def get_tokens_for_user(user):
         user = User.objects.get(id=user)
         refresh = RefreshToken.for_user(user)
         access = refresh.access_token
-        refresh_exp = datetime.utcfromtimestamp(refresh['exp'])
-        access_exp = datetime.utcfromtimestamp(access['exp'])
+        refresh_exp = datetime.fromtimestamp(refresh['exp'], timezone.utc)
+        access_exp = datetime.fromtimestamp(access['exp'], timezone.utc)
         return {
             'refresh': str(refresh),
             'access': str(refresh.access_token),
@@ -27,6 +28,22 @@ def get_tokens_for_user(user):
             'refresh_exp': None,
             'access_exp': None,
         }
+
+
+def get_user_id_from_refresh_token(request, key):
+    try:
+        refresh_token = request.COOKIES['refresh']
+        refresh_payload = jwt.decode(refresh_token, key, algorithms='HS256')
+        user_id = refresh_payload['user_id']
+        return user_id, ""
+    except KeyError:
+        return None, 'refresh token is missing'
+    except jwt.ExpiredSignatureError:
+        return None, 'refresh token is expired'
+    except jwt.DecodeError:
+        return None, 'refresh token is invalid'
+    except ObjectDoesNotExist:
+        return None, 'user does not exist'
 
 
 def get_variable(variable_name, source_request):
@@ -66,9 +83,10 @@ def password_creator():
 
 def is_trusted(request, id_):
     try:
-        user = User.objects.get(id=request.user.id)
-        if not (user.is_admin == 1 or int(user.id) == int(id_)):
-            return False
-        return True
+        if request.user.is_admin or id_ == request.user.id:
+            return True
+        return False
     except:
         return False
+
+

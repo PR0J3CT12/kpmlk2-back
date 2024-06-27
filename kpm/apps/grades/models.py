@@ -8,7 +8,7 @@ class Grade(models.Model):
     work = models.ForeignKey(Work, on_delete=models.CASCADE)
     score = models.FloatField('score', default=0)
     max_score = models.FloatField('max_score', default=0)
-    grades = models.CharField('grades string', default=None, max_length=200)
+    grades = models.JSONField('grades string', default=None)
     exercises = models.IntegerField('amount of exercises(current student)')
 
     class Meta:

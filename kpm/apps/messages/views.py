@@ -4,7 +4,6 @@ from rest_framework.permissions import IsAuthenticated
 from kpm.apps.users.permissions import IsAdmin
 from kpm.apps.users.functions import is_trusted
 from .functions import get_variable
-from kpm.apps.logs.models import Log
 from kpm.apps.users.models import User
 from kpm.apps.messages.models import Message, MessageGroup
 import json

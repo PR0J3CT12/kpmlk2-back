@@ -52,16 +52,7 @@ logout_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
 login_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                     properties={
                                         'id': openapi.Schema(type=openapi.TYPE_INTEGER, example=3),
-                                        'tokens': openapi.Schema(type=openapi.TYPE_OBJECT,
-                                                                 properties={
-                                                                     'refresh': openapi.Schema(
-                                                                         type=openapi.TYPE_STRING,
-                                                                         example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTY3NTA3NjI3MSwianRpIjoiOTg1ZmUyYWViNjBkNDk1MzhjMTRiOGRhY2YwODNjYTkiLCJ1c2VyX2lkIjozfQ.l-KVnS4mKjK7V8bw96qxfePb4H8MfV0EZ-HOoarTpjs"),
-                                                                     'access': openapi.Schema(
-                                                                         type=openapi.TYPE_STRING,
-                                                                         example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjc0NDc1MDcxLCJqdGkiOiI0YTRjNTY4NTg5YmQ0NTUyOTEzYTgzZDcxYTFkNzE1ZCIsInVzZXJfaWQiOjN9.wqpesDMhcj1uYRk947vqmYtmVjaBgWTchtuh8y1bzgI")
-                                                                 }),
-                                        'is_default': openapi.Schema(type=openapi.TYPE_BOOLEAN, example=True),
+                                        'is_admin': openapi.Schema(type=openapi.TYPE_BOOLEAN, example=True),
 
                                     })
 get_users_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,

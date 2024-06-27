@@ -5,7 +5,6 @@ from kpm.apps.users.permissions import *
 from kpm.apps.users.functions import is_trusted
 from .functions import *
 from kpm.apps.ratings.models import *
-from kpm.apps.logs.models import Log
 from kpm.apps.users.models import User
 import json
 from django.core.exceptions import ObjectDoesNotExist
@@ -158,8 +157,6 @@ def create_rating(request):
             description = None
         league = League(name=request_body['name'], school_class=int(request_body['class']), rating_type=int(request_body['type']), description=description)
         league.save()
-        log = Log(operation='INSERT', from_table='ratings', details='Добавлена новый рейтинг в таблицу ratings.')
-        log.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -187,10 +184,7 @@ def delete_rating(request):
                     {'state': 'error', 'message': f'Не указан id рейтинга.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         league = League.objects.get(id=id_)
-        log_details = f'Удален рейтинг из таблицы ratings. ["id": {league.id} | "name": "{league.name}" | "description": "{league.description}" | "rating_type": "{league.rating_type}"]'
         league.delete()
-        log = Log(operation='DELETE', from_table='ratings', details=log_details)
-        log.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(

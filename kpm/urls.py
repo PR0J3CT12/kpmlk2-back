@@ -10,7 +10,7 @@ from django.conf.urls.static import static
 schema_view = swagger_get_schema_view(
     openapi.Info(
         title="KPM API",
-        default_version='1.0.0',
+        default_version='2.0.0',
         description="API documentation of KPM-LK",
     ),
     public=True,
@@ -21,12 +21,12 @@ urlpatterns = [
     path('api/user/', include('users.urls')),
     path('api/group/', include('users.groupsurls')),
     path('api/grade/', include('grades.urls')),
-    path('api/log/', include('logs.urls')),
+    #path('api/log/', include('logs.urls')),
     path('api/theme/', include('themes.urls')),
     path('api/work/', include('works.urls')),
     path('api/message/', include('messages.urls')),
     path('api/stat/', include('stats.urls')),
-    path('api/homework/', include('homeworks.urls')),
+    #path('api/homework/', include('homeworks.urls')),
     path('api/rating/', include('ratings.urls')),
     path('api/token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/verify', TokenVerifyView.as_view(), name='token_verify'),

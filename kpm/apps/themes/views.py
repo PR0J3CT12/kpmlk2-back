@@ -3,7 +3,6 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import ObjectDoesNotExist
 from .functions import get_variable
-from kpm.apps.logs.models import Log
 import json
 from kpm.apps.themes.models import Theme
 from kpm.apps.users.permissions import *
@@ -102,8 +101,6 @@ def create_theme(request):
                     ensure_ascii=False), status=404)
         theme = Theme(name=request_body["name"], school_class=int(request_body["class"]))
         theme.save()
-        log = Log(operation='INSERT', from_table='themes', details='Добавлена новая тема в таблицу themes.')
-        log.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -128,10 +125,7 @@ def delete_theme(request):
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         theme = Theme.objects.get(id=id_)
-        log_details = f'Удалена тема из таблицы themes. ["id": {theme.id} | "name": "{theme.name}" | "school_class": {theme.school_class}]'
         theme.delete()
-        log = Log(operation='DELETE', from_table='themes', details=log_details)
-        log.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
@@ -167,9 +161,6 @@ def delete_themes(request):
         themes = Theme.objects.filter(school_class=class_)
         if not themes:
             return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
-        for theme in themes:
-            Log(operation='DELETE', from_table='themes',
-                details=f'Удалена тема из таблицы themes. ["id": {theme.id} | "name": "{theme.name}" | "school_class": {theme.school_class}]').save()
         themes.delete()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except Exception as e:

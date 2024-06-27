@@ -22,13 +22,13 @@ ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'users.apps.UsersConfig',
-    'logs.apps.LogsConfig',
+    #'logs.apps.LogsConfig',
     'works.apps.WorksConfig',
     'themes.apps.ThemesConfig',
     'grades.apps.GradesConfig',
     'messages.apps.MessagesConfig',
     'stats.apps.StatsConfig',
-    'homeworks.apps.HomeworksConfig',
+    #'homeworks.apps.HomeworksConfig',
     'ratings.apps.RatingsConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -56,7 +56,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'kpm.urls'
@@ -145,21 +144,23 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(seconds=20),
+    'ACCESS_TOKEN_LIFETIME': timedelta(seconds=2000),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
     'UPDATE_LAST_LOGIN': False,
 
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY + 'jwtoken',
+    'SIGNING_KEY': SECRET_KEY,
     'VERIFYING_KEY': None,
     'AUDIENCE': None,
     'ISSUER': None,
     'JWK_URL': None,
     'LEEWAY': 0,
 
-    'AUTH_COOKIE': 'access',
+    'AUTH_HEADER_TYPES': ('kpm',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'AUTH_COOKIE': 'access_token',
     'AUTH_COOKIE_DOMAIN': None,
     'AUTH_COOKIE_SECURE': False,
     'AUTH_COOKIE_HTTP_ONLY': True,

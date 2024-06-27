@@ -6,7 +6,6 @@ from kpm.apps.users.permissions import *
 from kpm.apps.users.functions import is_trusted
 from kpm.apps.stats.functions import *
 from kpm.apps.ratings.functions import count_lvl
-from kpm.apps.logs.models import Log
 from kpm.apps.works.models import Work
 from kpm.apps.grades.models import Grade, Mana
 from kpm.apps.themes.models import Theme

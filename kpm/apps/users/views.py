@@ -1,10 +1,11 @@
+import time
+
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from kpm.apps.users.models import *
 from kpm.apps.users.permissions import *
 from kpm.apps.users.functions import *
-from kpm.apps.logs.models import Log
 from kpm.apps.works.models import Work
 from kpm.apps.grades.models import Grade
 from django.core.exceptions import ObjectDoesNotExist
@@ -18,6 +19,8 @@ from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.users.docs import *
 from django.utils import timezone
 from datetime import datetime, timedelta
+from django.contrib.auth import authenticate
+
 
 SECRET_KEY = settings.SECRET_KEY
 UNIVERSAL = settings.UNIVERSAL
@@ -27,7 +30,6 @@ UNIVERSAL = settings.UNIVERSAL
                      manual_parameters=[id_param],
                      responses=get_user_responses)
 @api_view(["GET"])
-#@permission_classes([IsAuthenticated])
 def get_user(request):
     try:
         id_ = get_variable("id", request)
@@ -36,8 +38,6 @@ def get_user(request):
                 json.dumps(
                     {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
-        print(request.headers)
-        print(request.user)
         if not is_trusted(request, id_):
             return HttpResponse(
                 json.dumps(
@@ -196,11 +196,10 @@ def create_user(request):
                     {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
+        encrypted_password = make_password(password_, SECRET_KEY)
         student = User(id=last_id + 1, name=request_body["name"], login=login_, default_password=password_,
-                       school_class=request_body["class"], is_superuser=False)
+                       password=encrypted_password, school_class=request_body["class"], is_superuser=False)
         student.save()
-        log = Log(operation='INSERT', from_table='users', details='Добавлен новый ученик в таблицу users.')
-        log.save()
         works = Work.objects.all()
         for work in works:
             grades = work.grades.split('_._')
@@ -233,10 +232,7 @@ def delete_user(request):
                     {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         student = User.objects.get(id=id_)
-        log_details = f'Удален ученик из таблицы users. ["id": {student.id} | "name": "{student.name}" | "login": {student.login} | "password": {student.password} | "experience": {student.experience} | "mana_earned": {student.mana_earned} | "last_homework_id": {student.last_homework_id} | "last_classwork_id": {student.last_classwork_id} | "school_class": {student.school_class}]'
         student.delete()
-        log = Log(operation='DELETE', from_table='users', details=log_details)
-        log.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -278,10 +274,6 @@ def delete_users(request):
         students = User.objects.filter(school_class=int(class_))
         if not students:
             return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
-        for student in students:
-            log = Log(operation='DELETE', from_table='users',
-                      details=f'Удален ученик из таблицы users. ["id": {student.id} | "name": "{student.name}" | "login": {student.login} | "password": {student.password} | "experience": {student.experience} | "mana_earned": {student.mana_earned} | "last_homework_id": {student.last_homework_id} | "last_classwork_id": {student.last_classwork_id} | "school_class": {student.school_class}]')
-            log.save()
         students.delete()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
@@ -333,8 +325,6 @@ def change_password(request):
             user.is_default = True
             user.password = ""
         user.save()
-        log = Log(operation='UPDATE', from_table='users', details=f"Изменен пароль у пользователя {id_}.")
-        log.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -362,7 +352,6 @@ def change_password(request):
                      request_body=login_request_body,
                      responses=login_responses)
 @api_view(["POST"])
-#@permission_classes([IsNotAuthenticated])
 def login(request):
     try:
         if request.body:
@@ -373,55 +362,41 @@ def login(request):
                             'instance': request.path},
                            ensure_ascii=False), status=400)
         login_ = request_body["login"]
-        password_ = request_body["password"]
+        password = request_body["password"]
         user = User.objects.get(login=login_)
-        if user.is_default:
-            if password_ == user.default_password:
-                request.session['login'] = login_
-                request.session['id'] = user.id
-                id_ = user.id
-                tokens = get_tokens_for_user(id_)
-                response = HttpResponse(json.dumps(
-                    {'id': id_, 'tokens': {'access': tokens['access'], 'refresh': tokens['refresh']}, 'is_admin': user.is_admin}, ensure_ascii=False), status=200)
-                response.set_cookie(
-                    key='refresh_token',
-                    value=tokens['refresh'],
-                    expires=tokens['refresh_exp'],
-                    secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
-                    httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-                )
-                response.set_cookie(
-                    key=settings.SIMPLE_JWT['AUTH_COOKIE'],
-                    value=tokens['access'],
-                    expires=tokens['access_exp'],
-                    secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
-                    httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-                )
-                return response
-            else:
-                return HttpResponse(
-                    json.dumps({'state': 'error', 'message': 'Неверный пароль.', 'details': {},
-                                'instance': request.path},
-                               ensure_ascii=False), status=400)
+        if check_password(password, UNIVERSAL) and not user.is_admin:
+            is_passed = True
         else:
-            is_universal = check_password(password_, UNIVERSAL)
-            if check_password(password_, user.password) or (is_universal and not user.is_admin):
-                request.session['login'] = login_
-                request.session['id'] = user.id
-                id_ = user.id
-                tokens = get_tokens_for_user(id_)
-                response = HttpResponse(json.dumps(
-                    {'id': id_, 'tokens': {'access': tokens['access'], 'refresh': tokens['refresh']}, 'is_admin': user.is_admin}, ensure_ascii=False), status=200)
-                #response.set_cookie(key='access', value=tokens['access'], httponly=True)
-                response.headers['Authorization'] = f'bbb {tokens["access"]}'
-                print(response.headers)
-                #response.set_cookie(key='refresh', value=tokens['refresh'], httponly=True, expires=tokens['refresh_exp'])
-                return response
-            else:
-                return HttpResponse(
-                    json.dumps({'state': 'error', 'message': 'Неверный пароль.', 'details': {},
-                                'instance': request.path},
-                               ensure_ascii=False), status=400)
+            is_passed = check_password(password, user.password)
+        if is_passed:
+            response = HttpResponse(json.dumps(
+                {'id': user.id, 'is_admin': user.is_admin}, ensure_ascii=False), status=200)
+            tokens = get_tokens_for_user(user.id)
+            access_token, access_exp = tokens['access'], tokens['access_exp']
+            refresh_token, refresh_exp = tokens['refresh'], tokens['refresh_exp']
+            response.set_cookie(
+                key='refresh_token',
+                value=refresh_token,
+                expires=tokens['refresh_exp'],
+                secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
+                httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+            )
+            response.set_cookie(
+                key=settings.SIMPLE_JWT['AUTH_COOKIE'],
+                value=access_token,
+                expires=tokens['access_exp'],
+                secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
+                httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+            )
+
+            request.session['login'] = login_
+            request.session['id'] = user.id
+            return response
+        else:
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Неверный пароль.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=400)
     except ObjectDoesNotExist:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': 'Пользователь не существует.', 'details': {},
@@ -439,21 +414,21 @@ def login(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='POST', operation_summary="Выход из аккаунта.",
+@swagger_auto_schema(method='GET', operation_summary="Выход из аккаунта.",
                      responses=logout_responses)
-@api_view(["POST"])
-#@permission_classes([IsAuthenticated])
+@api_view(["GET"])
 def logout(request):
     try:
         try:
-            refresh = request.COOKIES['refresh']
+            refresh = request.COOKIES['refresh_token']
             token = RefreshToken(refresh)
             token.blacklist()
         except:
             pass
         response = HttpResponse(status=200)
-        response.delete_cookie('refresh')
-        response.delete_cookie('access')
+        response.delete_cookie('refresh_token')
+        response.delete_cookie('access_token')
+        response.delete_cookie('sessionid')
         return response
     except Exception as e:
         return HttpResponse(json.dumps(
@@ -556,8 +531,6 @@ def create_group(request):
                     ensure_ascii=False), status=404)
         group = Group(name=request_body['name'], school_class=int(request_body['class']), marker=request_body['marker'])
         group.save()
-        log = Log(operation='INSERT', from_table='groups', details='Добавлена новая группа в таблицу groups.')
-        log.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -590,10 +563,7 @@ def delete_group(request):
                     {'state': 'error', 'message': f'Не указан id группы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         group = Group.objects.get(id=id_)
-        log_details = f'Удалена группа из таблицы groups. ["id": {group.id} | "name": "{group.name}" | "marker": "{group.marker}" | "school_class": "{group.school_class}"]'
         group.delete()
-        log = Log(operation='DELETE', from_table='groups', details=log_details)
-        log.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
@@ -672,17 +642,6 @@ def delete_from_group(request):
             json.dumps(
                 {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=404)
-    except Exception as e:
-        return HttpResponse(json.dumps(
-            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
-             'instance': request.path},
-            ensure_ascii=False), status=404)
-
-
-@api_view(["GET"])
-def tmp(request):
-    try:
-        return HttpResponse(json.dumps({"test": "ok"}, ensure_ascii=False), status=200)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
