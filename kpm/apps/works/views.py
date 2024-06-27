@@ -2,8 +2,7 @@ from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import ObjectDoesNotExist
-from kpm.apps.works.models import Work, Exam
-from kpm.apps.logs.models import Log
+from kpm.apps.works.models import *
 from kpm.apps.users.models import User
 from kpm.apps.themes.models import Theme
 from kpm.apps.grades.models import Grade
@@ -14,6 +13,12 @@ from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.works.docs import *
 from kpm.apps.works.functions import *
 from django.utils import timezone
+import os
+from django.conf import settings
+from kpm.apps.grades.functions import validate_grade
+
+
+MEDIA_ROOT = settings.MEDIA_ROOT
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение списка работ.",
@@ -33,7 +38,8 @@ def get_works(request):
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        works = Work.objects.filter(school_class=int(class_)).exclude(type=7).exclude(type=8).select_related("theme").order_by('-id')
+        works = Work.objects.filter(school_class=int(class_)).exclude(type=7).exclude(type=8).select_related(
+            "theme").order_by('-id')
         if (theme is not None) and (theme != ''):
             works = works.filter(theme_id=theme)
         if type_ in ['0', '1', '2', '3', '4', '5', '6', '9']:
@@ -43,7 +49,7 @@ def get_works(request):
             works_list.append({
                 "id": work.id,
                 "name": work.name,
-                "grades": work.grades.split('_._'),
+                "grades": work.grades,
                 "max_score": work.max_score,
                 "exercises": work.exercises,
                 "theme_id": work.theme_id,
@@ -78,18 +84,42 @@ def get_work(request):
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         work = Work.objects.get(id=id_).select_related("theme")
-        return HttpResponse(
-            json.dumps({
+        result = {
                 "id": work.id,
                 "name": work.name,
-                "grades": work.grades.split('_._'),
+                "grades": work.grades,
                 "max_score": work.max_score,
                 "exercises": work.exercises,
                 "theme_id": work.theme_id,
                 "theme_name": work.theme.name,
                 "type": work.type,
-                "is_homework": work.is_homework
-            }, ensure_ascii=False), status=200)
+                "is_homework": work.is_homework,
+                "created_at": str(work.created_at),
+                "has_attachments": work.has_attachments
+            }
+        if work.has_attachments:
+            files = WorkFile.objects.filter(work=work)
+            files_list = []
+            for file in files:
+                link = file.file.name
+                name = link.split('/')[1]
+                ext = name.split('.')[-1]
+                files_list.append({'id': file.id, 'link': link, 'name': name, 'ext': ext})
+            work_users = WorkUser.objects.filter(work=work).select_related('user')
+            users_list = []
+            for user in work_users:
+                users_list.append({'id': user.user.id, 'name': user.user.name})
+            if work.title:
+                title = work.title
+            else:
+                title = work.name
+            result['title'] = title
+            result['text'] = work.text
+            result['answers'] = work.answers
+            result['files'] = files_list
+            result['users'] = users_list
+        return HttpResponse(
+            json.dumps(result, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
@@ -113,24 +143,35 @@ def get_work(request):
 @permission_classes([IsAdmin])
 def create_work(request):
     try:
-        if request.body:
-            request_body = json.loads(request.body)
+        if request.POST or request.FILES:
+            data = request.POST
+            files = request.FILES
         else:
-            return HttpResponse(json.dumps(
-                {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
-                ensure_ascii=False), status=400)
-        if request_body["type"] not in [0, 1, 2, 3, 4, 5, 6, 9]:
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=400)
+        type_ = data["type"]
+        school_class = data["class"]
+        name = data["name"]
+        if type_ not in [0, 1, 2, 3, 4, 5, 6, 9]:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс тип работы.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        if request_body["type"] == 2:
-            grades_list = ["1", "1", "1"]
+        if school_class not in ['4', '5', '6', 4, 5, 6]:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=404)
+        if type_ == 2:
+            grades = ["1", "1", "1"]
         else:
-            grades_list = request_body["grades"]
+            grades = data.getlist("grades")
         max_score = 0
-        for grade in grades_list:
+        for grade in grades:
             if not is_number(grade):
                 return HttpResponse(
                     json.dumps(
@@ -145,91 +186,36 @@ def create_work(request):
                         ensure_ascii=False), status=404)
             cast = float(grade)
             max_score += cast
-        grades = '_._'.join(grades_list)
 
-        theme = Theme.objects.get(id=request_body["theme_id"])
-        if request_body["class"] not in ['4', '5', '6', 4, 5, 6]:
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
-                     'instance': request.path},
-                    ensure_ascii=False), status=404)
-        if request_body["type"] in [0, 5, 6, 7]:
+        theme = Theme.objects.get(id=data["theme_id"])
+        if type_ in [0, 5, 6, 7]:
             is_homework = True
         else:
             is_homework = False
-        students = User.objects.filter(Q(is_admin=0) & Q(school_class=request_body["class"]))
-        if request_body["type"] not in [3, 5]:
-            work = Work(name=request_body["name"], grades=grades, theme=theme, max_score=max_score,
-                        exercises=len(grades_list), school_class=request_body["class"], type=request_body["type"],
+        students = User.objects.filter(Q(is_admin=0) & Q(school_class=school_class))
+        exercises = len(grades)
+        if type_ not in [3, 5]:
+            work = Work(name=name, grades=grades, theme=theme, max_score=max_score,
+                        exercises=exercises, school_class=school_class, type=type_,
                         is_homework=is_homework)
-            log = Log(operation='INSERT', from_table='works', details='Добавлена новая работа в таблицу works.')
-            work.save()
-            log.save()
-            for student in students:
-                empty_grades = '_._'.join(list('#' * len(grades_list)))
-                grade = Grade(user=student, work_id=work.id, grades=empty_grades, max_score=0, score=0, exercises=0)
-                grade.save()
-        elif request_body["type"] == 5:
-            work = Work(name=request_body["name"], grades=grades, theme=theme, max_score=max_score,
-                        exercises=len(grades_list), school_class=request_body["class"], type=request_body["type"],
-                        is_homework=is_homework)
-            log = Log(operation='INSERT', from_table='works', details='Добавлена новая работа в таблицу works.')
-            grades_list_2007 = request_body["grades_2007"]
-            if len(grades_list_2007) != len(grades_list):
-                return HttpResponse(
-                    json.dumps(
-                        {'state': 'error', 'message': f'Введено разное количество оценок.', 'details': {},
-                         'instance': request.path},
-                        ensure_ascii=False), status=404)
-            max_score_2007 = 0
-            for grade in grades_list_2007:
-                if not is_number(grade):
-                    return HttpResponse(
-                        json.dumps(
-                            {'state': 'error', 'message': f'Введены некорректные оценки.', 'details': {},
-                             'instance': request.path},
-                            ensure_ascii=False), status=404)
-                if float(grade) < 0:
-                    return HttpResponse(
-                        json.dumps(
-                            {'state': 'error', 'message': f'Введены некорректные оценки.', 'details': {},
-                             'instance': request.path},
-                            ensure_ascii=False), status=404)
-                cast = float(grade)
-                max_score_2007 += cast
-            grades_2007 = '_._'.join(grades_list_2007)
-            work_2007 = Work(name=request_body["name"], grades=grades_2007, theme=theme, max_score=max_score_2007,
-                             exercises=len(grades_list_2007), school_class=request_body["class"], type=7,
-                             is_homework=is_homework)
-            work.save()
-            work_2007.save()
-            log.save()
-            for student in students:
-                empty_grades_2007 = '_._'.join(list('#' * len(grades_list_2007)))
-                grade = Grade(user=student, work_id=work_2007.id, grades=empty_grades_2007, max_score=0, score=0,
-                              exercises=0)
-                grade.save()
-            link = Exam(work=work, work_2007=work_2007)
-            link.save()
-            for student in students:
-                empty_grades = '_._'.join(list('#' * len(grades_list)))
-                grade = Grade(user=student, work_id=work.id, grades=empty_grades, max_score=0, score=0, exercises=0)
-                grade.save()
+            work.full_clean()
+            work_2007 = None
+            link = None
         else:
-            work = Work(name=request_body["name"], grades=grades, theme=theme, max_score=max_score,
-                        exercises=len(grades_list), school_class=request_body["class"], type=request_body["type"],
-                        is_homework=is_homework)
-            log = Log(operation='INSERT', from_table='works', details='Добавлена новая работа в таблицу works.')
-            grades_list_2007 = request_body["grades_2007"]
-            if len(grades_list_2007) != len(grades_list):
+            if type_ == 5:
+                type_2007 = 7
+            else:
+                type_2007 = 8
+
+            grades_2007 = data["grades_2007"]
+            if len(grades_2007) != len(grades):
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Введено разное количество оценок.', 'details': {},
                          'instance': request.path},
                         ensure_ascii=False), status=404)
             max_score_2007 = 0
-            for grade in grades_list_2007:
+            for grade in grades_2007:
                 if not is_number(grade):
                     return HttpResponse(
                         json.dumps(
@@ -244,23 +230,62 @@ def create_work(request):
                             ensure_ascii=False), status=404)
                 cast = float(grade)
                 max_score_2007 += cast
-            grades_2007 = '_._'.join(grades_list_2007)
-            work_2007 = Work(name=request_body["name"], grades=grades_2007, theme=theme, max_score=max_score_2007,
-                             exercises=len(grades_list_2007), school_class=request_body["class"], type=8,
+
+            work = Work(name=name, grades=grades, theme=theme, max_score=max_score,
+                        exercises=exercises, school_class=school_class, type=type_,
+                        is_homework=is_homework)
+            work_2007 = Work(name=name, grades=grades_2007, theme=theme, max_score=max_score_2007,
+                             exercises=exercises, school_class=school_class, type=type_2007,
                              is_homework=is_homework)
-            work.save()
-            work_2007.save()
-            log.save()
-            for student in students:
-                empty_grades_2007 = '_._'.join(list('#' * len(grades_list_2007)))
-                grade = Grade(user=student, work_id=work_2007.id, grades=empty_grades_2007, max_score=0, score=0,
-                              exercises=0)
-                grade.save()
+            work.full_clean()
+            work_2007.full_clean()
             link = Exam(work=work, work_2007=work_2007)
-            link.save()
+            link.full_clean()
+
+        has_attachments = data["has_attachments"]
+        if has_attachments:
+            if 'title' in data:
+                title = data['title']
+                if not title:
+                    title = None
+            else:
+                title = None
+            text = data["text"]
+            answers = data.getlist("answers")
+            if len(answers) != exercises:
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Введено разное количество ответов.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=400)
+            files = files.getlist('files')
+            for file in files:
+                if 'image' in str(file.content_type):
+                    pass
+                elif file.content_type in ['application/pdf']:
+                    pass
+                else:
+                    return HttpResponse(
+                        json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
+                                    'instance': request.path},
+                                   ensure_ascii=False), status=404)
+            work.full_clean()
+            work.save()
+            for file in files:
+                ext = file.name.split('.')[1]
+                work_file = WorkFile(work=work, file=file, ext=ext)
+                work_file.save()
+            if work_2007 and link:
+                work_2007.save()
+                link.save()
+
+        empty_grades = list('#' * exercises)
+        for student in students:
+            grade = Grade(user=student, work=work, grades=empty_grades, max_score=0, score=0, exercises=0)
+            grade.save()
+        if work_2007:
             for student in students:
-                empty_grades = '_._'.join(list('#' * len(grades_list)))
-                grade = Grade(user=student, work_id=work.id, grades=empty_grades, max_score=0, score=0, exercises=0)
+                grade = Grade(user=student, work=work_2007, grades=empty_grades, max_score=0, score=0, exercises=0)
                 grade.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
@@ -286,15 +311,18 @@ def create_work(request):
 @permission_classes([IsAdmin])
 def update_work(request):
     try:
-        if request.body:
-            request_body = json.loads(request.body)
+        if request.POST or request.FILES:
+            data = request.POST
+            files = request.FILES
         else:
-            return HttpResponse(json.dumps(
-                {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
-                ensure_ascii=False), status=400)
-        work = Work.objects.get(id=request_body["id"])
-        if "grades" in request_body.keys():
-            grades_list = request_body["grades"]
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=400)
+        id_ = data['id']
+        work = Work.objects.get(id=id_)
+        if "grades" in data:
+            grades_list = data.getlist("grades")
             max_score = 0
             for grade in grades_list:
                 if not is_number(grade):
@@ -311,25 +339,62 @@ def update_work(request):
                             ensure_ascii=False), status=404)
                 cast = float(grade)
                 max_score += cast
-            grades = '_._'.join(grades_list)
-            old_grades = work.grades
-            old_maximum = work.max_score
+            grades = grades_list
             work.grades = grades
             work.max_score = max_score
             work.updated_at = timezone.now()
-            work.save()
-            log = Log(operation='UPDATE', from_table='works',
-                      details=f'Изменены оценки в работе {request_body["id"]} в таблице works. ["grades": "{old_grades}", "max_score": "{old_maximum}"]')
-            log.save()
-        if "name" in request_body.keys():
-            old_name = work.name
-            new_name = request_body["name"]
+        if "name" in data:
+            new_name = data["name"]
             work.name = new_name
             work.updated_at = timezone.now()
+        if "has_attachments" in data:
+            has_attachments = data["has_attachments"]
+            if not has_attachments:
+                work.title = None
+                work.answers = None
+                work.text = None
+                work.has_attachments = False
+                work_users = WorkUser.objects.filter(work=work)
+                work_users.delete()
+                work_files = WorkFile.objects.filter(work=work)
+                work_files.delete()
+            else:
+                if not work.has_attachments:
+                    if "title" in data:
+                        title = data["title"]
+                    else:
+                        title = None
+                    text = data["text"]
+                    answers = data.getlist("answers")
+                    work.text = text
+                    work.title = title
+                    work.answers = answers
+                    work.has_attachments = True
+                else:
+                    if "title" in data:
+                        work.title = data["title"]
+                    if "text" in data:
+                        work.text = data["text"]
+                    if "answers" in data:
+                        answers = data.getlist("answers")
+                        work.answers = answers
+                if "files" in files:
+                    files = files.getlist('files')
+                    for file in files:
+                        if 'image' in str(file.content_type):
+                            pass
+                        elif file.content_type in ['application/pdf']:
+                            pass
+                        else:
+                            return HttpResponse(
+                                json.dumps(
+                                    {'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
+                                     'instance': request.path},
+                                    ensure_ascii=False), status=404)
+                        ext = file.name.split('.')[1]
+                        work_file = WorkFile(work=work, file=file, ext=ext)
+                        work_file.save()
             work.save()
-            log = Log(operation='UPDATE', from_table='works',
-                      details=f'Изменено имя работы {request_body["id"]} в таблице works. ["name": "{old_name}"]')
-            log.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -367,21 +432,12 @@ def delete_work(request):
             work_ = link.work_2007
             link.delete()
             work_.delete()
-            log_details = f'Удалена работа из таблицы works. ["id": {work_.id} | "name": "{work_.name}" | "grades": {", ".join(map(str, work_.grades.split("_._")))} | "max_score": "{work_.max_score}" | "exercises": "{work_.exercises}" | "theme_id": {work_.theme_id} | "school_class": {work_.school_class} | "type": {work_.type} | "is_homework": {work_.is_homework}]'
-            log = Log(operation='DELETE', from_table='works', details=log_details)
-            log.save()
         elif type_ in [7, 8]:
             link = Exam.objects.get(work_2007=work)
             work_ = link.work
             link.delete()
             work_.delete()
-            log_details = f'Удалена работа из таблицы works. ["id": {work_.id} | "name": "{work_.name}" | "grades": {", ".join(map(str, work_.grades.split("_._")))} | "max_score": "{work_.max_score}" | "exercises": "{work_.exercises}" | "theme_id": {work_.theme_id} | "school_class": {work_.school_class} | "type": {work_.type} | "is_homework": {work_.is_homework}]'
-            log = Log(operation='DELETE', from_table='works', details=log_details)
-            log.save()
-        log_details = f'Удалена работа из таблицы works. ["id": {work.id} | "name": "{work.name}" | "grades": {", ".join(map(str, work.grades.split("_._")))} | "max_score": "{work.max_score}" | "exercises": "{work.exercises}" | "theme_id": {work.theme_id} | "school_class": {work.school_class} | "type": {work.type} | "is_homework": {work.is_homework}]'
         work.delete()
-        log = Log(operation='DELETE', from_table='works', details=log_details)
-        log.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -420,16 +476,429 @@ def delete_works(request):
                          'instance': request.path},
                         ensure_ascii=False), status=404)
         works = Work.objects.filter(school_class=class_)
-        if not works:
-            return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
-        for work in works:
-            Log(operation='DELETE', from_table='works',
-                details=f'Работа удалена из таблицы works. ["id": {work.id} | "name": "{work.name}" | "grades": {", ".join(map(str, work.grades.split("_._")))} | "max_score": "{work.max_score}" | "exercises": "{work.exercises}" | "theme_id": {work.theme_id} | "school_class": {work.school_class} | "type": {work.type} | "is_homework": {work.is_homework}]').save()
         works.delete()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='PATCH', operation_summary="Удаление файла у работы.",
+                     manual_parameters=[file_param],
+                     responses=delete_file_from_homework_responses)
+@api_view(["PATCH"])
+@permission_classes([IsTierOne])
+def delete_file_from_work(request):
+    try:
+        file_id = get_variable("file", request)
+        if (file_id is None) or (file_id == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id файла.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        work_file = WorkFile.objects.get(id=file_id)
+        path = os.path.join(MEDIA_ROOT, f'{work_file.file}')
+        if path is not None:
+            try:
+                os.remove(path)
+            except:
+                pass
+        work_file.delete()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Файл не существует.', 'details': {},
+                        'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='PATCH', operation_summary="Открыть доступ к работе ученику.",
+                     manual_parameters=[id_param, student_param],
+                     responses=add_to_homework_responses)
+@api_view(["PATCH"])
+@permission_classes([IsAdmin])
+def add_to_work(request):
+    try:
+        id_ = get_variable("id", request)
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        student_id = get_variable("student", request)
+        if (student_id is None) or (student_id == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        work = Work.objects.get(id=id_)
+        student = User.objects.get(id=student_id)
+        if student.school_class != work.school_class:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Класс ученика не соответствует классу работы.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=404)
+        answers = ['#'] * work.exercises
+        work_object_user = WorkUser(work=work, user=student, answers=answers)
+        work_object_user.save()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {},
+                        'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='PATCH', operation_summary="Закрыть доступ к работе ученику.",
+                     manual_parameters=[id_param, student_param],
+                     responses=delete_from_homework_responses)
+@api_view(["PATCH"])
+@permission_classes([IsTierTwo])
+def delete_from_work(request):
+    try:
+        id_ = get_variable("id", request)
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        student_id = get_variable("student", request)
+        if (student_id is None) or (student_id == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        work = Work.objects.get(id=id_)
+        student = User.objects.get(id=student_id)
+        work_object_user = WorkUser.objects.get(work=work, user=student)
+        work_object_user.delete()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа, объект работы или пользователь не существует.', 'details': {},
+                        'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='GET', operation_summary="Получение работы(пользователь).",
+                     manual_parameters=[id_param],
+                     responses=get_user_homework_responses)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_user_work(request):
+    try:
+        id_ = get_variable("id", request)
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        work = Work.objects.get(id=id_)
+        student = User.objects.get(id=request.user.id)
+        work_user = WorkUser.objects.filter(user=student, work=work)
+        if not work_user:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=403)
+        work_user = work_user[0]
+        files = WorkFile.objects.filter(work=work)
+        files_list = []
+        for file in files:
+            link = file.file.name
+            name = link.split('/')[1]
+            ext = name.split('.')[-1]
+            files_list.append({'link': link, 'name': name, 'ext': ext})
+        title = work.title if work.title else work.name
+        response = {
+            'id': work.id,
+            'title': title,
+            'text': work.text,
+            'max_score': work.score,
+            'fields': work.exercises,
+            'files': files_list,
+            'class': work.school_class,
+            'is_done': work.is_done,
+            'is_checked': work.is_checked,
+            'created_at': str(work.created_at)
+        }
+        if work_user.is_done:
+            response['answers'] = work.answers
+            response['user_answers'] = work_user.answers
+            user_files = WorkUserFile.objects.filter(link=work_user)
+            user_files_list = []
+            for file in user_files:
+                link = file.file.name
+                name = link.split('/')[1]
+                user_files_list.append({'link': link, 'name': name, 'ext': file.ext})
+            response['user_files'] = user_files_list
+            response['answered_at'] = str(work_user.answered_at)
+        # TODO: не score а grades
+        if work_user.is_checked:
+            response['user_score'] = work_user.score
+        response['comment'] = work_user.comment
+        return HttpResponse(json.dumps(response, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+@swagger_auto_schema(method='POST', operation_summary="Ответ на домашнюю работу.",
+                     request_body=create_response_request_body,
+                     responses=create_response_responses)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def create_response(request):
+    try:
+        if request.POST or request.FILES:
+            data = request.POST
+            files = request.FILES
+        else:
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=400)
+        id_ = data['id']
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        work = Work.objects.get(id=id_)
+        student = User.objects.get(id=request.user.id)
+        work_user = WorkUser.objects.filter(user=student, work=work)
+        if not work_user:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=403)
+        work_user = work_user[0]
+        answers = data.getlist("answers")
+        fields = len(answers)
+        if fields != work.exercises:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Некорректное количество ответов.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=403)
+        files = files.getlist('files')
+        for file in files:
+            if 'image' in str(file.content_type):
+                pass
+            elif file.content_type in ('application/pdf', 'application/octet-stream'):
+                pass
+            else:
+                return HttpResponse(
+                    json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {'ct': file.content_type},
+                                'instance': request.path},
+                               ensure_ascii=False), status=404)
+        work_user.is_done = True
+        work_user.answers = answers
+        work_user.answered_at = timezone.now()
+        for file in files:
+            ext = file.name.split('.')[1]
+            to_jpeg = False
+            if ext == 'heic':
+                ext = 'jpeg'
+                to_jpeg = True
+            homework_file = WorkUserFile(link=work_user, file=file, ext=ext)
+            homework_file.save()
+            if to_jpeg:
+                path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
+                new_path = heif_to_jpeg(path)
+                new_name = f'{str(homework_file.file).split(".")[0]}.jpeg'
+                if new_path is not None:
+                    homework_file.file = new_name
+                    homework_file.save()
+                    os.remove(path)
+        work_user.save()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='PATCH', operation_summary="Проверка домашней работы(админка).",
+                     request_body=check_user_homework_request_body,
+                     responses=check_user_homework_responses)
+@api_view(["PATCH"])
+@permission_classes([IsAdmin])
+def check_user_homework(request):
+    try:
+        if request.body:
+            request_body = json.loads(request.body)
+        else:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
+        id_ = request_body['id']
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        student_id = request_body['student']
+        if (student_id is None) or (student_id == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        work = Work.objects.get(id=id_)
+        student = User.objects.get(id=student_id)
+        admin = User.objects.get(id=request.user.id)
+        work_user = WorkUser.objects.filter(user=student, work=work)
+        if not work_user:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=403)
+        work_user = work_user[0]
+        if 'value' in request_body.keys():
+            value = request_body['value']
+            if ',' in value:
+                value = value.replace(',', '.')
+            cell = request_body['cell']
+            if not validate_grade(value):
+                return HttpResponse(
+                    json.dumps({'state': 'error', 'message': 'Некорректное значение оценки.', 'details': {},
+                                'instance': request.path},
+                               ensure_ascii=False), status=400)
+            work_grades = work.grades
+            grade = Grade.objects.get(user=student, work=work)
+            new_grades = grade.grades
+            new_grades[cell] = value
+            score = 0
+            max_score = 0
+            exercises = 0
+            is_empty = True
+            for i, grade_ in enumerate(new_grades):
+                if grade_ == '-':
+                    is_empty = False
+                    pass
+                elif grade_ == '#':
+                    exercises += 1
+                    max_score += work_grades[i]
+                else:
+                    is_empty = False
+                    exercises += 1
+                    max_score += work_grades[i]
+                    score += float(grade_)
+            if score > work.max_score:
+                return HttpResponse(
+                    json.dumps({'state': 'error', 'message': 'Некорректное значение оценок. Сумма вышла больше максимума.', 'details': {},
+                                'instance': request.path},
+                               ensure_ascii=False), status=404)
+            if is_empty:
+                exercises = 0
+                max_score = 0
+                score = 0
+                work_user.is_checked = False
+                work_user.checked_at = None
+                work_user.is_done = False
+                work_user.checker = None
+            else:
+                work_user.is_checked = True
+                work_user.checked_at = timezone.now()
+                work_user.is_done = True
+                work_user.checker = admin
+            grade.score = score
+            grade.exercises = exercises
+            grade.max_score = max_score
+            grade.grades = new_grades
+            grade.save()
+        if 'comment' in request_body.keys():
+            comment = request_body['comment']
+            work_user.comment = comment
+        work_user.save()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {},
+                        'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='GET', operation_summary="Получение списка домашних(пользователь).",
+                     responses=get_my_homeworks_responses)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_my_homeworks(request):
+    try:
+        student = User.objects.get(id=request.user.id)
+        work_user = WorkUser.objects.filter(user=student).select_related('work').order_by('work__created_at')
+        works_list = {}
+        for work in work_user:
+            if work.work.title:
+                title = work.work.title
+            else:
+                title = work.work.name
+            works_list[work.id] = {
+                'title': title,
+                'is_done': work.is_done,
+                'is_checked': work.is_checked,
+            }
+        grades = Grade.objects.filter(work_id__in=list(works_list.keys()), work__is_homework=True).select_related('work')
+        for grade in grades:
+            if grade.max_score:
+                works_list[grade.work_id]['max_score'] = grade.max_score
+            else:
+                works_list[grade.work_id]['max_score'] = grade.work.max_score
+            works_list[grade.work_id]['score'] = grade.score
+        homeworks_list = []
+        for homework in works_list:
+            result = {
+                'id': homework,
+                'name': works_list[homework]['title'],
+                'is_done': works_list[homework]['is_done'],
+                'is_checked': works_list[homework]['is_checked']
+            }
+            if works_list[homework]['is_checked']:
+                result['score'] = works_list[homework]['score']
+                result['max_score'] = works_list[homework]['max_score']
+            homeworks_list.append(result)
+        return HttpResponse(json.dumps({'homeworks': homeworks_list}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {},
+                        'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(

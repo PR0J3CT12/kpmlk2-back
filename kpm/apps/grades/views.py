@@ -3,7 +3,6 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from kpm.apps.users.permissions import IsAdmin
 from .functions import *
-from kpm.apps.logs.models import Log
 from kpm.apps.users.models import User
 from kpm.apps.works.models import Work, Exam
 from kpm.apps.themes.models import Theme
@@ -23,7 +22,11 @@ from django.core.exceptions import ObjectDoesNotExist
 @api_view(["POST"])
 @permission_classes([IsAdmin])
 def insert_grades(request):
-    global_change = None
+    global_change = {
+        "work_id": None,
+        "student_id": None,
+        "cell_number": None
+    }
     try:
         if request.body:
             request_body = json.loads(request.body)
@@ -40,9 +43,9 @@ def insert_grades(request):
             link = Exam.objects.get(work_2007=work)
             work_tech = link.work
         grade = Grade.objects.get(user=student, work=work)
-        work_grades = list(map(float, work.grades.split("_._")))
+        work_grades = list(map(float, work.grades))
         new_max_score = sum(work_grades)
-        new_grades = grade.grades.split("_._")
+        new_grades = grade.grades
         new_exercises = work.exercises
         new_score = 0
         if request_body["value"] == '':
@@ -93,7 +96,7 @@ def insert_grades(request):
             return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
         if work_tech:
             grade_tech = Grade.objects.get(user=student, work=work_tech)
-            work_tech_grades = list(map(float, work_tech.grades.split("_._")))
+            work_tech_grades = list(map(float, work_tech.grades))
             max_score_tech = 0
             score_tech = 0
             exercises_tech = 0
@@ -148,7 +151,6 @@ def insert_grades(request):
         grade.max_score = new_max_score
         grade.score = new_score
         grade.exercises = new_exercises
-        log_details = f'Обновлены оценки для ученика {student.id} в работе {work.id}. ["old_grades": {log_grades_string}, "new_grades": {new_grades_string}]'
         grade.save()
         if work.type in [0, 1, 4, 6, 7, 8]:
             if work.is_homework:
@@ -172,8 +174,6 @@ def insert_grades(request):
                     except ObjectDoesNotExist:
                         student.last_classwork_id = work.id
             student.save()
-        #total_scores = Grade.objects.filter(user=student, work__type__in=[0, 5, 6]).aggregate(sum_score=Sum('score'))
-        #total_experience = int(total_scores['sum_score'])
         aggregated_data = Grade.objects.filter(
             user=student,
             work__type__in=[0, 5, 6]
@@ -201,8 +201,6 @@ def insert_grades(request):
         student.exam_experience = exam_experience
         student.oral_exam_experience = oral_exam_experience
         student.save()
-        log = Log(operation='UPDATE', from_table='grades', details=log_details)
-        log.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -304,10 +302,10 @@ def get_grades(request):
         if works:
             works_dict = {}
             for work in works:
-                data = {'id': work.id, 'name': work.name, 'max_score': work.max_score, 'grades': list(map(int, work.grades.split("_._")))}
+                data = {'id': work.id, 'name': work.name, 'max_score': work.max_score, 'grades': list(map(int, work.grades))}
                 if ((type_ == '7') or (type_ == '8')) or (theme == '8'):
                     work_tech = links.get(work_2007=work)
-                    grades_tech = list(map(int, work_tech.work.grades.split("_._")))
+                    grades_tech = list(map(int, work_tech.work.grades))
                     data['grades_tech'] = grades_tech
                 works_data.append(data)
                 if work.id not in works_dict:
@@ -333,7 +331,7 @@ def get_grades(request):
                         percentage = str(round(float(score) / float(max_score) * 100, 1))
                     else:
                         percentage = ""
-                    current_student_grades_list = current_student_grades['grades'].split("_._")
+                    current_student_grades_list = current_student_grades['grades']
                     is_empty = True
                     for i in range(len(current_student_grades_list)):
                         if current_student_grades_list[i] == '#':
@@ -440,8 +438,6 @@ def give_mana_all(request):
         for mana in manas:
             mana.is_given = 1
             mana.save()
-        log = Log(operation='UPDATE', from_table='mana', details=log_details)
-        log.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(

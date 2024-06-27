@@ -138,5 +138,14 @@ def borders_lvl(score):
     return homework_lvl
 
 
+def validate_grade(grade):
+    if ',' in grade:
+        grade = grade.replace(',', '.')
+    if grade not in ['', '-']:
+        return is_number(grade)
+    else:
+        return False
+
+
 if __name__ == '__main__':
     pass
