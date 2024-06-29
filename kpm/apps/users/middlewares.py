@@ -19,6 +19,8 @@ class AuthenticationMiddleware(MiddlewareMixin):
         if request.path in EXCLUDE_FROM_MIDDLEWARE:
             return None
         try:
+            if request.user.is_disabled:
+                return HttpResponse(f'Access denied.', status=401)
             access = request.COOKIES.get('access_token', None)
             if access:
                 access_payload = jwt.decode(access, settings.SECRET_KEY, algorithms=['HS256'])
@@ -45,6 +47,8 @@ class AuthenticationMiddleware(MiddlewareMixin):
         return None
 
     def process_response(self, request, response):
+        if request.user.is_disabled:
+            return HttpResponse(f'Access denied.', status=401)
         if request.path in EXCLUDE_FROM_MIDDLEWARE:
             return response
         if hasattr(request, 'user_id'):

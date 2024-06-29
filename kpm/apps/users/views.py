@@ -154,7 +154,8 @@ def get_users(request):
                             "last_classwork_id": student.last_classwork_id,
                             "group_id": group_id,
                             "group_name": group_name,
-                            "color": MARKER_CHOICES[marker]
+                            "color": MARKER_CHOICES[marker],
+                            "is_disabled": student.is_disabled
                             }
             students_list.append(student_info)
         return HttpResponse(
@@ -635,6 +636,64 @@ def delete_from_group(request):
         if current_group:
             current_group[0].delete()
         student.group = None
+        student.save()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps(
+                {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='GET', operation_summary="Отключить пользователя.",
+                     manual_parameters=[user_param],
+                     responses=disable_user_responses)
+@api_view(["GET"])
+@permission_classes([IsTierTwo])
+def disable_user(request):
+    try:
+        student_id = get_variable("student", request)
+        if (student_id is None) or (student_id == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        student = User.objects.get(id=student_id)
+        student.is_disabled = True
+        student.save()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps(
+                {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='GET', operation_summary="Включить пользователя.",
+                     manual_parameters=[user_param],
+                     responses=enable_user_responses)
+@api_view(["GET"])
+@permission_classes([IsTierTwo])
+def enable_user(request):
+    try:
+        student_id = get_variable("student", request)
+        if (student_id is None) or (student_id == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        student = User.objects.get(id=student_id)
+        student.is_disabled = False
         student.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:

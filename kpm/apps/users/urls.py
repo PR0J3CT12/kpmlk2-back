@@ -11,4 +11,6 @@ urlpatterns = [
     path('logout', views.logout, name='logout'),
     path('change-password', views.change_password, name='change password'),
     path('get-all-logons', views.get_all_logons, name='get all logons'),
+    path('enable', views.enable_user, name='enable user'),
+    path('disable', views.disable_user, name='disable user'),
 ]

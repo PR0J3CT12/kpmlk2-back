@@ -85,6 +85,8 @@ get_users_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                                type=openapi.TYPE_INTEGER, example="Название группы"),
                                                                            "color": openapi.Schema(
                                                                                type=openapi.TYPE_STRING, example="#bfa0de"),
+                                                                           "is_disabled": openapi.Schema(
+                                                                               type=openapi.TYPE_BOOLEAN, example=False),
                                                                        }),
 
                                         })
@@ -155,6 +157,8 @@ create_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 add_to_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_from_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
+disable_user_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
+enable_user_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 logout_responses = {200: logout_response_200}
 login_responses = {200: login_response_200}
 delete_users_responses = {200: delete_users_response_200}
@@ -169,3 +173,5 @@ add_to_group_responses = {200: add_to_group_response_200}
 delete_from_group_responses = {200: delete_from_group_response_200}
 get_groups_responses = {200: get_groups_response_200}
 get_all_logons_responses = {200: get_all_logons_response_200}
+disable_user_responses = {200: disable_user_response_200}
+enable_user_responses = {200: enable_user_response_200}
