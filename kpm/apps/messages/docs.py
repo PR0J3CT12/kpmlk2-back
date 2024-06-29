@@ -28,6 +28,11 @@ get_message_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                               'is_viewed': openapi.Schema(type=openapi.TYPE_BOOLEAN, example=False),
                                               'datetime': openapi.Schema(type=openapi.FORMAT_DATETIME,
                                                                          example="2023-03-31 17:31:59.612927+03"),
+                                              'files': openapi.Schema(
+                                                  type=openapi.TYPE_ARRAY,
+                                                  items=openapi.Schema(
+                                                      type=openapi.TYPE_STRING)
+                                              ),
                                           })
 get_messages_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                            properties={
@@ -97,7 +102,12 @@ get_sent_messages_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                             'is_viewed': openapi.Schema(
                                                                                 type=openapi.TYPE_BOOLEAN,
                                                                                 example=False),
-                                                                        }))
+                                                                        })),
+                                                                'files': openapi.Schema(
+                                                                    type=openapi.TYPE_ARRAY,
+                                                                    items=openapi.Schema(
+                                                                        type=openapi.TYPE_STRING)
+                                                                ),
                                                             }
                                                         )),
                                                 })

@@ -5,7 +5,7 @@ from kpm.apps.users.permissions import IsAdmin
 from kpm.apps.users.functions import is_trusted
 from .functions import get_variable
 from kpm.apps.users.models import User
-from kpm.apps.messages.models import Message, MessageGroup
+from kpm.apps.messages.models import Message, MessageGroup, MessageGroupFile
 import json
 from django.core.exceptions import ObjectDoesNotExist
 from drf_yasg.utils import swagger_auto_schema
@@ -19,21 +19,38 @@ from kpm.apps.messages.docs import *
 @permission_classes([IsAdmin])
 def send_message(request):
     try:
-        if request.body:
-            request_body = json.loads(request.body)
+        if request.POST or request.FILES:
+            data = request.POST
+            files = request.FILES
         else:
-            return HttpResponse(json.dumps(
-                {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
-                ensure_ascii=False), status=400)
-        receivers_ids = request_body['users_to']
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=400)
+        receivers_ids = data['users_to']
         receivers = User.objects.filter(id__in=receivers_ids)
         sender = User.objects.get(id=request.user.id)
-        text = request_body['text']
+        text = data['text']
+        files = files.getlist('files')
+        for file in files:
+            if 'image' in str(file.content_type):
+                pass
+            elif file.content_type in ['application/pdf']:
+                pass
+            else:
+                return HttpResponse(
+                    json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
+                                'instance': request.path},
+                               ensure_ascii=False), status=404)
         messages_group = MessageGroup()
         messages_group.save()
         for receiver in receivers:
             message = Message(user_to=receiver, user_from=sender, text=text, group=messages_group)
             message.save()
+        for file in files:
+            ext = file.name.split('.')[1]
+            message_file = MessageGroupFile(message_group=messages_group, file=file, ext=ext)
+            message_file.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -95,6 +112,14 @@ def get_message(request):
             return HttpResponse(json.dumps(
                     {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=401)
+        message_group = message.group
+        files = MessageGroupFile.objects.filter(message_group=message_group)
+        files_list = []
+        for file in files:
+            link = file.file.name
+            name = link.split('/')[1]
+            ext = name.split('.')[-1]
+            files_list.append({'link': link, 'name': name, 'ext': ext})
         return HttpResponse(json.dumps({
             'id': message.id,
             'user_to': message.user_to.id,
@@ -103,7 +128,8 @@ def get_message(request):
             'user_from_name': message.user_from.name,
             'text': message.text,
             'is_viewed': message.is_viewed,
-            'datetime': str(message.group.datetime)
+            'datetime': str(message.group.datetime),
+            'files': files_list
         }, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
@@ -161,6 +187,7 @@ def get_sent_messages(request):
     try:
         id_ = request.user.id
         messages = Message.objects.filter(user_from=id_).order_by('user_to__name', '-group__datetime')
+        groups = set(messages.values_list('group', flat=True))
         if not is_trusted(request, id_):
             return HttpResponse(json.dumps(
                     {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
@@ -168,6 +195,15 @@ def get_sent_messages(request):
         if not messages:
             return HttpResponse(json.dumps({'messages': []}, ensure_ascii=False), status=200)
         messages_dict = {}
+        files = MessageGroupFile.objects.filter(message_group__in=groups)
+        files_dict = {}
+        for file in files:
+            link = file.file.name
+            name = link.split('/')[1]
+            ext = name.split('.')[-1]
+            if file.message_group not in files_dict:
+                files_dict[file.message_group_id] = []
+            files_dict[file.message_group_id].append({'link': link, 'name': name, 'ext': ext})
         for message in messages:
             if message.group_id not in messages_dict:
                 messages_dict[message.group_id] = {
@@ -176,7 +212,8 @@ def get_sent_messages(request):
                     'user_from_name': message.user_from.name,
                     'text': message.text,
                     'datetime': str(message.group.datetime),
-                    'recipients': []
+                    'recipients': [],
+                    'files': files_dict[message.group_id]
                 }
             messages_dict[message.group_id]['recipients'].append(
                 {
