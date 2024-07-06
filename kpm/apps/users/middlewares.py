@@ -1,7 +1,7 @@
 import jwt
 from django.urls import reverse
 from django.conf import settings
-from kpm.apps.users.functions import get_tokens_for_user, get_user_id_from_refresh_token
+from kpm.apps.users.functions import get_tokens_for_user, get_user_id_from_refresh_token, get_new_access_for_refresh_token
 from django.http import HttpResponse
 from django.core.exceptions import ObjectDoesNotExist
 import time
@@ -19,12 +19,12 @@ class AuthenticationMiddleware(MiddlewareMixin):
         if request.path in EXCLUDE_FROM_MIDDLEWARE:
             return None
         try:
-            if request.user.is_disabled:
-                return HttpResponse(f'Access denied.', status=401)
             access = request.COOKIES.get('access_token', None)
             if access:
                 access_payload = jwt.decode(access, settings.SECRET_KEY, algorithms=['HS256'])
                 user_id = access_payload['user_id']
+                if request.user.is_disabled:
+                    return HttpResponse(f'Access denied.', status=401)
                 setattr(request, 'user_id', user_id)
                 request.META['HTTP_AUTHORIZATION'] = f'kpm {access}'
             else:
@@ -34,21 +34,32 @@ class AuthenticationMiddleware(MiddlewareMixin):
             if user_id is None:
                 return HttpResponse(f'Access token is expired and {message}', status=401)
 
+            if request.user.is_disabled:
+                return HttpResponse(f'Access denied.', status=401)
             setattr(request, 'user_id', str(user_id))
+            access, message = get_new_access_for_refresh_token(request)
+            if access:
+                request.META['HTTP_AUTHORIZATION'] = f'yuh {access}'
+            else:
+                return HttpResponse(f'Invalid refresh token and {message}', status=401)
             return None
         except jwt.DecodeError:
             user_id, message = get_user_id_from_refresh_token(request, settings.SECRET_KEY)
             if user_id is None:
                 return HttpResponse(f'Access token invalid or missing and {message}', status=401)
 
+            if request.user.is_disabled:
+                return HttpResponse(f'Access denied.', status=401)
             setattr(request, 'user_id', str(user_id))
+            access, message = get_new_access_for_refresh_token(request)
+            if access:
+                request.META['HTTP_AUTHORIZATION'] = f'yuh {access}'
+            else:
+                return HttpResponse(f'Invalid refresh token and {message}', status=401)
             return None
-
         return None
 
     def process_response(self, request, response):
-        if request.user.is_disabled:
-            return HttpResponse(f'Access denied.', status=401)
         if request.path in EXCLUDE_FROM_MIDDLEWARE:
             return response
         if hasattr(request, 'user_id'):

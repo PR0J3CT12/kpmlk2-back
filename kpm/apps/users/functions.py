@@ -1,6 +1,7 @@
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.datastructures import MultiValueDictKeyError
+from rest_framework_simplejwt.exceptions import TokenError
 from transliterate import translit
 import random
 from kpm.apps.users.models import User
@@ -44,6 +45,18 @@ def get_user_id_from_refresh_token(request, key):
         return None, 'refresh token is invalid'
     except ObjectDoesNotExist:
         return None, 'user does not exist'
+
+
+def get_new_access_for_refresh_token(request):
+    try:
+        refresh_token = request.COOKIES['refresh_token']
+        refresh_token = RefreshToken(refresh_token)
+        new_access_token = refresh_token.access_token
+        return str(new_access_token), ''
+    except TokenError as e:
+        return None, 'Invalid refresh token'
+    except Exception as e:
+        return None, f'Failed to generate new access token | {str(e)}'
 
 
 def get_variable(variable_name, source_request):
