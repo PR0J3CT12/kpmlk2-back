@@ -19,7 +19,6 @@ from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.users.docs import *
 from django.utils import timezone
 from datetime import datetime, timedelta
-from django.contrib.auth import authenticate
 
 
 SECRET_KEY = settings.SECRET_KEY
@@ -30,6 +29,7 @@ UNIVERSAL = settings.UNIVERSAL
                      manual_parameters=[id_param],
                      responses=get_user_responses)
 @api_view(["GET"])
+@permission_classes([IsAuthenticated, IsEnabled])
 def get_user(request):
     try:
         id_ = get_variable("id", request)
@@ -97,26 +97,32 @@ def get_user(request):
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение пользователей.",
-                     manual_parameters=[class_param],
+                     manual_parameters=[class_param, is_admin_param],
                      responses=get_users_responses)
 @api_view(["GET"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def get_users(request):
     try:
-        class_ = get_variable("class", request)
-        if not class_:
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=404)
+        is_admin = get_variable("is_admin", request)
+        if is_admin:
+            query = Q(is_admin=1)
         else:
-            if class_ not in ['4', '5', '6', 4, 5, 6]:
+            class_ = get_variable("class", request)
+            if not class_:
                 return HttpResponse(
                     json.dumps(
-                        {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
+                        {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {},
                          'instance': request.path},
                         ensure_ascii=False), status=404)
-        students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).select_related('group').order_by('name')
+            else:
+                if class_ not in ['4', '5', '6', 4, 5, 6]:
+                    return HttpResponse(
+                        json.dumps(
+                            {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
+                             'instance': request.path},
+                            ensure_ascii=False), status=404)
+            query = Q(is_admin=0) & Q(school_class=int(class_))
+        students = User.objects.filter(query).select_related('group').order_by('name')
         MARKER_CHOICES = {
             0: '#ff8282',
             1: '#ffb875',
@@ -175,7 +181,7 @@ def get_users(request):
                      request_body=create_user_request_body,
                      responses=create_user_responses)
 @api_view(["POST"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def create_user(request):
     try:
         if request.body:
@@ -223,7 +229,7 @@ def create_user(request):
                      manual_parameters=[id_param],
                      responses=delete_user_responses)
 @api_view(["DELETE"])
-@permission_classes([IsTierTwo])
+@permission_classes([IsTierTwo, IsEnabled])
 def delete_user(request):
     try:
         id_ = get_variable("id", request)
@@ -255,7 +261,7 @@ def delete_user(request):
                      manual_parameters=[class_param],
                      responses=delete_users_responses)
 @api_view(["DELETE"])
-@permission_classes([IsTierTwo])
+@permission_classes([IsTierTwo, IsEnabled])
 def delete_users(request):
     try:
         class_ = get_variable("class", request)
@@ -292,7 +298,7 @@ def delete_users(request):
                      request_body=change_password_request_body,
                      responses=change_password_responses)
 @api_view(["PATCH"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsEnabled])
 def change_password(request):
     try:
         if request.body:
@@ -365,6 +371,11 @@ def login(request):
         login_ = request_body["login"]
         password = request_body["password"]
         user = User.objects.get(login=login_)
+        if user.is_disabled:
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Аккаунт заблокирован.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=403)
         if check_password(password, UNIVERSAL) and not user.is_admin:
             is_passed = True
         else:
@@ -442,7 +453,7 @@ def logout(request):
                      operation_summary="Список последних входов всех пользователей.",
                      responses=get_all_logons_responses)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAdmin, IsEnabled])
 def get_all_logons(request):
     try:
         logons = History.objects.all().select_related('user').order_by('-datetime')
@@ -470,7 +481,7 @@ def get_all_logons(request):
                      responses=get_groups_responses,
                      operation_description=operation_description)
 @api_view(["GET"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def get_groups(request):
     try:
         class_ = get_variable("class", request)
@@ -515,7 +526,7 @@ def get_groups(request):
                      responses=create_group_responses,
                      operation_description=operation_description)
 @api_view(["POST"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def create_group(request):
     try:
         if request.body:
@@ -554,7 +565,7 @@ def create_group(request):
                      manual_parameters=[group_param],
                      responses=delete_group_responses)
 @api_view(["DELETE"])
-@permission_classes([IsTierTwo])
+@permission_classes([IsTierTwo, IsEnabled])
 def delete_group(request):
     try:
         id_ = get_variable("group", request)
@@ -581,7 +592,7 @@ def delete_group(request):
                      manual_parameters=[group_param, user_param],
                      responses=add_to_group_responses)
 @api_view(["PATCH"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def add_to_group(request):
     try:
         id_ = get_variable("group", request)
@@ -622,7 +633,7 @@ def add_to_group(request):
                      manual_parameters=[user_param],
                      responses=delete_from_group_responses)
 @api_view(["PATCH"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def delete_from_group(request):
     try:
         student_id = get_variable("student", request)
@@ -654,7 +665,7 @@ def delete_from_group(request):
                      manual_parameters=[user_param],
                      responses=disable_user_responses)
 @api_view(["GET"])
-@permission_classes([IsTierTwo])
+@permission_classes([IsTierTwo, IsEnabled])
 def disable_user(request):
     try:
         student_id = get_variable("student", request)
@@ -683,7 +694,7 @@ def disable_user(request):
                      manual_parameters=[user_param],
                      responses=enable_user_responses)
 @api_view(["GET"])
-@permission_classes([IsTierTwo])
+@permission_classes([IsTierTwo, IsEnabled])
 def enable_user(request):
     try:
         student_id = get_variable("student", request)

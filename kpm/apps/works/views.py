@@ -25,7 +25,7 @@ MEDIA_ROOT = settings.MEDIA_ROOT
                      responses=get_works_responses,
                      operation_description=operation_description)
 @api_view(["GET"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def get_works(request):
     try:
         class_ = get_variable("class", request)
@@ -73,7 +73,7 @@ def get_works(request):
                      responses=get_work_responses,
                      operation_description=operation_description)
 @api_view(["GET"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def get_work(request):
     try:
         id_ = get_variable("id", request)
@@ -139,7 +139,7 @@ def get_work(request):
                      responses=create_work_responses,
                      operation_description=operation_description)
 @api_view(["POST"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def create_work(request):
     try:
         if request.POST or request.FILES:
@@ -307,7 +307,7 @@ def create_work(request):
                      responses=update_work_responses,
                      operation_description=operation_description)
 @api_view(["PATCH"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def update_work(request):
     try:
         if request.POST or request.FILES:
@@ -415,7 +415,7 @@ def update_work(request):
                      responses=delete_work_responses,
                      operation_description=operation_description)
 @api_view(["DELETE"])
-@permission_classes([IsTierTwo])
+@permission_classes([IsTierTwo, IsEnabled])
 def delete_work(request):
     try:
         id_ = get_variable("id", request)
@@ -458,7 +458,7 @@ def delete_work(request):
                      responses=delete_work_responses,
                      operation_description=operation_description)
 @api_view(["DELETE"])
-@permission_classes([IsTierTwo])
+@permission_classes([IsTierTwo, IsEnabled])
 def delete_works(request):
     try:
         class_ = get_variable("class", request)
@@ -492,7 +492,7 @@ def delete_works(request):
                      manual_parameters=[file_param],
                      responses=delete_file_from_homework_responses)
 @api_view(["PATCH"])
-@permission_classes([IsTierOne])
+@permission_classes([IsTierOne, IsEnabled])
 def delete_file_from_work(request):
     try:
         file_id = get_variable("file", request)
@@ -526,7 +526,7 @@ def delete_file_from_work(request):
                      manual_parameters=[id_param, student_param],
                      responses=add_to_homework_responses)
 @api_view(["PATCH"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def add_to_work(request):
     try:
         id_ = get_variable("id", request)
@@ -569,7 +569,7 @@ def add_to_work(request):
                      manual_parameters=[id_param, student_param],
                      responses=delete_from_homework_responses)
 @api_view(["PATCH"])
-@permission_classes([IsTierTwo])
+@permission_classes([IsTierTwo, IsEnabled])
 def delete_from_work(request):
     try:
         id_ = get_variable("id", request)
@@ -606,7 +606,7 @@ def delete_from_work(request):
                      manual_parameters=[id_param],
                      responses=get_user_homework_responses)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsEnabled])
 def get_user_work(request):
     try:
         id_ = get_variable("id", request)
@@ -675,7 +675,7 @@ def get_user_work(request):
                      request_body=create_response_request_body,
                      responses=create_response_responses)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsEnabled])
 def create_response(request):
     try:
         if request.POST or request.FILES:
@@ -756,7 +756,7 @@ def create_response(request):
                      request_body=check_user_homework_request_body,
                      responses=check_user_homework_responses)
 @api_view(["PATCH"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def check_user_homework(request):
     try:
         if request.body:
@@ -862,7 +862,7 @@ def check_user_homework(request):
 @swagger_auto_schema(method='GET', operation_summary="Получение списка домашних(пользователь).",
                      responses=get_my_homeworks_responses)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsEnabled])
 def get_my_homeworks(request):
     try:
         student = User.objects.get(id=request.user.id)

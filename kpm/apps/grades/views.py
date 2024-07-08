@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from kpm.apps.users.permissions import IsAdmin
+from kpm.apps.users.permissions import IsAdmin, IsEnabled
 from .functions import *
 from kpm.apps.users.models import User
 from kpm.apps.works.models import Work, Exam
@@ -20,7 +20,7 @@ from django.core.exceptions import ObjectDoesNotExist
                      request_body=insert_grades_request_body,
                      responses=insert_grades_responses)
 @api_view(["POST"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def insert_grades(request):
     global_change = {
         "work_id": None,
@@ -225,7 +225,7 @@ def insert_grades(request):
                      manual_parameters=[class_param, theme_param, type_param, group_param],
                      responses=get_grades_responses)
 @api_view(["GET"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def get_grades(request):
     try:
         class_ = get_variable("class", request)
@@ -366,7 +366,7 @@ def get_grades(request):
                      manual_parameters=[class_param, group_param],
                      responses=get_mana_waiters_responses)
 @api_view(["GET"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def get_mana_waiters(request):
     try:
         group = get_variable("group", request)
@@ -424,7 +424,7 @@ def get_mana_waiters(request):
                      manual_parameters=[id_param],
                      responses=give_mana_responses)
 @api_view(["POST"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def give_mana_all(request):
     try:
         id_ = get_variable("id", request)

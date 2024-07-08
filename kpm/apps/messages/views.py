@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from kpm.apps.users.permissions import IsAdmin
+from kpm.apps.users.permissions import IsAdmin, IsEnabled
 from kpm.apps.users.functions import is_trusted
 from .functions import get_variable
 from kpm.apps.users.models import User
@@ -16,7 +16,7 @@ from kpm.apps.messages.docs import *
                      request_body=send_message_request_body,
                      responses=send_message_responses)
 @api_view(["POST"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def send_message(request):
     try:
         if request.POST or request.FILES:
@@ -71,7 +71,7 @@ def send_message(request):
                      manual_parameters=[id_param],
                      responses=read_message_responses)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsEnabled])
 def read_message(request):
     try:
         id_ = get_variable('id', request)
@@ -98,7 +98,7 @@ def read_message(request):
                      manual_parameters=[id_param],
                      responses=get_message_responses)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsEnabled])
 def get_message(request):
     try:
         id_ = get_variable('id', request)
@@ -146,7 +146,7 @@ def get_message(request):
                      manual_parameters=[id_user_param],
                      responses=get_messages_responses)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsEnabled])
 def get_messages(request):
     try:
         id_ = get_variable('id', request)
@@ -182,7 +182,7 @@ def get_messages(request):
 @swagger_auto_schema(method='GET', operation_summary="Получить отправленные сообщения.",
                      responses=get_sent_messages_responses)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsEnabled])
 def get_sent_messages(request):
     try:
         id_ = request.user.id
@@ -235,7 +235,7 @@ def get_sent_messages(request):
                      manual_parameters=[id_param],
                      responses=delete_message_responses)
 @api_view(["DELETE"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def delete_message(request):
     try:
         id_ = get_variable('id', request)

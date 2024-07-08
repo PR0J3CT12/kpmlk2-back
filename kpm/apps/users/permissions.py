@@ -55,3 +55,13 @@ class IsTierTwo(permissions.BasePermission):
             return False
         except Exception:
             return False
+
+
+class IsEnabled(permissions.BasePermission):
+    def has_permission(self, request, view):
+        try:
+            if not request.user.is_disabled:
+                return True
+            return False
+        except Exception:
+            return False

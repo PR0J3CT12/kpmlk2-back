@@ -7,6 +7,7 @@ import random
 from kpm.apps.users.models import User
 from datetime import datetime, timezone
 import jwt
+from fuzzywuzzy import process
 
 
 def get_tokens_for_user(user):
@@ -101,5 +102,3 @@ def is_trusted(request, id_):
         return False
     except:
         return False
-
-

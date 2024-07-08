@@ -23,8 +23,6 @@ class AuthenticationMiddleware(MiddlewareMixin):
             if access:
                 access_payload = jwt.decode(access, settings.SECRET_KEY, algorithms=['HS256'])
                 user_id = access_payload['user_id']
-                if request.user.is_disabled:
-                    return HttpResponse(f'Access denied.', status=401)
                 setattr(request, 'user_id', user_id)
                 request.META['HTTP_AUTHORIZATION'] = f'kpm {access}'
             else:

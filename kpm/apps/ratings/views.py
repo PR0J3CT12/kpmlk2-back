@@ -17,7 +17,7 @@ from django.db.models import Count
                      manual_parameters=[class_param],
                      responses=get_ratings_responses)
 @api_view(["GET"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def get_ratings(request):
     try:
         class_ = get_variable("class", request)
@@ -56,7 +56,7 @@ def get_ratings(request):
                      manual_parameters=[id_param],
                      responses=get_rating_responses)
 @api_view(["GET"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def get_rating(request):
     try:
         id_ = get_variable("id", request)
@@ -130,7 +130,7 @@ def get_rating(request):
                      request_body=create_rating_request_body,
                      responses=create_rating_responses)
 @api_view(["POST"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def create_rating(request):
     try:
         if request.body:
@@ -174,7 +174,7 @@ def create_rating(request):
                      manual_parameters=[id_param],
                      responses=delete_rating_responses)
 @api_view(["DELETE"])
-@permission_classes([IsTierTwo])
+@permission_classes([IsTierTwo, IsEnabled])
 def delete_rating(request):
     try:
         id_ = get_variable("id", request)
@@ -201,7 +201,7 @@ def delete_rating(request):
                      manual_parameters=[id_param, user_param],
                      responses=add_to_rating_responses)
 @api_view(["PATCH"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def add_to_rating(request):
     try:
         id_ = get_variable("id", request)
@@ -236,7 +236,7 @@ def add_to_rating(request):
                      manual_parameters=[user_param],
                      responses=delete_from_rating_responses)
 @api_view(["PATCH"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def delete_from_rating(request):
     try:
         student_id = get_variable("student", request)
@@ -265,7 +265,7 @@ def delete_from_rating(request):
                      manual_parameters=[user_param],
                      responses=get_user_ratings_responses)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsEnabled])
 def get_user_ratings(request):
     try:
         student_id = get_variable("student", request)
@@ -304,7 +304,7 @@ def get_user_ratings(request):
                      manual_parameters=[user_param, id_param],
                      responses=get_user_rating_responses)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsEnabled])
 def get_user_rating(request):
     try:
         student_id = get_variable("student", request)

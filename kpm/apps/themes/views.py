@@ -14,7 +14,7 @@ from kpm.apps.themes.docs import *
                      manual_parameters=[id_param],
                      responses=get_theme_responses)
 @api_view(["GET"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def get_theme(request):
     try:
         id_ = get_variable("id", request)
@@ -45,7 +45,7 @@ def get_theme(request):
                      manual_parameters=[class_param],
                      responses=get_themes_responses)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsEnabled])
 def get_themes(request):
     try:
         class_ = get_variable("class", request)
@@ -84,7 +84,7 @@ def get_themes(request):
                      request_body=create_theme_request_body,
                      responses=create_theme_responses)
 @api_view(["POST"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin, IsEnabled])
 def create_theme(request):
     try:
         if request.body:
@@ -115,7 +115,7 @@ def create_theme(request):
                      manual_parameters=[id_param],
                      responses=delete_theme_responses)
 @api_view(["DELETE"])
-@permission_classes([IsTierTwo])
+@permission_classes([IsTierTwo, IsEnabled])
 def delete_theme(request):
     try:
         id_ = get_variable("id", request)
@@ -142,7 +142,7 @@ def delete_theme(request):
                      manual_parameters=[class_param],
                      responses=delete_themes_responses)
 @api_view(["DELETE"])
-@permission_classes([IsTierTwo])
+@permission_classes([IsTierTwo, IsEnabled])
 def delete_themes(request):
     try:
         class_ = get_variable("class", request)

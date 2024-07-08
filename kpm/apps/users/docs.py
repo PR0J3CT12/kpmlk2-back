@@ -6,6 +6,8 @@ id_param_group = openapi.Parameter("id", in_=openapi.IN_QUERY, type=openapi.TYPE
                                    operation_description='ID группы.', example=1)
 class_param = openapi.Parameter("class", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
                                 operation_description='Класс учеников.', example=4)
+is_admin_param = openapi.Parameter("is_admin", in_=openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN,
+                                   operation_description='Признак преподавателя.', example=1)
 group_param = openapi.Parameter("group", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
                                 operation_description='ID группы.', example=1)
 user_param = openapi.Parameter("student", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
@@ -82,11 +84,14 @@ get_users_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                            "group_id": openapi.Schema(
                                                                                type=openapi.TYPE_INTEGER, example=1),
                                                                            "group_name": openapi.Schema(
-                                                                               type=openapi.TYPE_INTEGER, example="Название группы"),
+                                                                               type=openapi.TYPE_INTEGER,
+                                                                               example="Название группы"),
                                                                            "color": openapi.Schema(
-                                                                               type=openapi.TYPE_STRING, example="#bfa0de"),
+                                                                               type=openapi.TYPE_STRING,
+                                                                               example="#bfa0de"),
                                                                            "is_disabled": openapi.Schema(
-                                                                               type=openapi.TYPE_BOOLEAN, example=False),
+                                                                               type=openapi.TYPE_BOOLEAN,
+                                                                               example=False),
                                                                        }),
 
                                         })
@@ -107,29 +112,29 @@ get_user_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
 get_groups_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                          properties={
                                              "groups": openapi.Schema(
-                                                      type=openapi.TYPE_ARRAY,
-                                                      items=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
-                                                                          "id": openapi.Schema(
-                                                                              type=openapi.TYPE_INTEGER, example=1),
-                                                                          "name": openapi.Schema(
-                                                                              type=openapi.TYPE_STRING,
-                                                                              example="Группа 1"),
-                                                                          "marker": openapi.Schema(
-                                                                              type=openapi.TYPE_INTEGER,
-                                                                              example=0),
-                                                                          "students": openapi.Schema(
-                                                                              type=openapi.TYPE_ARRAY,
-                                                                              items=openapi.Schema(
-                                                                                  type=openapi.TYPE_OBJECT,
-                                                                                  properties={
-                                                                                      "id": openapi.Schema(
-                                                                                          type=openapi.TYPE_INTEGER,
-                                                                                          example=1),
-                                                                                      "name": openapi.Schema(
-                                                                                          type=openapi.TYPE_STRING,
-                                                                                          example="Левин Михаил"),
-                                                                                  }))
-                                                                      }))
+                                                 type=openapi.TYPE_ARRAY,
+                                                 items=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+                                                     "id": openapi.Schema(
+                                                         type=openapi.TYPE_INTEGER, example=1),
+                                                     "name": openapi.Schema(
+                                                         type=openapi.TYPE_STRING,
+                                                         example="Группа 1"),
+                                                     "marker": openapi.Schema(
+                                                         type=openapi.TYPE_INTEGER,
+                                                         example=0),
+                                                     "students": openapi.Schema(
+                                                         type=openapi.TYPE_ARRAY,
+                                                         items=openapi.Schema(
+                                                             type=openapi.TYPE_OBJECT,
+                                                             properties={
+                                                                 "id": openapi.Schema(
+                                                                     type=openapi.TYPE_INTEGER,
+                                                                     example=1),
+                                                                 "name": openapi.Schema(
+                                                                     type=openapi.TYPE_STRING,
+                                                                     example="Левин Михаил"),
+                                                             }))
+                                                 }))
 
                                          })
 get_all_logons_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,

@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 #                     manual_parameters=[id_param],
 #                     responses=get_stats_responses)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsEnabled])
 def get_stats(request):
     try:
         id_ = get_variable('id', request)
@@ -154,7 +154,7 @@ def get_stats(request):
 #                     manual_parameters=[id_param],
 #                     responses=get_stats_responses)
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsEnabled])
 def get_graph(request):
     try:
         id_ = get_variable('id', request)
