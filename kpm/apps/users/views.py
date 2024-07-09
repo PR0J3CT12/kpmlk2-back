@@ -392,6 +392,7 @@ def login(request):
                 expires=tokens['refresh_exp'],
                 secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
                 httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+                samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE']
             )
             response.set_cookie(
                 key=settings.SIMPLE_JWT['AUTH_COOKIE'],
@@ -399,6 +400,7 @@ def login(request):
                 expires=tokens['access_exp'],
                 secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
                 httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+                samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE']
             )
 
             request.session['login'] = login_

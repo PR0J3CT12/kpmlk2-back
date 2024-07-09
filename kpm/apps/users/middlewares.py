@@ -69,6 +69,7 @@ class AuthenticationMiddleware(MiddlewareMixin):
                     expires=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'],
                     secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
                     httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+                    samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE']
                 )
             else:
                 response.delete_cookie('refresh_token')
@@ -80,6 +81,7 @@ class AuthenticationMiddleware(MiddlewareMixin):
                     expires=settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'],
                     secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
                     httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+                    samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE']
                 )
             else:
                 response.delete_cookie('access_token')
