@@ -8,6 +8,10 @@ from kpm.apps.themes.models import Theme
 from kpm.apps.users.permissions import *
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.themes.docs import *
+from django.conf import settings
+
+
+LOGGER = settings.LOGGER
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение темы.",
@@ -101,6 +105,7 @@ def create_theme(request):
                     ensure_ascii=False), status=404)
         theme = Theme(name=request_body["name"], school_class=int(request_body["class"]))
         theme.save()
+        LOGGER.info(f'Created theme {theme.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -126,6 +131,7 @@ def delete_theme(request):
                     ensure_ascii=False), status=404)
         theme = Theme.objects.get(id=id_)
         theme.delete()
+        LOGGER.warning(f'Deleted theme {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
@@ -162,6 +168,7 @@ def delete_themes(request):
         if not themes:
             return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
         themes.delete()
+        LOGGER.warning(f'Deleted all themes by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except Exception as e:
         return HttpResponse(json.dumps(

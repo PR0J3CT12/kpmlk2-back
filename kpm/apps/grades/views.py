@@ -13,6 +13,10 @@ import random
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.grades.docs import *
 from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
+
+
+LOGGER = settings.LOGGER
 
 
 # todo: внимательно потестить ману, чтобы не генерилось лишнее(в том числе когда вносят новые оценки и удаляется старая мана)
@@ -201,6 +205,7 @@ def insert_grades(request):
         student.exam_experience = exam_experience
         student.oral_exam_experience = oral_exam_experience
         student.save()
+        LOGGER.info(f'Inserted grades for student {student.id} in work {request_body["work_id"]} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -434,10 +439,10 @@ def give_mana_all(request):
                            ensure_ascii=False), status=404)
         student = User.objects.get(id=int(id_))
         manas = Mana.objects.filter(user=student)
-        log_details = f'Обновлена мана для ученика {student.id}.'
         for mana in manas:
             mana.is_given = 1
             mana.save()
+        LOGGER.info(f'Given mana for student {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(

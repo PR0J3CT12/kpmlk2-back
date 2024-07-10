@@ -16,6 +16,10 @@ from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.users.docs import *
 from django.utils import timezone
 from datetime import datetime, timedelta
+from django.conf import settings
+
+
+LOGGER = settings.LOGGER
 
 
 #@swagger_auto_schema(method='GET', operation_summary="Получить персональную статистику ученика.",

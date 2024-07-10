@@ -23,6 +23,7 @@ from datetime import datetime, timedelta
 
 SECRET_KEY = settings.SECRET_KEY
 UNIVERSAL = settings.UNIVERSAL
+LOGGER = settings.LOGGER
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение пользователя.",
@@ -213,6 +214,7 @@ def create_user(request):
             empty_grades = '_._'.join(list('#' * len(grades)))
             grade = Grade(user=student, work=work, grades=empty_grades, max_score=0, score=0, exercises=0)
             grade.save()
+        LOGGER.info(f'Created student {student.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -240,6 +242,7 @@ def delete_user(request):
                     ensure_ascii=False), status=404)
         student = User.objects.get(id=id_)
         student.delete()
+        LOGGER.warning(f'Deleted student {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -282,6 +285,7 @@ def delete_users(request):
         if not students:
             return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
         students.delete()
+        LOGGER.warning(f'Deleted all students by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -545,6 +549,7 @@ def create_group(request):
                     ensure_ascii=False), status=404)
         group = Group(name=request_body['name'], school_class=int(request_body['class']), marker=request_body['marker'])
         group.save()
+        LOGGER.info(f'Created group {group.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -578,6 +583,7 @@ def delete_group(request):
                     ensure_ascii=False), status=404)
         group = Group.objects.get(id=id_)
         group.delete()
+        LOGGER.warning(f'Deleted group {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
@@ -646,10 +652,12 @@ def delete_from_group(request):
                     ensure_ascii=False), status=404)
         student = User.objects.get(id=student_id)
         current_group = GroupUser.objects.filter(user=student)
+        group = current_group.group_id
         if current_group:
             current_group[0].delete()
         student.group = None
         student.save()
+        LOGGER.info(f'Deleted student {student_id} from group {group} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
@@ -679,6 +687,7 @@ def disable_user(request):
         student = User.objects.get(id=student_id)
         student.is_disabled = True
         student.save()
+        LOGGER.info(f'Disabled student {student_id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
@@ -708,6 +717,7 @@ def enable_user(request):
         student = User.objects.get(id=student_id)
         student.is_disabled = False
         student.save()
+        LOGGER.info(f'Enabled student {student_id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(

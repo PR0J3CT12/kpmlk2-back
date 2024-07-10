@@ -11,6 +11,10 @@ from django.core.exceptions import ObjectDoesNotExist
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.ratings.docs import *
 from django.db.models import Count
+from django.conf import settings
+
+
+LOGGER = settings.LOGGER
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение рейтингов.",
@@ -157,6 +161,7 @@ def create_rating(request):
             description = None
         league = League(name=request_body['name'], school_class=int(request_body['class']), rating_type=int(request_body['type']), description=description)
         league.save()
+        LOGGER.info(f'Created rating {league.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -185,6 +190,7 @@ def delete_rating(request):
                     ensure_ascii=False), status=404)
         league = League.objects.get(id=id_)
         league.delete()
+        LOGGER.warning(f'Deleted rating {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
@@ -220,6 +226,7 @@ def add_to_rating(request):
         league = League.objects.get(id=id_)
         new_league = LeagueUser(user=student, league=league)
         new_league.save()
+        LOGGER.info(f'Added student {student_id} to rating {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
@@ -247,8 +254,10 @@ def delete_from_rating(request):
                     ensure_ascii=False), status=404)
         student = User.objects.get(id=student_id)
         current_league = LeagueUser.objects.filter(user=student)
+        league = current_league.league_id
         if current_league:
             current_league[0].delete()
+        LOGGER.info(f'Deleted student {student_id} from rating {league} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(

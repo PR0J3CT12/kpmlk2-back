@@ -4,6 +4,7 @@ from pathlib import Path
 import dotenv
 import psycopg2
 from datetime import timedelta
+import logging
 
 PROJECT_ROOT = os.path.dirname(__file__)
 DOTENV_PATH = os.path.join(PROJECT_ROOT, '../.env')
@@ -229,3 +230,11 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+LOGGER = logging.getLogger('log')
+LOGGER.setLevel(logging.INFO)
+LOGFILE = os.environ.get('LOGFILE')
+file_handler = logging.FileHandler(LOGFILE)
+formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
+file_handler.setFormatter(formatter)
+LOGGER.addHandler(file_handler)

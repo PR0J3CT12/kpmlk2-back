@@ -17,7 +17,9 @@ import os
 from django.conf import settings
 from kpm.apps.grades.functions import validate_grade
 
+
 MEDIA_ROOT = settings.MEDIA_ROOT
+LOGGER = settings.LOGGER
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение списка работ.",
@@ -286,6 +288,7 @@ def create_work(request):
             for student in students:
                 grade = Grade(user=student, work=work_2007, grades=empty_grades, max_score=0, score=0, exercises=0)
                 grade.save()
+        LOGGER.info(f'Created work {work.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -394,6 +397,7 @@ def update_work(request):
                         work_file = WorkFile(work=work, file=file, ext=ext)
                         work_file.save()
             work.save()
+        LOGGER.info(f'Updated work {work.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -437,6 +441,7 @@ def delete_work(request):
             link.delete()
             work_.delete()
         work.delete()
+        LOGGER.info(f'Deleted work {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -476,6 +481,7 @@ def delete_works(request):
                         ensure_ascii=False), status=404)
         works = Work.objects.filter(school_class=class_)
         works.delete()
+        LOGGER.warning(f'Deleted all works by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -509,6 +515,7 @@ def delete_file_from_work(request):
             except:
                 pass
         work_file.delete()
+        LOGGER.info(f'Deleted file from work {work_file.work_id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
@@ -552,6 +559,7 @@ def add_to_work(request):
         answers = ['#'] * work.exercises
         work_object_user = WorkUser(work=work, user=student, answers=answers)
         work_object_user.save()
+        LOGGER.info(f'Added student {student_id} to work {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
@@ -588,6 +596,7 @@ def delete_from_work(request):
         student = User.objects.get(id=student_id)
         work_object_user = WorkUser.objects.get(work=work, user=student)
         work_object_user.delete()
+        LOGGER.info(f'Deleted student {student_id} from work {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(

@@ -10,6 +10,10 @@ import json
 from django.core.exceptions import ObjectDoesNotExist
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.messages.docs import *
+from django.conf import settings
+
+
+LOGGER = settings.LOGGER
 
 
 @swagger_auto_schema(method='POST', operation_summary="Отправить сообщение.",
@@ -51,6 +55,7 @@ def send_message(request):
             ext = file.name.split('.')[1]
             message_file = MessageGroupFile(message_group=messages_group, file=file, ext=ext)
             message_file.save()
+        LOGGER.info(f'Send message {messages_group.id} (msg_group) by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -246,6 +251,7 @@ def delete_message(request):
                     ensure_ascii=False), status=404)
         message = Message.objects.get(id=id_)
         message.delete()
+        LOGGER.warning(f'Deleted message {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
