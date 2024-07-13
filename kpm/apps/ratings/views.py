@@ -12,6 +12,8 @@ from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.ratings.docs import *
 from django.db.models import Count
 from django.conf import settings
+from django.db import IntegrityError
+
 
 LOGGER = settings.LOGGER
 
@@ -166,7 +168,10 @@ def create_rating(request):
         if "students" in request_body:
             if request_body["students"]:
                 for student in request_body["students"]:
-                    LeagueUser(league=league, user_id=student).save()
+                    try:
+                        league_user = LeagueUser.objects.create(league=league, user_id=student)
+                    except IntegrityError:
+                        pass
         LOGGER.info(f'Created rating {league.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:

@@ -481,7 +481,7 @@ def get_groups(request):
                 'students_ids': [],
                 'students': []
             }
-        groups_users = User.objects.filter(group__in=groups).select_related('group', 'user')
+        groups_users = User.objects.filter(group__in=groups).select_related('group')
         for user in groups_users:
             if user.id not in groups_dict[user.group_id]['students_ids']:
                 groups_dict[user.group_id]['students_ids'].append(user.id)
