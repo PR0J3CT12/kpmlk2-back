@@ -78,15 +78,6 @@ class Group(models.Model):
         db_table = 'groups'
 
 
-class GroupUser(models.Model):
-    id = models.AutoField('id группы', primary_key=True, editable=False)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True)
-
-    class Meta:
-        db_table = 'group_users'
-
-
 class Admin(models.Model):
     TIER_LIST = (
         (0, 'Стажер'),
