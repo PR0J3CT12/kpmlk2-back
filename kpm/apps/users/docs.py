@@ -32,6 +32,11 @@ create_group_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                'name': openapi.Schema(type=openapi.TYPE_STRING, example="Группа1"),
                                                'class': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
                                                'marker': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
+                                               'students': openapi.Schema(
+                                                   type=openapi.TYPE_ARRAY,
+                                                   items=openapi.Schema(
+                                                       type=openapi.TYPE_INTEGER,
+                                                       example=2)),
                                            },
                                            operation_description='Создание группы')
 add_to_group_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
