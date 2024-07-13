@@ -21,17 +21,3 @@ class League(models.Model):
 
     class Meta:
         db_table = 'leagues'
-
-
-class LeagueUser(models.Model):
-    id = models.AutoField('league_user id', primary_key=True, editable=False)
-    league = models.ForeignKey(League, on_delete=models.CASCADE)
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    is_hidden = models.BooleanField('is hidden for student', default=False)
-
-    def __str__(self):
-        return f'{self.id}'
-
-    class Meta:
-        db_table = 'leagues_users'
-        unique_together = ('league', 'user',)

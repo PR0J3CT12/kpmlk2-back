@@ -34,6 +34,34 @@ create_group_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                'marker': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
                                            },
                                            operation_description='Создание группы')
+add_to_group_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                           required=['id', 'students'],
+                                           properties={
+                                               "id": openapi.Schema(
+                                                   type=openapi.TYPE_INTEGER, example=4),
+                                               'students': openapi.Schema(
+                                                   type=openapi.TYPE_ARRAY,
+                                                   items=openapi.Schema(
+                                                       type=openapi.TYPE_INTEGER,
+                                                       example=2)),
+                                           })
+delete_from_group_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                                required=['students'],
+                                                properties={
+                                                    'students': openapi.Schema(
+                                                        type=openapi.TYPE_ARRAY,
+                                                        items=openapi.Schema(
+                                                            type=openapi.TYPE_INTEGER,
+                                                            example=2)),
+                                                })
+update_group_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                           required=['id'],
+                                           properties={
+                                               'id': openapi.Schema(type=openapi.TYPE_INTEGER, example=2),
+                                               'name': openapi.Schema(type=openapi.TYPE_STRING, example="Группа1"),
+                                               'marker': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
+                                           },
+                                           operation_description='Обновление группы')
 operation_description = "Marker: 0 - #ff8282, 1 - #ffb875, 2 - #fdff96, 3 - #93ff91, 4 - #78ffef, 5 - #7776d6, 6 - #bfa0de"
 change_password_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                               required=['password'],
@@ -154,7 +182,7 @@ get_all_logons_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
 
                                              })
 logout_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT, properties={
-     "refresh": openapi.Schema(type=openapi.TYPE_STRING, example="refresh token"),
+    "refresh": openapi.Schema(type=openapi.TYPE_STRING, example="refresh token"),
 })
 delete_users_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_user_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
@@ -166,6 +194,7 @@ add_to_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_from_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 disable_user_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 enable_user_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
+update_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 logout_responses = {200: logout_response_200}
 login_responses = {200: login_response_200}
 delete_users_responses = {200: delete_users_response_200}
@@ -175,6 +204,7 @@ get_user_responses = {200: get_user_response_200}
 get_users_responses = {200: get_users_response_200}
 change_password_responses = {200: change_password_response_200}
 create_group_responses = {200: create_group_response_200}
+update_group_responses = {200: update_group_response_200}
 delete_group_responses = {200: delete_group_response_200}
 add_to_group_responses = {200: add_to_group_response_200}
 delete_from_group_responses = {200: delete_from_group_response_200}

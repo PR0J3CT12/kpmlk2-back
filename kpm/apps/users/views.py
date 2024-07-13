@@ -481,13 +481,13 @@ def get_groups(request):
                 'students_ids': [],
                 'students': []
             }
-        groups_users = GroupUser.objects.filter(group__school_class=class_).select_related('group', 'user')
-        for row in groups_users:
-            if row.user_id not in groups_dict[row.group_id]['students_ids']:
-                groups_dict[row.group_id]['students_ids'].append(row.user_id)
-                groups_dict[row.group_id]['students'].append({
-                    'id': row.user.id,
-                    'name': row.user.name
+        groups_users = User.objects.filter(group__in=groups).select_related('group', 'user')
+        for user in groups_users:
+            if user.id not in groups_dict[user.group_id]['students_ids']:
+                groups_dict[user.group_id]['students_ids'].append(user.id)
+                groups_dict[user.group_id]['students'].append({
+                    'id': user.id,
+                    'name': user.name
                 })
         group_list = []
         for group in groups_dict:
@@ -542,6 +542,46 @@ def create_group(request):
             ensure_ascii=False), status=404)
 
 
+@swagger_auto_schema(method='PATCH', operation_summary="Изменение группы.",
+                     request_body=update_group_request_body,
+                     responses=update_group_responses,
+                     operation_description=operation_description)
+@api_view(["PATCH"])
+@permission_classes([IsAdmin, IsEnabled])
+def update_group(request):
+    try:
+        if request.body:
+            request_body = json.loads(request.body)
+        else:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
+        id_ = request_body['id']
+        group = Group.objects.get(id=id_)
+        if "name" in request_body:
+            group.name = request_body['name']
+        if "marker" in request_body:
+            group.marker = request_body['marker']
+        group.save()
+        LOGGER.info(f'Updated group {group.id} by user {request.user.id}.')
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except KeyError as e:
+        return HttpResponse(
+            json.dumps(
+                {'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps(
+                {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
 @swagger_auto_schema(method='DELETE', operation_summary="Удаление группы.",
                      manual_parameters=[group_param],
                      responses=delete_group_responses)
@@ -570,35 +610,33 @@ def delete_group(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='PATCH', operation_summary="Добавление ученика в группу.",
-                     manual_parameters=[group_param, user_param],
+@swagger_auto_schema(method='PATCH', operation_summary="Добавление учеников в группу.",
+                     request_body=add_to_group_request_body,
                      responses=add_to_group_responses)
 @api_view(["PATCH"])
 @permission_classes([IsAdmin, IsEnabled])
 def add_to_group(request):
     try:
-        id_ = get_variable("group", request)
-        if (id_ is None) or (id_ == ''):
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Не указан id группы.', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=404)
-        student_id = get_variable("student", request)
-        if (student_id is None) or (student_id == ''):
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=404)
-        student = User.objects.get(id=student_id)
+        if request.body:
+            request_body = json.loads(request.body)
+        else:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
+        id_ = request_body['id']
         group = Group.objects.get(id=id_)
-        current_group = GroupUser.objects.filter(user=student)
-        if current_group:
-            current_group[0].delete()
-        new_group = GroupUser(user=student, group=group)
-        new_group.save()
-        student.group = group
-        student.save()
+        students = request_body["students"]
+        users = User.objects.filter(id__in=students)
+        for student in users:
+            student.group = group
+            student.save()
+            LOGGER.info(f'Added student {student.id} to group {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except KeyError as e:
+        return HttpResponse(
+            json.dumps(
+                {'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except ObjectDoesNotExist as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Группа или пользователь не существует.', 'details': {},
@@ -611,27 +649,26 @@ def add_to_group(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='PATCH', operation_summary="Удаление ученика из группы.",
-                     manual_parameters=[user_param],
+@swagger_auto_schema(method='PATCH', operation_summary="Удаление учеников из группы.",
+                     request_body=delete_from_group_request_body,
                      responses=delete_from_group_responses)
 @api_view(["PATCH"])
 @permission_classes([IsAdmin, IsEnabled])
 def delete_from_group(request):
     try:
-        student_id = get_variable("student", request)
-        if (student_id is None) or (student_id == ''):
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=404)
-        student = User.objects.get(id=student_id)
-        current_group = GroupUser.objects.filter(user=student)
-        group = current_group.group_id
-        if current_group:
-            current_group[0].delete()
-        student.group = None
-        student.save()
-        LOGGER.info(f'Deleted student {student_id} from group {group} by user {request.user.id}.')
+        if request.body:
+            request_body = json.loads(request.body)
+        else:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
+        students = request_body['students']
+        users = User.objects.filter(id__in=students)
+        for student in users:
+            old_group = student.group_id
+            student.group = None
+            student.save()
+            LOGGER.info(f'Deleted student {student.id} from group {old_group} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(

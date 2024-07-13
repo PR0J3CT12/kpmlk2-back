@@ -34,7 +34,7 @@ update_rating_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                     type=openapi.TYPE_STRING, example="Описание рейтинга"),
                                             })
 add_to_rating_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
-                                            required=['id'],
+                                            required=['id', 'students'],
                                             properties={
                                                 "id": openapi.Schema(
                                                     type=openapi.TYPE_INTEGER, example=4),
@@ -45,7 +45,7 @@ add_to_rating_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                         example=2)),
                                             })
 delete_from_rating_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
-                                                 required=['id'],
+                                                 required=['id', 'students'],
                                                  properties={
                                                      "id": openapi.Schema(
                                                          type=openapi.TYPE_INTEGER, example=4),
