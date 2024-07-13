@@ -87,7 +87,6 @@ CORS_ALLOW_HEADERS = [
 
 CORS_ALLOWED_ORIGINS = [
     "https://dev.kpm-lk.ru",
-    "https://example.ru",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://89.169.48.205:5173"
