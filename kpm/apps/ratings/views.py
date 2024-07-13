@@ -13,7 +13,6 @@ from kpm.apps.ratings.docs import *
 from django.db.models import Count
 from django.conf import settings
 
-
 LOGGER = settings.LOGGER
 
 
@@ -44,7 +43,8 @@ def get_ratings(request):
                 'type': rating['rating_type'],
                 'students': 0
             }
-        users_per_league = LeagueUser.objects.filter(league__id__in=rating_ids).values('league').annotate(user_count=Count('user'))
+        users_per_league = LeagueUser.objects.filter(league__id__in=rating_ids).values('league').annotate(
+            user_count=Count('user'))
         for item in users_per_league:
             ratings_dict[item['league']]['students'] = item['user_count']
         ratings_list = list(ratings_dict.values())
@@ -159,14 +159,54 @@ def create_rating(request):
             description = request_body['description']
         else:
             description = None
-        league = League(name=request_body['name'], school_class=int(request_body['class']), rating_type=int(request_body['type']), description=description)
+        league = League(name=request_body['name'], school_class=int(request_body['class']),
+                        rating_type=int(request_body['type']), description=description)
         league.save()
+
+        if "students" in request_body:
+            if request_body["students"]:
+                for student in request_body["students"]:
+                    LeagueUser(league=league, user_id=student).save()
         LOGGER.info(f'Created rating {league.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
             json.dumps(
                 {'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='PATCH', operation_summary="Изменение рейтинга.",
+                     request_body=update_rating_request_body,
+                     responses=update_rating_responses)
+@api_view(["PATCH"])
+@permission_classes([IsTierTwo, IsEnabled])
+def update_rating(request):
+    try:
+        if request.body:
+            request_body = json.loads(request.body)
+        else:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
+        id_ = request_body['id']
+        league = League.objects.get(id=id_)
+        if 'name' in request_body:
+            league.name = request_body['name']
+        if 'description' in request_body:
+            league.description = request_body['description']
+        league.save()
+        LOGGER.info(f'Updated rating {id_} by user {request.user.id}.')
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps(
+                {'state': 'error', 'message': f'Рейтинг не существует.', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
@@ -194,8 +234,9 @@ def delete_rating(request):
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Рейтинг не существует.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
+            json.dumps(
+                {'state': 'error', 'message': f'Рейтинг не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -203,34 +244,37 @@ def delete_rating(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='PATCH', operation_summary="Добавление ученика в рейтинг.",
-                     manual_parameters=[id_param, user_param],
+@swagger_auto_schema(method='PATCH', operation_summary="Добавление учеников в рейтинг.",
+                     manual_parameters=[id_param],
+                     request_body=add_to_rating_request_body,
                      responses=add_to_rating_responses)
 @api_view(["PATCH"])
 @permission_classes([IsAdmin, IsEnabled])
 def add_to_rating(request):
     try:
-        id_ = get_variable("id", request)
-        if (id_ is None) or (id_ == ''):
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Не указан id рейтинга.', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=404)
-        student_id = get_variable("student", request)
-        if (student_id is None) or (student_id == ''):
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=404)
-        student = User.objects.get(id=student_id)
+        if request.body:
+            request_body = json.loads(request.body)
+        else:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
+        id_ = request_body['id']
+        students = request_body['students']
         league = League.objects.get(id=id_)
-        new_league = LeagueUser(user=student, league=league)
-        new_league.save()
-        LOGGER.info(f'Added student {student_id} to rating {id_} by user {request.user.id}.')
+        for student in students:
+            new_league = LeagueUser(user_id=student, league=league)
+            new_league.save()
+            LOGGER.info(f'Added student {student} to rating {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except KeyError as e:
+        return HttpResponse(
+            json.dumps(
+                {'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Рейтинг или пользователь не существует.', 'details': {}, 'instance': request.path},
+            json.dumps({'state': 'error', 'message': f'Рейтинг или пользователь не существует.', 'details': {},
+                        'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
@@ -239,30 +283,37 @@ def add_to_rating(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='PATCH', operation_summary="Удаление ученика из рейтинга.",
-                     manual_parameters=[user_param],
+@swagger_auto_schema(method='PATCH', operation_summary="Удаление учеников из рейтинга.",
+                     request_body=delete_from_rating_request_body,
                      responses=delete_from_rating_responses)
 @api_view(["PATCH"])
 @permission_classes([IsAdmin, IsEnabled])
 def delete_from_rating(request):
     try:
-        student_id = get_variable("student", request)
-        if (student_id is None) or (student_id == ''):
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=404)
-        student = User.objects.get(id=student_id)
-        current_league = LeagueUser.objects.filter(user=student)
-        league = current_league.league_id
-        if current_league:
-            current_league[0].delete()
-        LOGGER.info(f'Deleted student {student_id} from rating {league} by user {request.user.id}.')
+        if request.body:
+            request_body = json.loads(request.body)
+        else:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
+        id_ = request_body['id']
+        students = request_body['students']
+        league = League.objects.get(id=id_)
+        new_leagues = LeagueUser.objects.filter(league=league, user_id__in=students)
+        for student in new_leagues:
+            student.delete()
+            LOGGER.info(f'Deleted student {student.user_id} to rating {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except KeyError as e:
+        return HttpResponse(
+            json.dumps(
+                {'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
+            json.dumps(
+                {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -300,8 +351,9 @@ def get_user_ratings(request):
         return HttpResponse(json.dumps({'ratings': ratings}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
+            json.dumps(
+                {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -371,7 +423,8 @@ def get_user_rating(request):
         }, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Пользователь или рейтинг не существует.', 'details': {}, 'instance': request.path},
+            json.dumps({'state': 'error', 'message': f'Пользователь или рейтинг не существует.', 'details': {},
+                        'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(

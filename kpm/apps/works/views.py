@@ -110,11 +110,6 @@ def get_work(request):
             users_list = []
             for user in work_users:
                 users_list.append({'id': user.user.id, 'name': user.user.name})
-            if work.title:
-                title = work.title
-            else:
-                title = work.name
-            result['title'] = title
             result['text'] = work.text
             result['answers'] = work.answers
             result['files'] = files_list
@@ -245,12 +240,6 @@ def create_work(request):
 
         has_attachments = data["has_attachments"]
         if has_attachments:
-            if 'title' in data:
-                title = data['title']
-                if not title:
-                    title = None
-            else:
-                title = None
             text = data["text"]
             answers = data.getlist("answers")
             if len(answers) != exercises:
@@ -270,6 +259,8 @@ def create_work(request):
                         json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
                                     'instance': request.path},
                                    ensure_ascii=False), status=404)
+            work.text = text
+            work.answers = answers
             work.full_clean()
             work.save()
             for file in files:
@@ -279,6 +270,8 @@ def create_work(request):
             if work_2007 and link:
                 work_2007.save()
                 link.save()
+        else:
+            work.save()
 
         empty_grades = list('#' * exercises)
         for student in students:
@@ -352,7 +345,6 @@ def update_work(request):
         if "has_attachments" in data:
             has_attachments = data["has_attachments"]
             if not has_attachments:
-                work.title = None
                 work.answers = None
                 work.text = None
                 work.has_attachments = False
@@ -362,19 +354,12 @@ def update_work(request):
                 work_files.delete()
             else:
                 if not work.has_attachments:
-                    if "title" in data:
-                        title = data["title"]
-                    else:
-                        title = None
                     text = data["text"]
                     answers = data.getlist("answers")
                     work.text = text
-                    work.title = title
                     work.answers = answers
                     work.has_attachments = True
                 else:
-                    if "title" in data:
-                        work.title = data["title"]
                     if "text" in data:
                         work.text = data["text"]
                     if "answers" in data:
@@ -557,8 +542,8 @@ def add_to_work(request):
                      'instance': request.path},
                     ensure_ascii=False), status=404)
         answers = ['#'] * work.exercises
-        work_object_user = WorkUser(work=work, user=student, answers=answers)
-        work_object_user.save()
+        work_user = WorkUser(work=work, user=student, answers=answers)
+        work_user.save()
         LOGGER.info(f'Added student {student_id} to work {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
@@ -594,8 +579,8 @@ def delete_from_work(request):
                     ensure_ascii=False), status=404)
         work = Work.objects.get(id=id_)
         student = User.objects.get(id=student_id)
-        work_object_user = WorkUser.objects.get(work=work, user=student)
-        work_object_user.delete()
+        work_user = WorkUser.objects.get(work=work, user=student)
+        work_user.delete()
         LOGGER.info(f'Deleted student {student_id} from work {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
@@ -640,10 +625,9 @@ def get_user_work(request):
             name = link.split('/')[1]
             ext = name.split('.')[-1]
             files_list.append({'link': link, 'name': name, 'ext': ext})
-        title = work.title if work.title else work.name
         response = {
             'id': work.id,
-            'title': title,
+            'name': work.name,
             'text': work.text,
             'max_score': work.score,
             'fields': work.exercises,

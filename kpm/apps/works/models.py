@@ -46,7 +46,6 @@ class Work(models.Model):
 
     # Object fields
     has_attachments = models.BooleanField('has attachments', default=False)
-    title = models.CharField('Заголовок домашней работы', max_length=200, null=True, default=None)
     text = models.TextField('Текст домашней работы')
     answers = models.JSONField('Форма с ответами')
     is_closed = models.BooleanField('Работа закрыта', default=False)
