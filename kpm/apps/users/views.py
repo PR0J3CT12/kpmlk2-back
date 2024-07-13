@@ -687,12 +687,12 @@ def delete_from_group(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='GET', operation_summary="Отключить пользователя.",
+@swagger_auto_schema(method='GET', operation_summary="Включить/выключить пользователя пользователя.",
                      manual_parameters=[user_param],
-                     responses=disable_user_responses)
+                     responses=toggle_suspending_user_responses)
 @api_view(["GET"])
 @permission_classes([IsTierTwo, IsEnabled])
-def disable_user(request):
+def toggle_suspending_user(request):
     try:
         student_id = get_variable("student", request)
         if (student_id is None) or (student_id == ''):
@@ -701,39 +701,13 @@ def disable_user(request):
                     {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         student = User.objects.get(id=student_id)
-        student.is_disabled = True
+        state = False if student.is_disabled else True
+        student.is_disabled = state
         student.save()
-        LOGGER.info(f'Disabled student {student_id} by user {request.user.id}.')
-        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
-    except ObjectDoesNotExist as e:
-        return HttpResponse(
-            json.dumps(
-                {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
-                ensure_ascii=False), status=404)
-    except Exception as e:
-        return HttpResponse(json.dumps(
-            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
-             'instance': request.path},
-            ensure_ascii=False), status=404)
-
-
-@swagger_auto_schema(method='GET', operation_summary="Включить пользователя.",
-                     manual_parameters=[user_param],
-                     responses=enable_user_responses)
-@api_view(["GET"])
-@permission_classes([IsTierTwo, IsEnabled])
-def enable_user(request):
-    try:
-        student_id = get_variable("student", request)
-        if (student_id is None) or (student_id == ''):
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=404)
-        student = User.objects.get(id=student_id)
-        student.is_disabled = False
-        student.save()
-        LOGGER.info(f'Enabled student {student_id} by user {request.user.id}.')
+        if state:
+            LOGGER.info(f'Enabled student {student_id} by user {request.user.id}.')
+        else:
+            LOGGER.info(f'Disabled student {student_id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
