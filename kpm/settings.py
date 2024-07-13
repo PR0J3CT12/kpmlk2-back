@@ -23,13 +23,11 @@ ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'users.apps.UsersConfig',
-    #'logs.apps.LogsConfig',
     'works.apps.WorksConfig',
     'themes.apps.ThemesConfig',
     'grades.apps.GradesConfig',
     'messages.apps.MessagesConfig',
     'stats.apps.StatsConfig',
-    #'homeworks.apps.HomeworksConfig',
     'ratings.apps.RatingsConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -53,7 +51,6 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'kpm.apps.users.middlewares.AuthenticationMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -83,14 +80,6 @@ CORS_ALLOW_HEADERS = [
     "user-agent",
     "x-csrftoken",
     "x-requested-with",
-]
-
-CORS_ALLOWED_ORIGINS = [
-    "https://dev.kpm-lk.ru",
-    "https://kpm-lk.ru",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://89.169.48.205:5173"
 ]
 
 TEMPLATES = [
@@ -153,14 +142,14 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(seconds=2000),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=300),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
     'UPDATE_LAST_LOGIN': False,
 
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
+    'SIGNING_KEY': SECRET_KEY + 'jwtoken',
     'VERIFYING_KEY': None,
     'AUDIENCE': None,
     'ISSUER': None,
@@ -169,12 +158,6 @@ SIMPLE_JWT = {
 
     'AUTH_HEADER_TYPES': ('kpm',),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
-    'AUTH_COOKIE': 'access_token',
-    'AUTH_COOKIE_DOMAIN': None,
-    'AUTH_COOKIE_SECURE': True,
-    'AUTH_COOKIE_HTTP_ONLY': True,
-    'AUTH_COOKIE_SAMESITE': None,
-    'AUTH_COOKIE_PATH': '/',
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
     'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',

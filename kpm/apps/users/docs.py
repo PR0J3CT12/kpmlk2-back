@@ -153,7 +153,9 @@ get_all_logons_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                           }),
 
                                              })
-logout_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
+logout_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+     "refresh": openapi.Schema(type=openapi.TYPE_STRING, example="refresh token"),
+})
 delete_users_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_user_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 create_user_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)

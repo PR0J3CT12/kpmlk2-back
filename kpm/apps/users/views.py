@@ -385,31 +385,11 @@ def login(request):
         else:
             is_passed = check_password(password, user.password)
         if is_passed:
-            response = HttpResponse(json.dumps(
-                {'id': user.id, 'is_admin': user.is_admin}, ensure_ascii=False), status=200)
-            tokens = get_tokens_for_user(user.id)
-            access_token, access_exp = tokens['access'], tokens['access_exp']
-            refresh_token, refresh_exp = tokens['refresh'], tokens['refresh_exp']
-            response.set_cookie(
-                key='refresh_token',
-                value=refresh_token,
-                expires=tokens['refresh_exp'],
-                secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
-                httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-                samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE']
-            )
-            response.set_cookie(
-                key=settings.SIMPLE_JWT['AUTH_COOKIE'],
-                value=access_token,
-                expires=tokens['access_exp'],
-                secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
-                httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-                samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE']
-            )
-
+            tokens = get_tokens_for_user(user)
             request.session['login'] = login_
             request.session['id'] = user.id
-            return response
+            return HttpResponse(json.dumps(
+                    {'id': user.id, 'tokens': tokens, 'is_admin': user.is_admin}, ensure_ascii=False), status=200)
         else:
             return HttpResponse(
                 json.dumps({'state': 'error', 'message': 'Неверный пароль.', 'details': {},
@@ -437,17 +417,11 @@ def login(request):
 @api_view(["GET"])
 def logout(request):
     try:
-        try:
-            refresh = request.COOKIES['refresh_token']
+        refresh = request.data.get('refresh', None)
+        if refresh:
             token = RefreshToken(refresh)
             token.blacklist()
-        except:
-            pass
-        response = HttpResponse(status=200)
-        response.delete_cookie('refresh_token')
-        response.delete_cookie('access_token')
-        response.delete_cookie('sessionid')
-        return response
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},

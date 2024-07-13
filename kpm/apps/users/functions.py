@@ -11,25 +11,11 @@ from fuzzywuzzy import process
 
 
 def get_tokens_for_user(user):
-    try:
-        user = User.objects.get(id=user)
-        refresh = RefreshToken.for_user(user)
-        access = refresh.access_token
-        refresh_exp = datetime.fromtimestamp(refresh['exp'], timezone.utc)
-        access_exp = datetime.fromtimestamp(access['exp'], timezone.utc)
-        return {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-            'refresh_exp': refresh_exp,
-            'access_exp': access_exp,
-        }
-    except ObjectDoesNotExist:
-        return {
-            'refresh': None,
-            'access': None,
-            'refresh_exp': None,
-            'access_exp': None,
-        }
+    refresh = RefreshToken.for_user(user)
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
 
 
 def get_user_id_from_refresh_token(request, key):
