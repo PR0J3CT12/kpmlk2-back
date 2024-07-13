@@ -32,6 +32,11 @@ update_rating_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                     type=openapi.TYPE_STRING, example="Лига сентябрь"),
                                                 "description": openapi.Schema(
                                                     type=openapi.TYPE_STRING, example="Описание рейтинга"),
+                                                'students': openapi.Schema(
+                                                    type=openapi.TYPE_ARRAY,
+                                                    items=openapi.Schema(
+                                                        type=openapi.TYPE_INTEGER,
+                                                        example=2)),
                                             })
 add_to_rating_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                             required=['id', 'students'],

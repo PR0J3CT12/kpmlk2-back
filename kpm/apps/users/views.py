@@ -567,6 +567,11 @@ def update_group(request):
             group.name = request_body['name']
         if "marker" in request_body:
             group.marker = request_body['marker']
+        if "students" in request_body:
+            users = User.objects.filter(id__in=request_body["students"])
+            for user in users:
+                user.group = group
+                user.save()
         group.save()
         LOGGER.info(f'Updated group {group.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)

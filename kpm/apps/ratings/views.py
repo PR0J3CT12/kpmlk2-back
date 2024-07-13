@@ -205,6 +205,14 @@ def update_rating(request):
             league.name = request_body['name']
         if 'description' in request_body:
             league.description = request_body['description']
+        if "students" in request_body:
+            users = User.objects.filter(id__in=request_body["students"])
+            for student in users:
+                try:
+                    league_user = LeagueUser.objects.create(league=league, user_id=student)
+                except IntegrityError:
+                    pass
+                LOGGER.info(f'Added student {student} to rating {id_} by user {request.user.id}.')
         league.save()
         LOGGER.info(f'Updated rating {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
