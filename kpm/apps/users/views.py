@@ -687,10 +687,10 @@ def delete_from_group(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='GET', operation_summary="Включить/выключить пользователя пользователя.",
+@swagger_auto_schema(method='POST', operation_summary="Включить/выключить пользователя пользователя.",
                      manual_parameters=[user_param],
                      responses=toggle_suspending_user_responses)
-@api_view(["GET"])
+@api_view(["POST"])
 @permission_classes([IsTierTwo, IsEnabled])
 def toggle_suspending_user(request):
     try:
