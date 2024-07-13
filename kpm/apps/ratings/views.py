@@ -267,8 +267,10 @@ def add_to_rating(request):
         students = request_body['students']
         league = League.objects.get(id=id_)
         for student in students:
-            new_league = LeagueUser(user_id=student, league=league)
-            new_league.save()
+            try:
+                league_user = LeagueUser.objects.create(league=league, user_id=student)
+            except IntegrityError:
+                pass
             LOGGER.info(f'Added student {student} to rating {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
