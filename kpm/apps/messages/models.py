@@ -29,6 +29,7 @@ class Message(models.Model):
     id = models.AutoField('message id', primary_key=True, editable=False)
     user_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='receiver')
     user_from = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sender')
+    title = models.CharField('message theme', max_length=100)
     text = models.TextField('message text')
     group = models.ForeignKey(MessageGroup, on_delete=models.CASCADE)
     is_viewed = models.BooleanField('has the message been read by the recipient', default=False)

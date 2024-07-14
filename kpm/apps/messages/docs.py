@@ -8,8 +8,8 @@ send_message_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                            required=['user_to', 'text'],
                                            properties={
                                                "user_to": [1, 2, 3, 4, 5],
-                                               "text": openapi.Schema(
-                                                   type=openapi.TYPE_STRING, example='Текст сообщения'),
+                                               "title": openapi.Schema(type=openapi.TYPE_STRING, example='Тема сообщения'),
+                                               "text": openapi.Schema(type=openapi.TYPE_STRING, example='Текст сообщения'),
                                            })
 get_message_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                           properties={
@@ -23,8 +23,8 @@ get_message_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                               'user_from_name': openapi.Schema(
                                                   type=openapi.TYPE_STRING,
                                                   example="Имя Фамилия"),
-                                              'text': openapi.Schema(type=openapi.TYPE_STRING,
-                                                                     example="Текст сообщения"),
+                                              'title': openapi.Schema(type=openapi.TYPE_STRING, example="Тема сообщения"),
+                                              'text': openapi.Schema(type=openapi.TYPE_STRING, example="Текст сообщения"),
                                               'is_viewed': openapi.Schema(type=openapi.TYPE_BOOLEAN, example=False),
                                               'datetime': openapi.Schema(type=openapi.FORMAT_DATETIME,
                                                                          example="2023-03-31 17:31:59.612927+03"),
@@ -53,6 +53,7 @@ get_messages_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                            'user_from_name': openapi.Schema(
                                                                type=openapi.TYPE_STRING,
                                                                example="Имя Фамилия"),
+                                                           "title": openapi.Schema(type=openapi.TYPE_STRING, example='Тема сообщения'),
                                                            'text': openapi.Schema(type=openapi.TYPE_STRING,
                                                                                   example="Текст сообщения"),
                                                            'is_viewed': openapi.Schema(type=openapi.TYPE_BOOLEAN,
@@ -79,6 +80,7 @@ get_sent_messages_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                 'user_from_name': openapi.Schema(
                                                                     type=openapi.TYPE_STRING,
                                                                     example="Имя Фамилия"),
+                                                                "title": openapi.Schema(type=openapi.TYPE_STRING, example='Тема сообщения'),
                                                                 'text': openapi.Schema(type=openapi.TYPE_STRING,
                                                                                        example="Текст сообщения"),
                                                                 'is_viewed': openapi.Schema(

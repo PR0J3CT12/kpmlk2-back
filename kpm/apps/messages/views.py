@@ -35,6 +35,7 @@ def send_message(request):
         receivers = User.objects.filter(id__in=receivers_ids)
         sender = User.objects.get(id=request.user.id)
         text = data['text']
+        title = data['title']
         files = files.getlist('files')
         for file in files:
             if 'image' in str(file.content_type):
@@ -49,7 +50,7 @@ def send_message(request):
         messages_group = MessageGroup()
         messages_group.save()
         for receiver in receivers:
-            message = Message(user_to=receiver, user_from=sender, text=text, group=messages_group)
+            message = Message(user_to=receiver, user_from=sender, text=text, group=messages_group, title=title)
             message.save()
         for file in files:
             ext = file.name.split('.')[1]
@@ -131,6 +132,7 @@ def get_message(request):
             'user_to_name': message.user_to.name,
             'user_from': message.user_from.id,
             'user_from_name': message.user_from.name,
+            'title': message.title,
             'text': message.text,
             'is_viewed': message.is_viewed,
             'datetime': str(message.group.datetime),
@@ -171,6 +173,7 @@ def get_messages(request):
                     'user_to_name': message.user_to.name,
                     'user_from': message.user_from.id,
                     'user_from_name': message.user_from.name,
+                    'title': message.title,
                     'text': message.text,
                     'is_viewed': message.is_viewed,
                     'datetime': str(message.group.datetime)
@@ -215,6 +218,7 @@ def get_sent_messages(request):
                     'id': message.id,
                     'user_from': message.user_from.id,
                     'user_from_name': message.user_from.name,
+                    'title': message.title,
                     'text': message.text,
                     'datetime': str(message.group.datetime),
                     'recipients': [],
