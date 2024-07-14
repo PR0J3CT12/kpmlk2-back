@@ -175,6 +175,29 @@ get_groups_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                  }))
 
                                          })
+get_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                        properties={
+                                            "id": openapi.Schema(
+                                                type=openapi.TYPE_INTEGER, example=1),
+                                            "name": openapi.Schema(
+                                                type=openapi.TYPE_STRING,
+                                                example="Группа 1"),
+                                            "marker": openapi.Schema(
+                                                type=openapi.TYPE_INTEGER,
+                                                example=0),
+                                            "students": openapi.Schema(
+                                                type=openapi.TYPE_ARRAY,
+                                                items=openapi.Schema(
+                                                    type=openapi.TYPE_OBJECT,
+                                                    properties={
+                                                        "id": openapi.Schema(
+                                                            type=openapi.TYPE_INTEGER,
+                                                            example=1),
+                                                        "name": openapi.Schema(
+                                                            type=openapi.TYPE_STRING,
+                                                            example="Левин Михаил"),
+                                                    }))
+                                        })
 get_all_logons_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                              properties={
                                                  "logons": openapi.Schema(type=openapi.TYPE_OBJECT,
@@ -220,3 +243,4 @@ delete_from_group_responses = {200: delete_from_group_response_200}
 get_groups_responses = {200: get_groups_response_200}
 get_all_logons_responses = {200: get_all_logons_response_200}
 toggle_suspending_user_responses = {200: toggle_suspending_user_response_200}
+get_group_responses = {200: get_group_response_200}

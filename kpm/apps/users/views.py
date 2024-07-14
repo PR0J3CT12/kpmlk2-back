@@ -124,16 +124,6 @@ def get_users(request):
                             ensure_ascii=False), status=404)
             query = Q(is_admin=0) & Q(school_class=int(class_))
         students = User.objects.filter(query).select_related('group').order_by('name')
-        MARKER_CHOICES = {
-            0: '#ff8282',
-            1: '#ffb875',
-            2: '#fdff96',
-            3: '#93ff91',
-            4: '#78ffef',
-            5: '#7776d6',
-            6: '#bfa0de',
-            7: None
-        }
         students_list = []
         if not students:
             return HttpResponse(
@@ -148,7 +138,7 @@ def get_users(request):
                 group_name = student.group.name
                 group_id = student.group.id
             else:
-                marker = 7
+                marker = None
                 group_name = None
                 group_id = None
             student_info = {"id": student.id,
@@ -161,7 +151,7 @@ def get_users(request):
                             "last_classwork_id": student.last_classwork_id,
                             "group_id": group_id,
                             "group_name": group_name,
-                            "color": MARKER_CHOICES[marker],
+                            "color": marker,
                             "is_disabled": student.is_disabled
                             }
             students_list.append(student_info)
@@ -494,6 +484,50 @@ def get_groups(request):
             del groups_dict[group]['students_ids']
             group_list.append(groups_dict[group])
         return HttpResponse(json.dumps({'groups': group_list}, ensure_ascii=False), status=200)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='GET', operation_summary="Получение группы.",
+                     manual_parameters=[id_param_group],
+                     responses=get_group_responses)
+@api_view(["GET"])
+@permission_classes([IsAdmin, IsEnabled])
+def get_group(request):
+    try:
+        id_ = get_variable("id", request)
+        if not id_:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан ID группы.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=404)
+        group = Group.objects.get(id=id_)
+        groups_users = User.objects.filter(group=group).select_related('group')
+        result = {
+            'id': group.id,
+            'name': group.name,
+            'marker': group.marker,
+            'students_ids': [],
+            'students': []
+        }
+        for user in groups_users:
+            if user.id not in result['students_ids']:
+                result['students_ids'].append(user.id)
+                result['students'].append({
+                    'id': user.id,
+                    'name': user.name
+                })
+        del result['students_ids']
+        return HttpResponse(json.dumps(result, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps(
+                {'state': 'error', 'message': f'Группа не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},

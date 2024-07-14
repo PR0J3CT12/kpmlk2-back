@@ -70,7 +70,7 @@ class Group(models.Model):
     )
     id = models.AutoField('id группы', primary_key=True, editable=False)
     name = models.CharField('Название группы', max_length=100)
-    marker = models.IntegerField('Цвет группы', choices=MARKER_CHOICES, default=7, null=True)
+    marker = models.CharField('Цвет группы', default=None, null=True, max_length=7)
     school_class = models.IntegerField('student class', default=None, null=True, blank=True)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
 
