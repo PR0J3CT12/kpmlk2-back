@@ -388,16 +388,6 @@ def get_mana_waiters(request):
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {}, 'instance': request.path},
                         ensure_ascii=False), status=404)
         waiters = []
-        MARKER_CHOICES = {
-            0: '#ff8282',
-            1: '#ffb875',
-            2: '#fdff96',
-            3: '#93ff91',
-            4: '#78ffef',
-            5: '#7776d6',
-            6: '#bfa0de',
-            7: None
-        }
         if (group is not None) and (group != ''):
             students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_)) & Q(group=int(group))).select_related('group').order_by('group', 'id')
         else:
@@ -406,11 +396,11 @@ def get_mana_waiters(request):
             if student.group:
                 marker = student.group.marker
             else:
-                marker = 7
+                marker = None
             manas = Mana.objects.filter(Q(user=student) & Q(is_given=0))
             green = manas.filter(color='green').aggregate(Count('id'))
             blue = manas.filter(color='blue').aggregate(Count('id'))
-            waiter = {"id": student.id, "name": student.name, "green": green["id__count"], "blue": blue["id__count"], 'color': MARKER_CHOICES[marker]}
+            waiter = {"id": student.id, "name": student.name, "green": green["id__count"], "blue": blue["id__count"], 'color': marker}
             if int(green["id__count"]) + int(blue["id__count"]) > 0:
                 waiters.append(waiter)
         return HttpResponse(json.dumps({'waiters': waiters}, ensure_ascii=False), status=200)
