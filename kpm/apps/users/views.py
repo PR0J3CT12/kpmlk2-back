@@ -602,11 +602,10 @@ def update_group(request):
         if "marker" in request_body:
             group.marker = request_body['marker']
         if "students" in request_body:
+            current_students = User.objects.filter(group=group)
+            current_students.update(group=None)
             users = User.objects.filter(id__in=request_body["students"])
-            for user in users:
-                user.group = group
-                user.save()
-        group.save()
+            users.update(group=group)
         LOGGER.info(f'Updated group {group.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
