@@ -11,6 +11,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.messages.docs import *
 from django.conf import settings
+from django.utils import timezone
 
 
 LOGGER = settings.LOGGER
@@ -87,6 +88,7 @@ def read_message(request):
                     {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=401)
         message.is_viewed = True
+        message.viewed_at = timezone.now()
         message.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
@@ -135,6 +137,7 @@ def get_message(request):
             'title': message.title,
             'text': message.text,
             'is_viewed': message.is_viewed,
+            'viewed_at': str(message.viewed_at),
             'datetime': str(message.group.datetime),
             'files': files_list
         }, ensure_ascii=False), status=200)
@@ -176,6 +179,7 @@ def get_messages(request):
                     'title': message.title,
                     'text': message.text,
                     'is_viewed': message.is_viewed,
+                    'viewed_at': str(message.viewed_at),
                     'datetime': str(message.group.datetime)
                 }
             )
@@ -228,7 +232,8 @@ def get_sent_messages(request):
                 {
                     'user_to': message.user_to.id,
                     'user_to_name': message.user_to.name,
-                    'is_viewed': message.is_viewed
+                    'is_viewed': message.is_viewed,
+                    'viewed_at': str(message.viewed_at),
                 }
             )
         messages_list = list(messages_dict.values())

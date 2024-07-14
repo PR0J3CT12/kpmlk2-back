@@ -33,6 +33,7 @@ class Message(models.Model):
     text = models.TextField('message text')
     group = models.ForeignKey(MessageGroup, on_delete=models.CASCADE)
     is_viewed = models.BooleanField('has the message been read by the recipient', default=False)
+    viewed_at = models.DateTimeField('datetime of view', default=None, null=True, blank=True)
 
     class Meta:
         db_table = 'messages'
