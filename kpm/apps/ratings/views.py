@@ -209,7 +209,7 @@ def update_rating(request):
             users = User.objects.filter(id__in=request_body["students"])
             for student in users:
                 try:
-                    league_user = LeagueUser.objects.create(league=league, user_id=student)
+                    league_user = LeagueUser.objects.create(league=league, user=student)
                 except IntegrityError:
                     pass
                 LOGGER.info(f'Added student {student} to rating {id_} by user {request.user.id}.')
