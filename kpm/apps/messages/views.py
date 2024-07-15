@@ -213,10 +213,14 @@ def get_sent_messages(request):
             link = file.file.name
             name = link.split('/')[1]
             ext = name.split('.')[-1]
-            if file.message_group not in files_dict:
+            if file.message_group_id not in files_dict:
                 files_dict[file.message_group_id] = []
             files_dict[file.message_group_id].append({'link': link, 'name': name, 'ext': ext})
+        print(files_dict)
+        messages_groups = []
         for message in messages:
+            if message.group_id not in messages_groups:
+                messages_groups.append(message.group_id)
             if message.group_id not in messages_dict:
                 messages_dict[message.group_id] = {
                     'id': message.id,
@@ -226,7 +230,7 @@ def get_sent_messages(request):
                     'text': message.text,
                     'datetime': str(message.group.datetime),
                     'recipients': [],
-                    'files': files_dict[message.group_id]
+                    'files': []
                 }
             messages_dict[message.group_id]['recipients'].append(
                 {
@@ -236,6 +240,18 @@ def get_sent_messages(request):
                     'viewed_at': str(message.viewed_at),
                 }
             )
+        files = MessageGroupFile.objects.filter(message_group__in=messages_groups)
+        files_dict = {}
+        for file in files:
+            link = file.file.name
+            name = link.split('/')[1]
+            ext = name.split('.')[-1]
+            if file.message_group_id not in files_dict:
+                files_dict[file.message_group_id] = []
+            files_dict[file.message_group_id].append({'link': link, 'name': name, 'ext': ext})
+        for group in messages_groups:
+            if group in files_dict:
+                messages_dict[group]['files'] = files_dict[group]
         messages_list = list(messages_dict.values())
         return HttpResponse(json.dumps({'messages': messages_list}, ensure_ascii=False), status=200)
     except Exception as e:
