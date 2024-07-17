@@ -4,3 +4,4 @@ venv
 .venv
 .env
 logs.log
+media/
