@@ -5,7 +5,7 @@ from kpm.apps.users.models import *
 from kpm.apps.users.permissions import *
 from kpm.apps.users.functions import *
 from kpm.apps.works.models import Work
-from kpm.apps.groups.models import Group, Subgroup
+from kpm.apps.groups.models import Group, GroupUser, Subgroup, SubgroupUser, SubgroupWorkDates
 from django.core.exceptions import ObjectDoesNotExist
 import json
 from django.conf import settings
@@ -13,6 +13,7 @@ from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.groups.docs import *
 from django.utils import timezone
 from datetime import datetime, timedelta
+from django.db import IntegrityError
 
 
 LOGGER = settings.LOGGER
@@ -42,13 +43,13 @@ def get_groups(request):
                 'students_ids': [],
                 'students': []
             }
-        groups_users = User.objects.filter(group__in=groups).select_related('group')
+        groups_users = GroupUser.objects.filter(group__in=groups).select_related('user')
         for user in groups_users:
-            if user.id not in groups_dict[user.group_id]['students_ids']:
-                groups_dict[user.group_id]['students_ids'].append(user.id)
+            if user.user.id not in groups_dict[user.group_id]['students_ids']:
+                groups_dict[user.group_id]['students_ids'].append(user.user.id)
                 groups_dict[user.group_id]['students'].append({
-                    'id': user.id,
-                    'name': user.name
+                    'id': user.user.id,
+                    'name': user.user.name
                 })
         group_list = []
         for group in groups_dict:
@@ -77,7 +78,7 @@ def get_group(request):
                      'instance': request.path},
                     ensure_ascii=False), status=404)
         group = Group.objects.get(id=id_)
-        groups_users = User.objects.filter(group=group).select_related('group')
+        groups_users = GroupUser.objects.filter(group=group).select_related('user')
         result = {
             'id': group.id,
             'name': group.name,
@@ -86,11 +87,11 @@ def get_group(request):
             'students': []
         }
         for user in groups_users:
-            if user.id not in result['students_ids']:
-                result['students_ids'].append(user.id)
+            if user.user.id not in result['students_ids']:
+                result['students_ids'].append(user.user.id)
                 result['students'].append({
-                    'id': user.id,
-                    'name': user.name
+                    'id': user.user.id,
+                    'name': user.user.name
                 })
         del result['students_ids']
         return HttpResponse(json.dumps(result, ensure_ascii=False), status=200)
@@ -128,10 +129,13 @@ def create_group(request):
         group = Group(name=request_body['name'], school_class=int(request_body['class']), marker=request_body['marker'])
         group.save()
         if "students" in request_body:
-            users = User.objects.filter(id__in=request_body["students"])
-            for user in users:
-                user.group = group
-                user.save()
+            for student in request_body["students"]:
+                try:
+                    group_user = GroupUser.objects.create(group=group, user_id=student)
+                except IntegrityError:
+                    group_user = GroupUser.objects.filter(user_id=student)
+                    group_user.group = group
+                    group_user.save()
         LOGGER.info(f'Created group {group.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
@@ -171,10 +175,10 @@ def update_group(request):
         if "marker" in request_body:
             group.marker = request_body['marker']
         if "students" in request_body:
-            current_students = User.objects.filter(group=group)
-            current_students.update(group=None)
-            users = User.objects.filter(id__in=request_body["students"])
-            users.update(group=group)
+            current_students = GroupUser.objects.filter(group=group)
+            current_students.delete()
+            for student in request_body["students"]:
+                league_user = GroupUser.objects.create(group=group, user_id=student)
         LOGGER.info(f'Updated group {group.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
@@ -238,10 +242,13 @@ def add_to_group(request):
         id_ = request_body['id']
         group = Group.objects.get(id=id_)
         students = request_body["students"]
-        users = User.objects.filter(id__in=students)
-        for student in users:
-            student.group = group
-            student.save()
+        for student in students:
+            try:
+                group_user = GroupUser.objects.create(group=group, user_id=student)
+            except IntegrityError:
+                group_user = GroupUser.objects.filter(user_id=student)
+                group_user.group = group
+                group_user.save()
             LOGGER.info(f'Added student {student.id} to group {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
@@ -275,11 +282,10 @@ def delete_from_group(request):
                 {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=400)
         students = request_body['students']
-        users = User.objects.filter(id__in=students)
-        for student in users:
+        groups_users = GroupUser.objects.filter(id__in=students)
+        for student in groups_users:
             old_group = student.group_id
-            student.group = None
-            student.save()
+            student.delete()
             LOGGER.info(f'Deleted student {student.id} from group {old_group} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
@@ -287,6 +293,50 @@ def delete_from_group(request):
             json.dumps(
                 {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+#@swagger_auto_schema(method='GET', operation_summary="Получение подгрупп.",
+#                     manual_parameters=[class_param],
+#                     responses=get_subgroups_responses)
+@api_view(["GET"])
+@permission_classes([IsAdmin, IsEnabled])
+def get_subgroups(request):
+    try:
+        class_ = get_variable("class", request)
+        if class_ not in ['4', '5', '6', 4, 5, 6]:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=404)
+        subgroups_dict = {}
+        subgroups = Subgroup.objects.filter(school_class=class_).order_by('created_at')
+        for subgroup in subgroups:
+            subgroups_dict[subgroup.id] = {
+                'id': subgroup.id,
+                'name': subgroup.name,
+                'marker': subgroup.marker,
+                'students_ids': [],
+                'students': []
+            }
+        subgroups_users = SubgroupUser.objects.filter(group__in=groups).select_related('user')
+        for user in subgroups_users:
+            if user.user.id not in groups_dict[user.group_id]['students_ids']:
+                groups_dict[user.group_id]['students_ids'].append(user.user.id)
+                groups_dict[user.group_id]['students'].append({
+                    'id': user.user.id,
+                    'name': user.user.name
+                })
+        group_list = []
+        for group in groups_dict:
+            del groups_dict[group]['students_ids']
+            group_list.append(groups_dict[group])
+        return HttpResponse(json.dumps({'groups': group_list}, ensure_ascii=False), status=200)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},

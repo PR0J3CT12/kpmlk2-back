@@ -2,7 +2,6 @@ from django.db import models
 from django.utils import timezone
 import datetime
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from kpm.apps.groups.models import Group
 
 
 class UserManager(BaseUserManager):
@@ -36,7 +35,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     default_password = models.CharField('default password', max_length=5, null=True, blank=True)
     is_default = models.BooleanField('is default password', default=True)
     is_disabled = models.BooleanField('is user disabled', default=False)
-    group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, default=None)
 
     USERNAME_FIELD = 'login'
     REQUIRED_FIELDS = ['name', 'default_password', 'is_admin']

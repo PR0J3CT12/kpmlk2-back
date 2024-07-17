@@ -6,9 +6,10 @@ from kpm.apps.users.permissions import *
 from kpm.apps.users.functions import *
 from kpm.apps.works.models import Work
 from kpm.apps.grades.models import Grade
+from kpm.apps.groups.models import GroupUser
 from django.core.exceptions import ObjectDoesNotExist
 import json
-from django.db.models import Sum, Q, Count
+from django.db.models import Sum, Q, Count, Subquery, OuterRef
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
@@ -121,7 +122,7 @@ def get_users(request):
                              'instance': request.path},
                             ensure_ascii=False), status=404)
             query = Q(is_admin=0) & Q(school_class=int(class_))
-        students = User.objects.filter(query).select_related('group').order_by('name')
+        students = User.objects.filter(query).annotate(group=Subquery(GroupUser.objects.filter(user_id=OuterRef('id')).select_related('group').values('group_id', 'group__name', 'group__marker'))).order_by('name')
         students_list = []
         if not students:
             return HttpResponse(
@@ -132,9 +133,9 @@ def get_users(request):
             else:
                 default_password = student.default_password
             if student.group:
-                marker = student.group.marker
-                group_name = student.group.name
-                group_id = student.group.id
+                marker = student.group['group__marker']
+                group_name = student.group['group__name']
+                group_id = student.group['group_id']
             else:
                 marker = None
                 group_name = None
