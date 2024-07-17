@@ -1,6 +1,5 @@
 from drf_yasg import openapi
 
-
 id_group_param = openapi.Parameter("id", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
                                    operation_description='ID группы.', example=1)
 class_param = openapi.Parameter("class", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,

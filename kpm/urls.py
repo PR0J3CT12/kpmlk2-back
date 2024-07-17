@@ -19,8 +19,7 @@ schema_view = swagger_get_schema_view(
 
 urlpatterns = [
     path('api/user/', include('users.urls')),
-    path('api/group/', include('groups.urls_groups')),
-    path('api/subgroup/', include('groups.urls_subgroups')),
+    path('api/group/', include('groups.urls')),
     path('api/grade/', include('grades.urls')),
     path('api/theme/', include('themes.urls')),
     path('api/work/', include('works.urls')),
