@@ -322,6 +322,12 @@ def change_password(request):
             user.default_password = None
             user.is_default = False
         else:
+            if user.is_admin:
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Смена пароля на дефолтный для администратора запрещена.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=403)
             user.default_password = password_
             user.is_default = True
             user.password = ""
