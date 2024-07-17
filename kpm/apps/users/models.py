@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 import datetime
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from kpm.apps.groups.models import Group
 
 
 class UserManager(BaseUserManager):
@@ -35,7 +36,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     default_password = models.CharField('default password', max_length=5, null=True, blank=True)
     is_default = models.BooleanField('is default password', default=True)
     is_disabled = models.BooleanField('is user disabled', default=False)
-    group = models.ForeignKey('Group', on_delete=models.SET_NULL, null=True, default=None)
+    group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, default=None)
 
     USERNAME_FIELD = 'login'
     REQUIRED_FIELDS = ['name', 'default_password', 'is_admin']
@@ -55,27 +56,6 @@ class History(models.Model):
 
     class Meta:
         db_table = 'history'
-
-
-class Group(models.Model):
-    MARKER_CHOICES = (
-        (0, '#ff8282'),
-        (1, '#ffb875'),
-        (2, '#fdff96'),
-        (3, '#93ff91'),
-        (4, '#78ffef'),
-        (5, '#7776d6'),
-        (6, '#bfa0de'),
-        (7, None)
-    )
-    id = models.AutoField('id группы', primary_key=True, editable=False)
-    name = models.CharField('Название группы', max_length=100)
-    marker = models.CharField('Цвет группы', default=None, null=True, max_length=7)
-    school_class = models.IntegerField('student class', default=None, null=True, blank=True)
-    created_at = models.DateTimeField('Дата создания', auto_now_add=True)
-
-    class Meta:
-        db_table = 'groups'
 
 
 class Admin(models.Model):

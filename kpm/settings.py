@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'messages.apps.MessagesConfig',
     'stats.apps.StatsConfig',
     'ratings.apps.RatingsConfig',
+    'groups.apps.GroupsConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
