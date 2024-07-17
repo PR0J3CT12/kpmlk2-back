@@ -27,7 +27,7 @@ class Group(models.Model):
 class GroupUser(models.Model):
     id = models.AutoField('id пары группа - ученик', primary_key=True, editable=False)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, unique=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     class Meta:
         db_table = 'groups_users'

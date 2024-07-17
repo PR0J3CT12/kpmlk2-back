@@ -9,7 +9,7 @@ from kpm.apps.grades.models import Grade
 from kpm.apps.groups.models import GroupUser
 from django.core.exceptions import ObjectDoesNotExist
 import json
-from django.db.models import Sum, Q, Count, Subquery, OuterRef
+from django.db.models import Sum, Q, Count, Subquery, OuterRef, Value, CharField, IntegerField
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
@@ -122,20 +122,29 @@ def get_users(request):
                              'instance': request.path},
                             ensure_ascii=False), status=404)
             query = Q(is_admin=0) & Q(school_class=int(class_))
-        students = User.objects.filter(query).annotate(group=Subquery(GroupUser.objects.filter(user_id=OuterRef('id')).select_related('group').values('group_id', 'group__name', 'group__marker'))).order_by('name')
-        students_list = []
+        students = User.objects.filter(query).order_by('name')
         if not students:
             return HttpResponse(
-                json.dumps({'students': students_list}, ensure_ascii=False), status=200)
+                json.dumps({'students': []}, ensure_ascii=False), status=200)
+        students_groups = GroupUser.objects.filter(user__in=students).select_related('group')
+        students_groups_dict = {}
+        for student in students_groups:
+            if student.user_id not in students_groups_dict:
+                students_groups_dict[student.user_id] = {
+                    "group_id": student.group.id,
+                    "group_name": student.group.name,
+                    "marker": student.group.marker
+                }
+        students_list = []
         for student in students:
             if not student.default_password:
                 default_password = ""
             else:
                 default_password = student.default_password
-            if student.group:
-                marker = student.group['group__marker']
-                group_name = student.group['group__name']
-                group_id = student.group['group_id']
+            if student.id in students_groups_dict:
+                marker = students_groups_dict[student.id]['group__marker']
+                group_name = students_groups_dict[student.id]['group__name']
+                group_id = students_groups_dict[student.id]['group_id']
             else:
                 marker = None
                 group_name = None
