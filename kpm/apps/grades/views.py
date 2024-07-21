@@ -368,13 +368,13 @@ def get_grades(request):
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получить список ожидающих ману.",
-                     manual_parameters=[class_param, group_param],
+                     manual_parameters=[class_param],
                      responses=get_mana_waiters_responses)
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_mana_waiters(request):
     try:
-        group = get_variable("group", request)
+        #group = get_variable("group", request)
         class_ = get_variable("class", request)
         if not class_:
             return HttpResponse(
@@ -388,19 +388,12 @@ def get_mana_waiters(request):
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {}, 'instance': request.path},
                         ensure_ascii=False), status=404)
         waiters = []
-        if (group is not None) and (group != ''):
-            students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_)) & Q(group=int(group))).select_related('group').order_by('group', 'id')
-        else:
-            students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).select_related('group').order_by('group', 'id')
+        students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).order_by('id')
         for student in students:
-            if student.group:
-                marker = student.group.marker
-            else:
-                marker = None
             manas = Mana.objects.filter(Q(user=student) & Q(is_given=0))
             green = manas.filter(color='green').aggregate(Count('id'))
             blue = manas.filter(color='blue').aggregate(Count('id'))
-            waiter = {"id": student.id, "name": student.name, "green": green["id__count"], "blue": blue["id__count"], 'color': marker}
+            waiter = {"id": student.id, "name": student.name, "green": green["id__count"], "blue": blue["id__count"]}
             if int(green["id__count"]) + int(blue["id__count"]) > 0:
                 waiters.append(waiter)
         return HttpResponse(json.dumps({'waiters': waiters}, ensure_ascii=False), status=200)
