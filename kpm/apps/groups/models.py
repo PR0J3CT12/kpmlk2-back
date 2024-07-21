@@ -1,6 +1,21 @@
 from django.db import models
 from kpm.apps.works.models import Work
 from kpm.apps.users.models import User
+from django.utils.deconstruct import deconstructible
+import os
+
+
+@deconstructible
+class PathRename(object):
+
+    def __init__(self, sub_path):
+        self.path = sub_path
+
+    def __call__(self, instance, filename):
+        return os.path.join(self.path, filename)
+
+
+path_and_rename = PathRename("classworks/")
 
 
 class Group(models.Model):
@@ -17,7 +32,7 @@ class Group(models.Model):
 class GroupUser(models.Model):
     id = models.AutoField('id пары группа - ученик', primary_key=True, editable=False)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     class Meta:
         db_table = 'groups_users'
@@ -31,3 +46,15 @@ class GroupWorkDate(models.Model):
 
     class Meta:
         db_table = 'groups_works_dates'
+
+
+class GroupWorkFile(models.Model):
+    id = models.AutoField('id тройки файла классной работы подгруппы', primary_key=True, editable=False)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    work = models.ForeignKey(Work, on_delete=models.CASCADE)
+    file = models.FileField('Файл работы', upload_to=path_and_rename)
+    ext = models.CharField('Расширение файла', max_length=100)
+    added_at = models.DateTimeField('Дата загрузки файла', auto_now_add=True)
+
+    class Meta:
+        db_table = 'classworks_files'

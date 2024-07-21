@@ -76,7 +76,22 @@ get_groups_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                  "name": openapi.Schema(
                                                                      type=openapi.TYPE_STRING,
                                                                      example="Левин Михаил"),
-                                                             }))
+                                                             })),
+                                                     "works_dates": openapi.Schema(
+                                                         type=openapi.TYPE_ARRAY,
+                                                         items=openapi.Schema(
+                                                             type=openapi.TYPE_OBJECT,
+                                                             properties={
+                                                                 "work_id": openapi.Schema(
+                                                                     type=openapi.TYPE_INTEGER,
+                                                                     example=1),
+                                                                 "work_name": openapi.Schema(
+                                                                     type=openapi.TYPE_STRING,
+                                                                     example="Название работы"),
+                                                                 "date": openapi.Schema(
+                                                                     type=openapi.TYPE_STRING,
+                                                                     example="2024.01.01"),
+                                                             })),
                                                  }))
 
                                          })
@@ -101,7 +116,22 @@ get_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                         "name": openapi.Schema(
                                                             type=openapi.TYPE_STRING,
                                                             example="Левин Михаил"),
-                                                    }))
+                                                    })),
+                                            "works_dates": openapi.Schema(
+                                                type=openapi.TYPE_ARRAY,
+                                                items=openapi.Schema(
+                                                    type=openapi.TYPE_OBJECT,
+                                                    properties={
+                                                        "work_id": openapi.Schema(
+                                                            type=openapi.TYPE_INTEGER,
+                                                            example=1),
+                                                        "work_name": openapi.Schema(
+                                                            type=openapi.TYPE_STRING,
+                                                            example="Название работы"),
+                                                        "date": openapi.Schema(
+                                                            type=openapi.TYPE_STRING,
+                                                            example="2024.01.01"),
+                                                    })),
                                         })
 
 create_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)

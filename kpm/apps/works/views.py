@@ -16,7 +16,7 @@ from django.utils import timezone
 import os
 from django.conf import settings
 from kpm.apps.grades.functions import validate_grade
-
+from kpm.apps.groups.models import GroupUser, GroupWorkFile, Group, GroupWorkDate
 
 MEDIA_ROOT = settings.MEDIA_ROOT
 LOGGER = settings.LOGGER
@@ -99,13 +99,14 @@ def get_work(request):
             "has_attachments": work.has_attachments
         }
         if work.has_attachments:
+            host = request.META.get('HTTP_HOST')
             files = WorkFile.objects.filter(work=work)
             files_list = []
             for file in files:
                 link = file.file.name
                 name = link.split('/')[1]
                 ext = name.split('.')[-1]
-                files_list.append({'id': file.id, 'link': link, 'name': name, 'ext': ext})
+                files_list.append({'id': file.id, 'link': f'{host}/link', 'name': name, 'ext': ext})
             work_users = WorkUser.objects.filter(work=work).select_related('user')
             users_list = []
             for user in work_users:
@@ -620,11 +621,12 @@ def get_user_work(request):
         work_user = work_user[0]
         files = WorkFile.objects.filter(work=work)
         files_list = []
+        host = request.META.get('HTTP_HOST')
         for file in files:
             link = file.file.name
             name = link.split('/')[1]
             ext = name.split('.')[-1]
-            files_list.append({'link': link, 'name': name, 'ext': ext})
+            files_list.append({'link': f'{host}/link', 'name': name, 'ext': ext})
         response = {
             'id': work.id,
             'name': work.name,
@@ -862,12 +864,8 @@ def get_my_homeworks(request):
         work_user = WorkUser.objects.filter(user=student).select_related('work').order_by('work__created_at')
         works_list = {}
         for work in work_user:
-            if work.work.title:
-                title = work.work.title
-            else:
-                title = work.work.name
             works_list[work.id] = {
-                'title': title,
+                'name': work.name,
                 'is_done': work.is_done,
                 'is_checked': work.is_checked,
             }
@@ -895,6 +893,175 @@ def get_my_homeworks(request):
     except ObjectDoesNotExist as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {},
+                        'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='GET', operation_summary="Получение списка классных(пользователь).",
+                     responses=get_my_classworks_responses)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsEnabled])
+def get_my_classworks(request):
+    try:
+        student = User.objects.get(id=request.user.id)
+        groups = GroupUser.objects.filter(user=student).select_related('group')
+        files = GroupWorkFile.objects.filter(group__in=groups).select_related('work').order_by('added_at').values('file', 'ext', 'work__id', 'work__name')
+        classworks_list = {}
+        host = request.META.get('HTTP_HOST')
+        for file in files:
+            link = file['file']
+            name = link.split('/')[1]
+            ext = file['ext']
+            if file['work_id'] not in classworks_list:
+                classworks_list[file['work__id']] = {
+                    'name': file['work__name'],
+                    'files': [{
+                        'link': f'{host}/link',
+                        'name': name,
+                        'ext': ext,
+                    }]
+                }
+            else:
+                classworks_list[file['work_id']]['files'].append({
+                    'link': f'{host}/link',
+                    'name': name,
+                    'ext': ext,
+                })
+        return HttpResponse(json.dumps({'classworks': list(classworks_list.values())}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {},
+                        'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='POST', operation_summary="Прикрепить файлы к классной работе(админ).",
+                     request_body=apply_files_to_classwork_request_body,
+                     responses=apply_files_to_classwork_responses)
+@api_view(["POST"])
+@permission_classes([IsAdmin, IsEnabled])
+def apply_files_to_classwork(request):
+    try:
+        if request.POST or request.FILES:
+            data = request.POST
+            files = request.FILES
+        else:
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=400)
+        group = User.objects.get(id=data['group'])
+        work = Work.objects.get(id=data['work'])
+        files = files.getlist('files')
+        for file in files:
+            if 'image' in str(file.content_type):
+                pass
+            elif file.content_type in ['application/pdf']:
+                pass
+            else:
+                return HttpResponse(
+                    json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
+                                'instance': request.path},
+                               ensure_ascii=False), status=404)
+            ext = file.name.split('.')[1]
+            GroupWorkFile.objects.create(group=group, work=work, file=file, ext=ext)
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Группа или работа не существует.', 'details': {},
+                        'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except KeyError as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='DELETE', operation_summary="Удалить файл классной работы(админ).",
+                     manual_parameters=[file_param],
+                     responses=delete_file_from_classwork_responses)
+@api_view(["DELETE"])
+@permission_classes([IsAdmin, IsEnabled])
+def delete_file_from_classwork(request):
+    try:
+        file_id = get_variable('file', request)
+        if file_id is None:
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': f'Не указан id файла.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=400)
+        file = GroupWorkFile.objects.get(id=file_id)
+        file.delete()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Файл не существует.', 'details': {},
+                        'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='DELETE', operation_summary="Получить файлы классной работы подгрупп(админ).",
+                     manual_parameters=[id_param],
+                     responses=get_classwork_files_responses)
+@api_view(["DELETE"])
+@permission_classes([IsAdmin, IsEnabled])
+def get_classwork_files(request):
+    try:
+        id_ = get_variable('id', request)
+        if id_ is None:
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': f'Не указан id работы.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=400)
+        work = Work.objects.get(id=id_)
+        groups_files = GroupWorkFile.objects.filter(work=work).select_related('group').values('file', 'ext', 'group__id', 'group__name', 'group__marker')
+        group_files_dict = {}
+        host = request.META.get('HTTP_HOST')
+        for file in groups_files:
+            link = file['file']
+            name = link.split('/')[1]
+            ext = file['ext']
+            if file['group__id'] not in group_files_dict:
+                group_files_dict[file['group__id']] = {
+                    'group_id': file['group__id'],
+                    'group_name': file['group__name'],
+                    'group_marker': file['group__marker'],
+                    'files': [{
+                        'link': f'{host}/link',
+                        'name': name,
+                        'ext': ext,
+                    }]
+                }
+            else:
+                group_files_dict[file['group__id']]['files'].append({
+                    'link': f'{host}/link',
+                    'name': name,
+                    'ext': ext,
+                })
+        return HttpResponse(json.dumps({'groups': list(group_files_dict.values())}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Файл не существует.', 'details': {},
                         'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:

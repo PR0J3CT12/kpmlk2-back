@@ -40,6 +40,20 @@ check_user_homework_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                                 example="Комментарий преподавателя"),
                                                   },
                                                   operation_description='Проверка домашней работы(админка).')
+apply_files_to_classwork_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                                       required=['group', 'work', 'files'],
+                                                       properties={
+                                                           'group': openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                                   example=4),
+                                                           'work': openapi.Schema(type=openapi.TYPE_INTEGER, example=1),
+                                                           'files': openapi.Schema(
+                                                               type=openapi.TYPE_ARRAY,
+                                                               items=openapi.Schema(
+                                                                   type=openapi.TYPE_FILE
+                                                               )
+                                                           ),
+                                                       },
+                                                       operation_description='Отправление файла классной работы для группы(FormData).')
 
 get_works_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                         properties={
@@ -213,7 +227,66 @@ get_my_homeworks_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                    type=openapi.TYPE_INTEGER,
                                                                    example=100),
                                                            }))})
-
+get_my_classworks_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                                properties={
+                                                    "classworks": openapi.Schema(
+                                                        type=openapi.TYPE_ARRAY,
+                                                        items=openapi.Schema(
+                                                            type=openapi.TYPE_OBJECT,
+                                                            properties={
+                                                                "name": openapi.Schema(
+                                                                    type=openapi.TYPE_STRING,
+                                                                    example="Классная работа 1"),
+                                                                'files': openapi.Schema(
+                                                                    type=openapi.TYPE_ARRAY,
+                                                                    items=openapi.Schema(
+                                                                        type=openapi.TYPE_OBJECT,
+                                                                        properties={
+                                                                            "name": openapi.Schema(
+                                                                                type=openapi.TYPE_STRING,
+                                                                                example="Название файла"),
+                                                                            "link": openapi.Schema(
+                                                                                type=openapi.TYPE_STRING,
+                                                                                example="Путь до файла"),
+                                                                            "ext": openapi.Schema(
+                                                                                type=openapi.TYPE_STRING,
+                                                                                example="Расширение файла"),
+                                                                        }
+                                                                    )
+                                                                ),
+                                                            }))})
+get_classwork_files_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                                  properties={
+                                                      "groups": openapi.Schema(
+                                                          type=openapi.TYPE_ARRAY,
+                                                          items=openapi.Schema(
+                                                              type=openapi.TYPE_OBJECT,
+                                                              properties={
+                                                                  "group_id": openapi.Schema(type=openapi.TYPE_INTEGER, example=1),
+                                                                  "group_name": openapi.Schema(
+                                                                      type=openapi.TYPE_STRING,
+                                                                      example="Группа 1"),
+                                                                  "group_marker": openapi.Schema(
+                                                                      type=openapi.TYPE_STRING,
+                                                                      example="#FFFFFF"),
+                                                                  'files': openapi.Schema(
+                                                                      type=openapi.TYPE_ARRAY,
+                                                                      items=openapi.Schema(
+                                                                          type=openapi.TYPE_OBJECT,
+                                                                          properties={
+                                                                              "name": openapi.Schema(
+                                                                                  type=openapi.TYPE_STRING,
+                                                                                  example="Название файла"),
+                                                                              "link": openapi.Schema(
+                                                                                  type=openapi.TYPE_STRING,
+                                                                                  example="Путь до файла"),
+                                                                              "ext": openapi.Schema(
+                                                                                  type=openapi.TYPE_STRING,
+                                                                                  example="Расширение файла"),
+                                                                          }
+                                                                      )
+                                                                  ),
+                                                              }))})
 create_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 update_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
@@ -222,6 +295,8 @@ add_to_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_from_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 create_response_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 check_user_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
+apply_files_to_classwork_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
+delete_file_from_classwork_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 get_works_responses = {200: get_works_response_200}
 get_work_responses = {200: get_work_response_200}
 create_work_responses = {200: create_work_response_200}
@@ -234,4 +309,8 @@ get_user_homework_responses = {200: get_user_homework_response_200}
 create_response_responses = {200: create_response_response_200}
 check_user_homework_responses = {200: check_user_homework_response_200}
 get_my_homeworks_responses = {200: get_my_homeworks_response_200}
+get_my_classworks_responses = {200: get_my_classworks_response_200}
+apply_files_to_classwork_responses = {200: apply_files_to_classwork_response_200}
+delete_file_from_classwork_responses = {200: delete_file_from_classwork_response_200}
+get_classwork_files_responses = {200: get_classwork_files_response_200}
 operation_description = "Type: 0 - Домашняя работа, 1 - Классная работа, 2 - Блиц, 3 - Письменный экзамен, 4 - Устный экзамен, 5 - Письменный экзамен дз, 6 - Устный экзамен дз, 7 - Письменный экзамен дз(баллы 2007), 8 - Вне статистики"

@@ -62,6 +62,14 @@ def get_user(request):
             name = name_splitted[1]
         else:
             name = student.name
+        groups = GroupUser.objects.filter(user=student).select_related('group').values('group_id', 'group__name', 'group__color')
+        groups_list = []
+        for group in groups:
+            groups_list.append({
+                'id': group['group_id'],
+                'name': group['group__name'],
+                'color': group['group__color'],
+            })
         result = {
             "id": student.id,
             "name": name,
@@ -72,7 +80,8 @@ def get_user(request):
             "experience": student.experience,
             "mana_earned": student.mana_earned,
             "last_homework_id": student.last_homework_id,
-            "last_classwork_id": student.last_classwork_id
+            "last_classwork_id": student.last_classwork_id,
+            "groups": groups
         }
         if student.is_admin:
             tier = Admin.objects.get(user=student).tier
@@ -130,11 +139,17 @@ def get_users(request):
         students_groups_dict = {}
         for student in students_groups:
             if student.user_id not in students_groups_dict:
-                students_groups_dict[student.user_id] = {
+                students_groups_dict[student.user_id] = [{
                     "group_id": student.group.id,
                     "group_name": student.group.name,
-                    "marker": student.group.marker
-                }
+                    "color": student.group.marker
+                }]
+            else:
+                students_groups_dict[student.user_id].append({
+                    "group_id": student.group.id,
+                    "group_name": student.group.name,
+                    "color": student.group.marker
+                })
         students_list = []
         for student in students:
             if not student.default_password:
@@ -142,13 +157,9 @@ def get_users(request):
             else:
                 default_password = student.default_password
             if student.id in students_groups_dict:
-                marker = students_groups_dict[student.id]['group__marker']
-                group_name = students_groups_dict[student.id]['group__name']
-                group_id = students_groups_dict[student.id]['group_id']
+                groups = students_groups_dict[student.id]
             else:
-                marker = None
-                group_name = None
-                group_id = None
+                groups = []
             student_info = {"id": student.id,
                             "name": student.name,
                             "login": student.login,
@@ -157,9 +168,7 @@ def get_users(request):
                             "mana_earned": student.mana_earned,
                             "last_homework_id": student.last_homework_id,
                             "last_classwork_id": student.last_classwork_id,
-                            "group_id": group_id,
-                            "group_name": group_name,
-                            "color": marker,
+                            "groups": groups,
                             "is_disabled": student.is_disabled
                             }
             students_list.append(student_info)
