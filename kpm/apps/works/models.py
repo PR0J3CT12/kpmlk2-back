@@ -46,8 +46,8 @@ class Work(models.Model):
 
     # Object fields
     has_attachments = models.BooleanField('has attachments', default=False)
-    text = models.TextField('Текст домашней работы')
-    answers = models.JSONField('Форма с ответами')
+    text = models.TextField('Текст домашней работы', default=None, null=True, blank=True)
+    answers = models.JSONField('Форма с ответами', null=True, blank=True)
     is_closed = models.BooleanField('Работа закрыта', default=False)
 
     # Date fields

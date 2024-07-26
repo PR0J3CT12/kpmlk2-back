@@ -194,7 +194,7 @@ def create_work(request):
         if type_ not in [3, 5]:
             work = Work(name=name, grades=grades, theme=theme, max_score=max_score,
                         exercises=exercises, school_class=school_class, type=type_,
-                        is_homework=is_homework)
+                        is_homework=is_homework, author_id=request.user.id)
             work.full_clean()
             work_2007 = None
             link = None
@@ -230,10 +230,10 @@ def create_work(request):
 
             work = Work(name=name, grades=grades, theme=theme, max_score=max_score,
                         exercises=exercises, school_class=school_class, type=type_,
-                        is_homework=is_homework)
+                        is_homework=is_homework, author_id=request.user.id)
             work_2007 = Work(name=name, grades=grades_2007, theme=theme, max_score=max_score_2007,
                              exercises=exercises, school_class=school_class, type=type_2007,
-                             is_homework=is_homework)
+                             is_homework=is_homework, author_id=request.user.id)
             work.full_clean()
             work_2007.full_clean()
             link = Exam(work=work, work_2007=work_2007)
