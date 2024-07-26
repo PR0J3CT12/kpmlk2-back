@@ -1020,10 +1020,10 @@ def delete_file_from_classwork(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='DELETE', operation_summary="Получить файлы классной работы подгрупп(админ).",
+@swagger_auto_schema(method='GET', operation_summary="Получить файлы классной работы подгрупп(админ).",
                      manual_parameters=[id_param],
                      responses=get_classwork_files_responses)
-@api_view(["DELETE"])
+@api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_classwork_files(request):
     try:
