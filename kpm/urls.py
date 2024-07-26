@@ -23,6 +23,7 @@ urlpatterns = [
     path('api/grade/', include('grades.urls')),
     path('api/theme/', include('themes.urls')),
     path('api/work/', include('works.urls')),
+    path('api/work/', include('works.urls_classworks')),
     path('api/message/', include('messages.urls')),
     path('api/stat/', include('stats.urls')),
     path('api/rating/', include('ratings.urls')),
