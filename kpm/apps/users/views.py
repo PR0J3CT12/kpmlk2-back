@@ -62,13 +62,13 @@ def get_user(request):
             name = name_splitted[1]
         else:
             name = student.name
-        groups = GroupUser.objects.filter(user=student).select_related('group').values('group_id', 'group__name', 'group__color')
+        groups = GroupUser.objects.filter(user=student).select_related('group').values('group_id', 'group__name', 'group__marker')
         groups_list = []
         for group in groups:
             groups_list.append({
                 'id': group['group_id'],
                 'name': group['group__name'],
-                'color': group['group__color'],
+                'marker': group['group__marker'],
             })
         result = {
             "id": student.id,
