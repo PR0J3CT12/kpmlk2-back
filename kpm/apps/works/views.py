@@ -239,7 +239,7 @@ def create_work(request):
             link = Exam(work=work, work_2007=work_2007)
             link.full_clean()
 
-        has_attachments = data["has_attachments"]
+        has_attachments = data["has_attachments"] if "has_attachments" in data else False
         if has_attachments:
             text = data["text"]
             answers = data.getlist("answers")
