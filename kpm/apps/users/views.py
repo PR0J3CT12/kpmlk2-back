@@ -81,7 +81,7 @@ def get_user(request):
             "mana_earned": student.mana_earned,
             "last_homework_id": student.last_homework_id,
             "last_classwork_id": student.last_classwork_id,
-            "groups": groups
+            "groups": groups_list
         }
         if student.is_admin:
             tier = Admin.objects.get(user=student).tier
