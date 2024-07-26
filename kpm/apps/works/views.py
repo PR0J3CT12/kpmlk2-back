@@ -151,10 +151,10 @@ def create_work(request):
         type_ = data["type"]
         school_class = data["class"]
         name = data["name"]
-        if type_ not in [0, 1, 2, 3, 4, 5, 6, 9]:
+        if type_ not in ['0', '1', '2', '3', '4', '5', '6', '9']:
             return HttpResponse(
                 json.dumps(
-                    {'state': 'error', 'message': f'Неверно указан класс тип работы.', 'details': {},
+                    {'state': 'error', 'message': f'Неверно указан тип работы.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
         if school_class not in ['4', '5', '6', 4, 5, 6]:
