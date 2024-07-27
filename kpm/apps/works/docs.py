@@ -128,7 +128,7 @@ create_work_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                               "has_attachments": openapi.Schema(type=openapi.TYPE_BOOLEAN, example=True),
                                               "text": openapi.Schema(type=openapi.TYPE_STRING, example="Описание работы."),
                                               "answers": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.TYPE_STRING, example=["Ответ1", "Ответ2", "Ответ3", "Ответ4", "Ответ5"]),
-                                              "files": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.TYPE_FILE, description="Файлы, всё это форм дата"),
+                                              "files": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.TYPE_STRING, example=["File1", "File2"]),
                                           },
                                           operation_description='Создание работы.')
 update_work_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
@@ -144,7 +144,7 @@ update_work_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                               "has_attachments": openapi.Schema(type=openapi.TYPE_BOOLEAN, example=True),
                                               "text": openapi.Schema(type=openapi.TYPE_STRING, example="Описание работы."),
                                               "answers": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.TYPE_STRING, example=["Ответ1", "Ответ2", "Ответ3", "Ответ4", "Ответ5"]),
-                                              "files": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.TYPE_FILE, description="Файлы, всё это форм дата"),
+                                              "files": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.TYPE_STRING, example=["File1", "File2"]),
                                           },
                                           operation_description='Изменение работы.')
 
