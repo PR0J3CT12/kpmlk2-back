@@ -8,5 +8,6 @@ urlpatterns = [
     path('check-homework', views.check_user_homework, name='check user homework'),
     path('get-user-work', views.get_user_work, name='get user homework'),
     path('add-to-homework', views.add_to_work, name='add to homework'),
-    path('delete-from-homework', views.delete_from_work, name='delete user from work')
+    path('delete-from-homework', views.delete_from_work, name='delete user from work'),
+    path('set-homework-dates', views.set_homeworks_dates, name='set homework dates')
 ]
