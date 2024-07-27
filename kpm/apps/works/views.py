@@ -84,7 +84,7 @@ def get_work(request):
                 json.dumps(
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
-        work = Work.objects.get(id=id_).select_related("theme")
+        work = Work.objects.get(id=id_)
         result = {
             "id": work.id,
             "name": work.name,
