@@ -45,7 +45,7 @@ class GroupWorkDate(models.Model):
     date = models.DateField('Дата выполнения работы')
 
     class Meta:
-        unique_together = (('group', 'work'),)
+        unique_together = ('group', 'work')
         db_table = 'groups_works_dates'
 
 
