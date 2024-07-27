@@ -62,7 +62,7 @@ def get_groups(request):
             groups_dict[group_id]['works_dates'].append({
                 'work_id': work_id,
                 'work_name': work_name,
-                'date': date
+                'date': str(date)
             })
         return HttpResponse(json.dumps({'groups': list(groups_dict.values())}, ensure_ascii=False), status=200)
     except Exception as e:
@@ -108,7 +108,7 @@ def get_group(request):
             result['works_dates'].append({
                 'work_id': work_id,
                 'work_name': work_name,
-                'date': date
+                'date': str(date)
             })
         return HttpResponse(json.dumps(result, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
