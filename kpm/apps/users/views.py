@@ -81,6 +81,7 @@ def get_user(request):
             "mana_earned": student.mana_earned,
             "last_homework_id": student.last_homework_id,
             "last_classwork_id": student.last_classwork_id,
+            "is_admin": student.is_admin,
             "groups": groups_list
         }
         if student.is_admin:
