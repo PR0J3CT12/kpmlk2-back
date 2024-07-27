@@ -343,45 +343,45 @@ def update_work(request):
             new_name = data["name"]
             work.name = new_name
             work.updated_at = timezone.now()
-        if "has_attachments" in data:
-            has_attachments = data["has_attachments"]
-            if not has_attachments:
-                work.answers = None
-                work.text = None
-                work.has_attachments = False
-                work_users = WorkUser.objects.filter(work=work)
-                work_users.delete()
-                work_files = WorkFile.objects.filter(work=work)
-                work_files.delete()
+        has_attachments = data["has_attachments"] if "has_attachments" in data else False
+        if has_attachments:
+            #if not has_attachments:
+            #    work.answers = None
+            #    work.text = None
+            #    work.has_attachments = False
+            #    work_users = WorkUser.objects.filter(work=work)
+            #    work_users.delete()
+            #    work_files = WorkFile.objects.filter(work=work)
+            #    work_files.delete()
+            #else:
+            if not work.has_attachments:
+                text = data["text"]
+                answers = data.getlist("answers")
+                work.text = text
+                work.answers = answers
+                work.has_attachments = True
             else:
-                if not work.has_attachments:
-                    text = data["text"]
+                if "text" in data:
+                    work.text = data["text"]
+                if "answers" in data:
                     answers = data.getlist("answers")
-                    work.text = text
                     work.answers = answers
-                    work.has_attachments = True
-                else:
-                    if "text" in data:
-                        work.text = data["text"]
-                    if "answers" in data:
-                        answers = data.getlist("answers")
-                        work.answers = answers
-                if "files" in files:
-                    files = files.getlist('files')
-                    for file in files:
-                        if 'image' in str(file.content_type):
-                            pass
-                        elif file.content_type in ['application/pdf']:
-                            pass
-                        else:
-                            return HttpResponse(
-                                json.dumps(
-                                    {'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
-                                     'instance': request.path},
-                                    ensure_ascii=False), status=404)
-                        ext = file.name.split('.')[1]
-                        work_file = WorkFile(work=work, file=file, ext=ext)
-                        work_file.save()
+            if "files" in files:
+                files = files.getlist('files')
+                for file in files:
+                    if 'image' in str(file.content_type):
+                        pass
+                    elif file.content_type in ['application/pdf']:
+                        pass
+                    else:
+                        return HttpResponse(
+                            json.dumps(
+                                {'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
+                                 'instance': request.path},
+                                ensure_ascii=False), status=404)
+                    ext = file.name.split('.')[1]
+                    work_file = WorkFile(work=work, file=file, ext=ext)
+                    work_file.save()
             work.save()
         LOGGER.info(f'Updated work {work.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
@@ -910,7 +910,8 @@ def get_my_classworks(request):
     try:
         student = User.objects.get(id=request.user.id)
         groups = GroupUser.objects.filter(user=student).select_related('group')
-        files = GroupWorkFile.objects.filter(group__in=groups).select_related('work').order_by('added_at').values('file', 'ext', 'work__id', 'work__name')
+        files = GroupWorkFile.objects.filter(group__in=groups).select_related('work').order_by('added_at').values(
+            'file', 'ext', 'work__id', 'work__name')
         classworks_list = {}
         host = request.META.get('HTTP_HOST')
         for file in files:
@@ -1034,7 +1035,10 @@ def get_classwork_files(request):
                             'instance': request.path},
                            ensure_ascii=False), status=400)
         work = Work.objects.get(id=id_)
-        groups_files = GroupWorkFile.objects.filter(work=work).select_related('group').values('file', 'ext', 'group__id', 'group__name', 'group__marker')
+        groups_files = GroupWorkFile.objects.filter(work=work).select_related('group').values('file', 'ext',
+                                                                                              'group__id',
+                                                                                              'group__name',
+                                                                                              'group__marker')
         group_files_dict = {}
         host = request.META.get('HTTP_HOST')
         for file in groups_files:
@@ -1063,6 +1067,52 @@ def get_classwork_files(request):
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Файл не существует.', 'details': {},
                         'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+#@swagger_auto_schema(method='POST', operation_summary="Установить даты проведения домашних работ для подгрупп.",
+#                     request_body=set_works_dates_request_body,
+#                     responses=set_works_dates_responses)
+@api_view(["POST"])
+@permission_classes([IsAdmin, IsEnabled])
+def set_works_dates(request):
+    try:
+        if request.body:
+            request_body = json.loads(request.body)
+        else:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
+        groups = request_body['groups']
+        for group in groups:
+            group_id = group['group_id']
+            group_work_dates = group['work_dates']
+            for work_date in group_work_dates:
+                work_id = work_date['work_id']
+                date = work_date['date']
+                GroupWorkDate.objects.update_or_create(group_id=group_id, work_id=work_id, date=date)
+                #try:
+                #    GroupWorkDate.objects.update_or_create(group_id=group_id, work_id=work_id, defaults={'date': date})
+                #except Exception as e:
+                #    return HttpResponse(
+                #        json.dumps({'state': 'error',
+                #                    'message': f'Произошла ошибка при сохранении даты проведения домашнего задания.',
+                #                    'details': {'error': str(e)},
+                #                    'instance': request.path},
+                #                   ensure_ascii=False), status=404)
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except KeyError as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа не существует.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
