@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'whitenoise',
     'django_celery_beat',
     'django_celery_results',
+    'storages'
 ]
 
 MIDDLEWARE = [
@@ -187,6 +188,43 @@ SWAGGER_SETTINGS = {
         },
 }
 
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            'access_key': os.environ.get("AWS_ACCESS_KEY_ID"),
+            'secret_key': os.environ.get("AWS_SECRET_ACCESS_KEY"),
+            'bucket_name': os.environ.get("AWS_STORAGE_BUCKET_NAME"),
+            'default_acl': 'public-read',
+            'object_parameters': {
+                'CacheControl': 'max-age=86400',
+            },
+            'location': 'media/',
+            'endpoint_url': os.environ.get("S3_DOMAIN"),
+            'region_name': 'ru-1'
+        },
+    },
+    'staticfiles': {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            'access_key': os.environ.get("AWS_ACCESS_KEY_ID"),
+            'secret_key': os.environ.get("AWS_SECRET_ACCESS_KEY"),
+            'bucket_name': os.environ.get("AWS_STORAGE_BUCKET_NAME"),
+            'default_acl': 'public-read',
+            'object_parameters': {
+                'CacheControl': 'max-age=86400',
+            },
+            'endpoint_url': os.environ.get("S3_DOMAIN"),
+            'location': 'static/',
+            'region_name': 'ru-1'
+        }
+    }
+}
+
+STATIC_URL = 'static/'
+
+MEDIA_URL = '/media/'
+
 AUTH_USER_MODEL = 'users.User'
 
 DEFAULT_CHARSET = 'utf-8'
@@ -198,14 +236,6 @@ TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
 
 USE_TZ = True
-
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-
-STATIC_URL = 'static/'
-
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-MEDIA_URL = '/media/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
