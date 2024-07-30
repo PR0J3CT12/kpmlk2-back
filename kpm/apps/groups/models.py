@@ -42,7 +42,7 @@ class GroupWorkDate(models.Model):
     id = models.AutoField('id тройки группа - дата - работа', primary_key=True, editable=False)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
     work = models.OneToOneField(Work, on_delete=models.CASCADE)
-    date = models.DateField('Дата выполнения работы')
+    date = models.DateField('Дата выполнения работы', null=True, blank=True, default=None)
 
     class Meta:
         unique_together = ('group', 'work')

@@ -2,6 +2,10 @@ from drf_yasg import openapi
 
 id_param = openapi.Parameter("id", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
                              operation_description='ID работы.', example=1)
+group_param = openapi.Parameter("group", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
+                                operation_description='ID группы.', example=1)
+work_param = openapi.Parameter("work", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
+                               operation_description='ID работы.', example=1)
 class_param = openapi.Parameter("class", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
                                 operation_description='Класс учеников.', example=4)
 theme_param = openapi.Parameter("theme", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
@@ -163,35 +167,15 @@ update_work_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                       example=["File1", "File2"]),
                                           },
                                           operation_description='Изменение работы.')
-set_homeworks_dates_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
-                                                  required=['groups'],
-                                                  properties={
-                                                      "groups": openapi.Schema(
-                                                          type=openapi.TYPE_ARRAY,
-                                                          items=openapi.Schema(
-                                                              type=openapi.TYPE_OBJECT,
-                                                              required=['group_id', 'work_dates'],
-                                                              properties={
-                                                                  "group_id": openapi.Schema(type=openapi.TYPE_INTEGER,
-                                                                                             example=1),
-                                                                  "work_dates": openapi.Schema(
-                                                                      type=openapi.TYPE_ARRAY,
-                                                                      items=openapi.Schema(
-                                                                          type=openapi.TYPE_OBJECT,
-                                                                          properties={
-                                                                              "work_id": openapi.Schema(
-                                                                                  type=openapi.TYPE_INTEGER,
-                                                                                  example=1),
-                                                                              "date": openapi.Schema(
-                                                                                  type=openapi.TYPE_STRING,
-                                                                                  example="2024-01-01"),
-                                                                          }
-                                                                      ),
-                                                                  )
-                                                              }
-                                                          ))
-                                                  },
-                                                  operation_description='Установка дат проведения домашних работ.')
+set_homework_date_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                                required=['group', 'work', 'date'],
+                                                properties={
+                                                    'group': openapi.Schema(type=openapi.TYPE_INTEGER, example=1),
+                                                    'work': openapi.Schema(type=openapi.TYPE_INTEGER, example=2),
+                                                    'date': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                           example='01.01.2024'),
+                                                },
+                                                operation_description='Установка даты проведения домашней работы для группы.')
 
 get_user_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                 properties={
@@ -340,6 +324,20 @@ get_classwork_files_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                       )
                                                                   ),
                                                               }))})
+get_homeworks_dates_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                                  properties={
+                                                      "groups_works_dates": openapi.Schema(
+                                                          type=openapi.TYPE_ARRAY,
+                                                          items=openapi.Schema(
+                                                              type=openapi.TYPE_OBJECT,
+                                                              properties={
+                                                                  "group_id": openapi.Schema(type=openapi.TYPE_INTEGER, example=1),
+                                                                  "work_id": openapi.Schema(type=openapi.TYPE_INTEGER, example=2),
+                                                                  "date": openapi.Schema(type=openapi.TYPE_STRING, example='01.01.2024'),
+                                                              }
+                                                          )
+                                                      )
+                                                  })
 create_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 update_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
@@ -350,7 +348,8 @@ create_response_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 check_user_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 apply_files_to_classwork_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_file_from_classwork_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
-set_homeworks_dates_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
+set_homework_date_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
+delete_homework_date_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 get_works_responses = {200: get_works_response_200}
 get_work_responses = {200: get_work_response_200}
 create_work_responses = {200: create_work_response_200}
@@ -367,5 +366,7 @@ get_my_classworks_responses = {200: get_my_classworks_response_200}
 apply_files_to_classwork_responses = {200: apply_files_to_classwork_response_200}
 delete_file_from_classwork_responses = {200: delete_file_from_classwork_response_200}
 get_classwork_files_responses = {200: get_classwork_files_response_200}
-set_homeworks_dates_responses = {200: set_homeworks_dates_response_200}
+set_homework_date_responses = {200: set_homework_date_response_200}
+delete_homework_date_responses = {200: delete_homework_date_response_200}
+get_homeworks_dates_responses = {200: get_homeworks_dates_response_200}
 operation_description = "Type: 0 - Домашняя работа, 1 - Классная работа, 2 - Блиц, 3 - Письменный экзамен, 4 - Устный экзамен, 5 - Письменный экзамен дз, 6 - Устный экзамен дз, 7 - Письменный экзамен дз(баллы 2007), 8 - Вне статистики"

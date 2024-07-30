@@ -19,7 +19,7 @@ import os
 from django.conf import settings
 from kpm.apps.grades.functions import validate_grade
 from kpm.apps.groups.models import GroupUser, GroupWorkFile, Group, GroupWorkDate
-from django.db import IntegrityError
+from datetime import datetime
 
 
 MEDIA_ROOT = settings.MEDIA_ROOT
@@ -350,15 +350,6 @@ def update_work(request):
             work.updated_at = timezone.now()
         has_attachments = data["has_attachments"].lower() == "true" if "has_attachments" in data else False
         if has_attachments:
-            #if not has_attachments:
-            #    work.answers = None
-            #    work.text = None
-            #    work.has_attachments = False
-            #    work_users = WorkUser.objects.filter(work=work)
-            #    work_users.delete()
-            #    work_files = WorkFile.objects.filter(work=work)
-            #    work_files.delete()
-            #else:
             if not work.has_attachments:
                 text = data["text"]
                 answers = data.getlist("answers")
@@ -1080,12 +1071,12 @@ def get_classwork_files(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='PATCH', operation_summary="Установить даты проведения домашних работ для подгрупп.",
-                     request_body=set_homeworks_dates_request_body,
-                     responses=set_homeworks_dates_responses)
-@api_view(["PATCH"])
-@permission_classes([IsAdmin, IsEnabled])
-def set_homeworks_dates(request):
+@swagger_auto_schema(method='POST', operation_summary="Установить дату проведения домашней работы для группы.",
+                     request_body=set_homework_date_request_body,
+                     responses=set_homework_date_responses)
+@api_view(["POST"])
+@permission_classes([IsTierTwo, IsEnabled])
+def set_homework_date(request):
     try:
         if request.body:
             request_body = json.loads(request.body)
@@ -1093,28 +1084,118 @@ def set_homeworks_dates(request):
             return HttpResponse(json.dumps(
                 {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=400)
-        groups = request_body['groups']
-        for group in groups:
-            group_id = group['group_id']
-            group_work_dates = group['work_dates']
-            for work_date in group_work_dates:
-                work_id = work_date['work_id']
-                date = work_date['date']
-                GroupWorkDate.objects.update_or_create(group_id=group_id, work_id=work_id, defaults={'date': date})
+        group_id = request_body['group']
+        work_id = request_body['work']
+        date = request_body['date']
+        if date:
+            date = datetime.strptime(date, '%d.%m.%Y')
+        group = Group.objects.get(id=group_id)
+        work = Work.objects.get(id=work_id)
+        row = GroupWorkDate.objects.filter(work=work, group=group)
+        if row:
+            row = row[0]
+            row.date = date
+        else:
+            row = GroupWorkDate(work=work, group=group, date=date)
+        row.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
-    except IntegrityError as e:
-        if 'already exists' in str(e):
-            return HttpResponse(
-                json.dumps({'state': 'error', 'message': f'Группа не существует.', 'details': {}, 'instance': request.path},
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+                json.dumps({'state': 'error', 'message': f'Группа или работа не существует.', 'details': {}, 'instance': request.path},
                            ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='DELETE', operation_summary="Удалить дату проведения домашней работы для группы.",
+                     manual_parameters=[work_param, group_param],
+                     responses=delete_homework_date_responses)
+@api_view(["DELETE"])
+@permission_classes([IsTierTwo, IsEnabled])
+def delete_homework_date(request):
+    try:
+        group_id = get_variable("group", request)
+        if not group_id:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id группы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=400)
+        work_id = get_variable("work", request)
+        if not work_id:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=400)
+        group = Group.objects.get(id=group_id)
+        work = Work.objects.get(id=work_id)
+        row = GroupWorkDate.objects.filter(work=work, group=group)
+        if row:
+            row = row[0]
+            row.delete()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+                json.dumps({'state': 'error', 'message': f'Группа или работа не существует.', 'details': {}, 'instance': request.path},
+                           ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='GET', operation_summary="Получить даты проведения домашних работ для группы, либо для домашней работы получить даты проведения в группах.",
+                     manual_parameters=[work_param, group_param],
+                     responses=get_homeworks_dates_responses)
+@api_view(["GET"])
+@permission_classes([IsAdmin, IsEnabled])
+def get_homeworks_dates(request):
+    try:
+        group_filter = False
+        work_filter = False
+        group_id = get_variable("group", request)
+        if group_id not in [None, '']:
+            group_filter = True
+        work_id = get_variable("work", request)
+        if work_id not in [None, '']:
+            group_filter = False
+            work_filter = True
+
+        result = []
+        if group_filter:
+            group = Group.objects.get(id=group_id)
+            rows = GroupWorkDate.objects.filter(group=group).values('work_id', 'date')
+            for row in rows:
+                result.append({
+                    'work_id': row['work_id'],
+                    'group_id': group_id,
+                    'date': row['date'].strftime('%d.%m.%Y'),
+                })
+        elif work_filter:
+            work = Work.objects.get(id=work_id)
+            rows = GroupWorkDate.objects.filter(work=work).values('group_id', 'date')
+            for row in rows:
+                result.append({
+                    'work_id': row['work_id'],
+                    'group_id': group_id,
+                    'date': row['date'].strftime('%d.%m.%Y'),
+                })
         else:
             return HttpResponse(
-                json.dumps({'state': 'error', 'message': f'Работа не существует.',
-                           'details': {}, 'instance': request.path},
+                json.dumps(
+                    {'state': 'error', 'message': f'Необходимо указать либо work, либо group.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        return HttpResponse(json.dumps({'groups_works_dates': result}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+                json.dumps({'state': 'error', 'message': f'Группа или работа не существует.', 'details': {}, 'instance': request.path},
                            ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
