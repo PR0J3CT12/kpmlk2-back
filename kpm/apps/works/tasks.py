@@ -13,7 +13,6 @@ LOGGER = settings.LOGGER
 def open_homeworks():
     try:
         today = datetime.today()
-        print(today)
         group_work_dates = GroupWorkDate.objects.filter(date__lte=today, is_given=False)
         for group_work_date in group_work_dates:
             work_id = group_work_date.work_id
@@ -23,8 +22,8 @@ def open_homeworks():
                 answers = ['#'] * work.exercises
                 group = Group.objects.get(id=group_id)
                 students = GroupUser.objects.filter(group=group).select_related('user')
-                print(students)
                 for student in students:
+                    print(len(answers))
                     user = student.user
                     try:
                         if user.school_class == work.school_class:

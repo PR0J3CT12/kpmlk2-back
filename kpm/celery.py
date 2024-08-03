@@ -12,6 +12,6 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     'open_homeworks': {
         'task': 'kpm.apps.works.tasks.open_homeworks',
-        'schedule': crontab(minute=36, hour=20),
+        'schedule': crontab(minute=0, hour=21),
     }
 }
