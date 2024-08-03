@@ -1,8 +1,6 @@
 from kpm.celery import app
-from kpm.apps.users.models import User
-from kpm.apps.groups.models import Group, GroupUser
+from kpm.apps.groups.models import Group, GroupUser, GroupWorkDate
 from kpm.apps.works.models import Work, WorkUser
-from kpm.apps.groups.models import GroupWorkDate
 from datetime import datetime, date
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
