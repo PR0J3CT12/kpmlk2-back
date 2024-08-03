@@ -188,6 +188,8 @@ SWAGGER_SETTINGS = {
         },
 }
 
+MEDIA_HOST_PATH = f'{os.environ.get("S3_DOMAIN")}/{os.environ.get("AWS_STORAGE_BUCKET_NAME")}/media'
+
 STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3.S3Storage",
@@ -201,7 +203,7 @@ STORAGES = {
             },
             'location': 'media/',
             'endpoint_url': os.environ.get("S3_DOMAIN"),
-            'region_name': 'ru-1'
+            'region_name': 'ru-1',
         },
     },
     'staticfiles': {

@@ -326,7 +326,10 @@ def change_password(request):
             password_ = str(request_body["password"])
         else:
             id_ = request_body["id"]
-            password_ = password_creator()
+            if 'password' not in request_body:
+                password_ = password_creator()
+            else:
+                password_ = request_body['password']
             is_default = True
         if not is_trusted(request, id_):
             return HttpResponse(
@@ -348,7 +351,8 @@ def change_password(request):
                         ensure_ascii=False), status=403)
             user.default_password = password_
             user.is_default = True
-            user.password = ""
+            encrypted_password = make_password(password_, SECRET_KEY)
+            user.password = encrypted_password
         user.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:

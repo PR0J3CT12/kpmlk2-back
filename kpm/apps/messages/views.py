@@ -12,7 +12,8 @@ from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.messages.docs import *
 from django.conf import settings
 from django.utils import timezone
-
+from django.contrib.postgres.aggregates import ArrayAgg
+from django.db.models import F
 
 LOGGER = settings.LOGGER
 
@@ -32,7 +33,7 @@ def send_message(request):
                 json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {},
                             'instance': request.path},
                            ensure_ascii=False), status=400)
-        receivers_ids = data['users_to']
+        receivers_ids = data.getlist('users_to')
         receivers = User.objects.filter(id__in=receivers_ids)
         sender = User.objects.get(id=request.user.id)
         text = data['text']
@@ -65,8 +66,9 @@ def send_message(request):
                        ensure_ascii=False), status=404)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
+            json.dumps(
+                {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -85,16 +87,17 @@ def read_message(request):
         message = Message.objects.get(id=id_)
         if message.user_to.id != request.user.id:
             return HttpResponse(json.dumps(
-                    {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=401)
+                {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=401)
         message.is_viewed = True
         message.viewed_at = timezone.now()
         message.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Сообщение не существует.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
+            json.dumps(
+                {'state': 'error', 'message': f'Сообщение не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -116,17 +119,18 @@ def get_message(request):
                     {'state': 'error', 'message': f'Не указан id сообщения.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         message = Message.objects.get(id=id_)
-        if not is_trusted(request, message.user_to):
+        if not is_trusted(request, message.user_to_id):
             return HttpResponse(json.dumps(
-                    {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=401)
+                {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=401)
         message_group = message.group
-        files = MessageGroupFile.objects.filter(message_group=message_group)
+        host = settings.MEDIA_HOST_PATH
+        files = MessageGroupFile.objects.filter(message_group=message_group).values('file', 'ext')
         files_list = []
         for file in files:
-            link = file.file.name
-            name = link.split('/')[1]
-            ext = name.split('.')[-1]
+            link = f"{host}/{file['file']}"
+            name = file['file'].split('/')[1]
+            ext = file['ext']
             files_list.append({'link': link, 'name': name, 'ext': ext})
         return HttpResponse(json.dumps({
             'id': message.id,
@@ -143,8 +147,9 @@ def get_message(request):
         }, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Сообщение не существует.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
+            json.dumps(
+                {'state': 'error', 'message': f'Сообщение не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -160,30 +165,43 @@ def get_message(request):
 def get_messages(request):
     try:
         id_ = get_variable('id', request)
-        messages = Message.objects.filter(user_to=id_).order_by('-group__datetime')
         if not is_trusted(request, id_):
             return HttpResponse(json.dumps(
-                    {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=401)
+                {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=401)
+        messages = Message.objects.filter(user_to=id_).select_related('user_to', 'user_from', 'group').values(
+            'id', 'user_to__id', 'user_to__name', 'user_from__id', 'user_from__name', 'title', 'text', 'is_viewed',
+            'viewed_at', 'group__datetime', 'group_id').order_by('-group__datetime')
+        groups = []
         messages_list = []
         if not messages:
             return HttpResponse(json.dumps({'messages': messages_list}, ensure_ascii=False), status=200)
+        host = settings.MEDIA_HOST_PATH
+        messages_dict = {}
         for message in messages:
-            messages_list.append(
-                {
-                    'id': message.id,
-                    'user_to': message.user_to.id,
-                    'user_to_name': message.user_to.name,
-                    'user_from': message.user_from.id,
-                    'user_from_name': message.user_from.name,
-                    'title': message.title,
-                    'text': message.text,
-                    'is_viewed': message.is_viewed,
-                    'viewed_at': str(message.viewed_at),
-                    'datetime': str(message.group.datetime)
-                }
-            )
-        return HttpResponse(json.dumps({'messages': messages_list}, ensure_ascii=False), status=200)
+            if message['group_id'] not in groups:
+                groups.append(message['group_id'])
+            messages_dict[message['group_id']] = {
+                'id': message['id'],
+                'user_to': message['user_to__id'],
+                'user_to_name': message['user_to__name'],
+                'user_from': message['user_from__id'],
+                'user_from_name': message['user_from__name'],
+                'title': message['title'],
+                'text': message['text'],
+                'is_viewed': message['is_viewed'],
+                'viewed_at': str(message['viewed_at']),
+                'datetime': str(message['group__datetime']),
+                'files': []
+            }
+        msg_files = MessageGroupFile.objects.filter(message_group__in=groups).values('message_group_id', 'file', 'ext')
+        for file in msg_files:
+            messages_dict[file['message_group_id']]['files'].append({
+                'link': f'{host}/{file["file"]}',
+                'name': file['file'].split('/')[1],
+                'ext': file['ext'],
+            })
+        return HttpResponse(json.dumps({'messages': list(messages_dict.values())}, ensure_ascii=False), status=200)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -199,24 +217,13 @@ def get_sent_messages(request):
     try:
         id_ = request.user.id
         messages = Message.objects.filter(user_from=id_).order_by('user_to__name', '-group__datetime')
-        groups = set(messages.values_list('group', flat=True))
         if not is_trusted(request, id_):
             return HttpResponse(json.dumps(
-                    {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=401)
+                {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=401)
         if not messages:
             return HttpResponse(json.dumps({'messages': []}, ensure_ascii=False), status=200)
         messages_dict = {}
-        files = MessageGroupFile.objects.filter(message_group__in=groups)
-        files_dict = {}
-        for file in files:
-            link = file.file.name
-            name = link.split('/')[1]
-            ext = name.split('.')[-1]
-            if file.message_group_id not in files_dict:
-                files_dict[file.message_group_id] = []
-            files_dict[file.message_group_id].append({'link': link, 'name': name, 'ext': ext})
-        print(files_dict)
         messages_groups = []
         for message in messages:
             if message.group_id not in messages_groups:
@@ -240,15 +247,19 @@ def get_sent_messages(request):
                     'viewed_at': str(message.viewed_at),
                 }
             )
-        files = MessageGroupFile.objects.filter(message_group__in=messages_groups)
+        files = MessageGroupFile.objects.filter(message_group__in=list(messages_groups.keys())).values(
+            'file',
+            'ext,'
+            'message_group_id')
+        host = settings.MEDIA_HOST_PATH
         files_dict = {}
         for file in files:
-            link = file.file.name
-            name = link.split('/')[1]
-            ext = name.split('.')[-1]
-            if file.message_group_id not in files_dict:
-                files_dict[file.message_group_id] = []
-            files_dict[file.message_group_id].append({'link': link, 'name': name, 'ext': ext})
+            link = f"{host}/{file['file']}"
+            name = file['file'].split('/')[1]
+            ext = file['ext']
+            if file['message_group_id'] not in files_dict:
+                files_dict[file['message_group_id']] = []
+            files_dict[file['message_group_id']].append({'link': link, 'name': name, 'ext': ext})
         for group in messages_groups:
             if group in files_dict:
                 messages_dict[group]['files'] = files_dict[group]
@@ -280,12 +291,11 @@ def delete_message(request):
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Сообщение не существует.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
+            json.dumps(
+                {'state': 'error', 'message': f'Сообщение не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
              'instance': request.path},
             ensure_ascii=False), status=404)
-
-

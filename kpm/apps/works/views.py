@@ -1,5 +1,5 @@
 import time
-
+from collections import defaultdict
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -9,7 +9,9 @@ from kpm.apps.users.models import User
 from kpm.apps.themes.models import Theme
 from kpm.apps.grades.models import Grade
 import json
-from django.db.models import Sum, Q, Count
+from django.db.models import Sum, Q, Count, Prefetch, F, Value, OuterRef, Subquery
+from django.contrib.postgres.aggregates import ArrayAgg
+from django.db.models.functions import Coalesce
 from kpm.apps.users.permissions import *
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.works.docs import *
@@ -103,7 +105,7 @@ def get_work(request):
             "has_attachments": work.has_attachments
         }
         if work.has_attachments:
-            host = request.META.get('HTTP_HOST')
+            host = settings.MEDIA_HOST_PATH
             files = WorkFile.objects.filter(work=work)
             files_list = []
             for file in files:
@@ -617,7 +619,7 @@ def get_user_work(request):
         work_user = work_user[0]
         files = WorkFile.objects.filter(work=work)
         files_list = []
-        host = request.META.get('HTTP_HOST')
+        host = settings.MEDIA_HOST_PATH
         for file in files:
             link = file.file.name
             name = link.split('/')[1]
@@ -909,7 +911,7 @@ def get_my_classworks(request):
         files = GroupWorkFile.objects.filter(group__in=groups).select_related('work').order_by('added_at').values(
             'file', 'ext', 'work__id', 'work__name')
         classworks_list = {}
-        host = request.META.get('HTTP_HOST')
+        host = settings.MEDIA_HOST_PATH
         for file in files:
             link = file['file']
             name = link.split('/')[1]
@@ -957,7 +959,7 @@ def apply_files_to_classwork(request):
                 json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {},
                             'instance': request.path},
                            ensure_ascii=False), status=400)
-        group = User.objects.get(id=data['group'])
+        group = Group.objects.get(id=data['group'])
         work = Work.objects.get(id=data['work'])
         files = files.getlist('files')
         for file in files:
@@ -1031,34 +1033,31 @@ def get_classwork_files(request):
                             'instance': request.path},
                            ensure_ascii=False), status=400)
         work = Work.objects.get(id=id_)
-        groups_files = GroupWorkFile.objects.filter(work=work).select_related('group').values('file', 'ext',
-                                                                                              'group__id',
-                                                                                              'group__name',
-                                                                                              'group__marker')
-        group_files_dict = {}
-        host = request.META.get('HTTP_HOST')
-        for file in groups_files:
-            link = file['file']
-            name = link.split('/')[1]
+        school_class = work.school_class
+        host = settings.MEDIA_HOST_PATH
+        group_files = GroupWorkFile.objects.filter(work=work).values('file', 'ext', 'group_id')
+        files_dict = defaultdict(list)
+        for file in group_files:
+            name = file['file'].split('/')[1]
+            link = f"{host}/{file['file']}"
             ext = file['ext']
-            if file['group__id'] not in group_files_dict:
-                group_files_dict[file['group__id']] = {
-                    'group_id': file['group__id'],
-                    'group_name': file['group__name'],
-                    'group_marker': file['group__marker'],
-                    'files': [{
-                        'link': f'{host}/link',
-                        'name': name,
-                        'ext': ext,
-                    }]
-                }
-            else:
-                group_files_dict[file['group__id']]['files'].append({
-                    'link': f'{host}/link',
-                    'name': name,
-                    'ext': ext,
-                })
-        return HttpResponse(json.dumps({'groups': list(group_files_dict.values())}, ensure_ascii=False), status=200)
+            files_dict[file['group_id']].append({
+                'name': name,
+                'link': link,
+                'ext': ext
+            })
+
+        groups = Group.objects.filter(school_class=school_class).values('id', 'name', 'marker')
+        groups_list = []
+        for group in groups:
+            group_files = files_dict[group['id']] if group['id'] in files_dict else []
+            groups_list.append({
+                'group_id': group['id'],
+                'group_name': group['name'],
+                'group_marker': group['marker'],
+                'files': group_files
+            })
+        return HttpResponse(json.dumps({'groups': groups_list}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Файл не существует.', 'details': {},

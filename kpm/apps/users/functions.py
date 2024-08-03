@@ -83,7 +83,7 @@ def password_creator():
 
 def is_trusted(request, id_):
     try:
-        if request.user.is_admin or id_ == request.user.id:
+        if request.user.is_admin or int(id_) == request.user.id:
             return True
         return False
     except:
