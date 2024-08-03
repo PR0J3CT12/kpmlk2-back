@@ -20,13 +20,15 @@ def open_homeworks():
             group_id = group_work_date.group_id
             try:
                 work = Work.objects.get(id=work_id)
+                answers = ['#'] * work.exercises
                 group = Group.objects.get(id=group_id)
                 students = GroupUser.objects.filter(group=group).select_related('user')
+                print(students)
                 for student in students:
                     user = student.user
                     try:
                         if user.school_class == work.school_class:
-                            work_user = WorkUser(user=user, work=work)
+                            work_user = WorkUser(user=user, work=work, answers=answers)
                             work_user.save()
                             LOGGER.info(f'[CELERY | open_homeworks] Added student {student.id} to work {work_id}.')
                         else:
