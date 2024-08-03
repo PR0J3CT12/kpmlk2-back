@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path('get-my-homeworks', views.get_my_homeworks, name='get user homeworks'),
+    path('get-all-homeworks', views.get_homeworks, name='get all homeworks'),
     path('check-user-homework', views.check_user_homework, name='check user homework'),
     path('create-response', views.create_response, name='create response on homework'),
     path('get-user-work', views.get_user_work, name='get user homework'),

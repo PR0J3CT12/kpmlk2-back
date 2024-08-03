@@ -23,7 +23,6 @@ def open_homeworks():
                 group = Group.objects.get(id=group_id)
                 students = GroupUser.objects.filter(group=group).select_related('user')
                 for student in students:
-                    print(len(answers))
                     user = student.user
                     try:
                         if user.school_class == work.school_class:

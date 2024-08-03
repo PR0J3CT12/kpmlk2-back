@@ -1204,7 +1204,7 @@ def get_homeworks_dates(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='GET', operation_summary="Получение списка работ.",
+@swagger_auto_schema(method='GET', operation_summary="Получение списка домашних работ.",
                      manual_parameters=[class_param, theme_param, type_param],
                      responses=get_works_responses,
                      operation_description=operation_description)
@@ -1221,10 +1221,57 @@ def get_homeworks(request):
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        works = Work.objects.filter(is_homework=True, school_class=int(class_)).exclude(type=7).select_related("theme").order_by('-id')
+        works = Work.objects.filter(is_homework=True, school_class=int(class_)).exclude(type__in=[1, 2, 3, 4, 7, 8, 9]).select_related("theme").order_by('-id')
         if (theme is not None) and (theme != ''):
             works = works.filter(theme_id=theme)
         if type_ in ['0', '5', '6']:
+            works = works.filter(type=type_)
+        works_list = []
+        for work in works:
+            works_list.append({
+                "id": work.id,
+                "name": work.name,
+                "grades": work.grades,
+                "max_score": work.max_score,
+                "exercises": work.exercises,
+                "theme_id": work.theme_id,
+                "theme_name": work.theme.name,
+                "work_type": work.type,
+                "is_homework": work.is_homework
+            })
+        return HttpResponse(json.dumps({'works': works_list}, ensure_ascii=False), status=200)
+    except KeyError as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='GET', operation_summary="Получение списка классных работ.",
+                     manual_parameters=[class_param, theme_param, type_param],
+                     responses=get_works_responses,
+                     operation_description=operation_description)
+@api_view(["GET"])
+@permission_classes([IsAdmin, IsEnabled])
+def get_classworks(request):
+    try:
+        class_ = get_variable("class", request)
+        theme = get_variable("theme", request)
+        type_ = get_variable("type", request)
+        if class_ not in ['4', '5', '6', 4, 5, 6]:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=404)
+        works = Work.objects.filter(is_homework=False, school_class=int(class_)).exclude(type__in=[0, 5, 6, 7, 8, 9]).select_related("theme").order_by('-id')
+        if (theme is not None) and (theme != ''):
+            works = works.filter(theme_id=theme)
+        if type_ in ['1', '2', '3', '4']:
             works = works.filter(type=type_)
         works_list = []
         for work in works:
