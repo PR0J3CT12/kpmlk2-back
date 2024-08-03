@@ -22,7 +22,7 @@ LOGGER = settings.LOGGER
                      manual_parameters=[class_param],
                      responses=get_groups_responses)
 @api_view(["GET"])
-@permission_classes([IsAdmin, IsEnabled])
+#@permission_classes([IsAdmin, IsEnabled])
 def get_groups(request):
     try:
         class_ = get_variable("class", request)
@@ -33,24 +33,23 @@ def get_groups(request):
                      'instance': request.path},
                     ensure_ascii=False), status=404)
         groups_dict = {}
-        groups = GroupUser.objects.filter(group__school_class=class_).select_related('group', 'user').order_by('group__created_at').values(
-            'group__id', 'group__name', 'group__marker', 'user__id', 'user__name')
+        groups = Group.objects.filter(school_class=class_).values('id', 'name', 'marker')
+        groups_ids = []
         for row in groups:
-            if row['group__id'] not in groups_dict:
-                groups_dict[row['group__id']] = {
-                    'id': row['group__id'],
-                    'name': row['group__name'],
-                    'color': row['group__marker'],
-                    'students': [{
-                        'id': row['user__id'],
-                        'name': row['user__name']
-                    }],
+            if row['id'] not in groups_dict:
+                groups_ids.append(row['id'])
+                groups_dict[row['id']] = {
+                    'id': row['id'],
+                    'name': row['name'],
+                    'color': row['marker'],
+                    'students': [],
                 }
-            else:
-                groups_dict[row['group__id']]['students'].append({
-                    'id': row['user__id'],
-                    'name': row['user__name']
-                })
+        groups_users = GroupUser.objects.filter(group_id__in=groups_ids).select_related('user').values('group_id', 'user__id', 'user__name')
+        for user in groups_users:
+            groups_dict[user['group_id']]['students'].append({
+                'id': user['user__id'],
+                'name': user['user__name'],
+            })
         return HttpResponse(json.dumps({'groups': list(groups_dict.values())}, ensure_ascii=False), status=200)
     except Exception as e:
         return HttpResponse(json.dumps(
