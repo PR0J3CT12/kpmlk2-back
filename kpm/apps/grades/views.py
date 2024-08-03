@@ -5,7 +5,7 @@ from kpm.apps.users.permissions import IsAdmin, IsEnabled
 from .functions import *
 from kpm.apps.users.models import User
 from kpm.apps.works.models import Work, Exam
-from kpm.apps.themes.models import Theme
+from kpm.apps.groups.models import Group, GroupUser
 from kpm.apps.grades.models import Grade, Mana
 import json
 from django.db.models import Sum, Case, When, IntegerField, Count, Q
@@ -36,12 +36,22 @@ def insert_grades(request):
             request_body = json.loads(request.body)
         else:
             return HttpResponse(json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path}, ensure_ascii=False), status=400)
-        work = Work.objects.get(id=int(request_body["work_id"]))
+        work_id = request_body["work_id"]
+        if not work_id:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Не указан ID работы.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
+        work = Work.objects.get(id=work_id)
         if work.type == 5:
             return HttpResponse(json.dumps(
                 {'state': 'error', 'message': 'Закрытая таблица.', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=400)
-        student = User.objects.get(id=int(request_body["user_id"]))
+        user_id = request_body["user_id"]
+        if not user_id:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Не указан ID пользователя.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
+        student = User.objects.get(id=user_id)
         work_tech = None
         if work.type in [7, 8]:
             link = Exam.objects.get(work_2007=work)
@@ -49,54 +59,52 @@ def insert_grades(request):
         grade = Grade.objects.get(user=student, work=work)
         work_grades = list(map(float, work.grades))
         new_max_score = sum(work_grades)
-        new_grades = grade.grades
+        new_grades = list(grade.grades)
+        log_grades = new_grades
         new_exercises = work.exercises
         new_score = 0
-        if request_body["value"] == '':
-            request_body["value"] = '#'
-        new_grades[int(request_body["cell_number"])] = request_body["value"]
+        value = request_body["value"]
+        if value == '':
+            value = '#'
+        cell = request_body["cell_number"]
+        new_grades[cell] = value
         coefficient_2007 = []
-        for i in range(len(new_grades)):
-            if ',' in new_grades[i]:
-                new_grades[i] = new_grades[i].replace(',', '.')
-            if new_grades[i] == '-':
+        work_is_empty = True
+        for i, grade in enumerate(new_grades):
+            if ',' in grade:
+                grade = grade.replace(',', '.')
+            if grade == '-':
                 new_exercises -= 1
                 new_max_score -= work_grades[i]
                 if work.type in [7, 8]:
                     coefficient_2007.append('-')
+                work_is_empty = False
                 continue
-            elif new_grades[i] == '#':
+            elif grade == '#':
                 cast = 0
                 if work.type in [7, 8]:
                     coefficient_2007.append('#')
             else:
-                cast = float(new_grades[i])
+                cast = float(grade)
                 if cast < 0:
                     return HttpResponse(
                         json.dumps({'state': 'error', 'message': f'Указано недопустимое значение.',
-                                    'details': {"user_id": request_body["user_id"], "work_id": request_body["work_id"],
-                                                "cell_number": request_body["cell_number"],
-                                                "cell_name": f'{request_body["user_id"]}_{request_body["work_id"]}_{request_body["cell_number"]}'},
+                                    'details': {"user_id": user_id, "work_id": work_id, "cell_number": cell,
+                                                "cell_name": f'{user_id}_{work_id}_{cell}'},
                                     'instance': request.path},
                                    ensure_ascii=False), status=400)
                 if cast > float(work_grades[i]):
                     return HttpResponse(
                         json.dumps({'state': 'error', 'message': f'Указанная оценка больше максимальной.',
-                                    'details': {"user_id": request_body["user_id"], "work_id": request_body["work_id"],
-                                                "cell_number": request_body["cell_number"],
-                                                "cell_name": f'{request_body["user_id"]}_{request_body["work_id"]}_{request_body["cell_number"]}'},
+                                    'details': {"user_id": user_id, "work_id": work_id, "cell_number": cell,
+                                                "cell_name": f'{user_id}_{work_id}_{cell}'},
                                     'instance': request.path},
                                    ensure_ascii=False), status=400)
                 if work.type in [7, 8]:
                     coefficient_2007.append(cast / work_grades[i])
-            new_score += cast
-        log_grades_string = grade.grades
-        work_is_empty = True
-        for grade_ in new_grades:
-            if grade_ != '#':
                 work_is_empty = False
-        new_grades_string = '_._'.join(new_grades)
-        if log_grades_string == new_grades_string:
+            new_score += cast
+        if log_grades == new_grades:
             return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
         if work_tech:
             grade_tech = Grade.objects.get(user=student, work=work_tech)
@@ -123,8 +131,7 @@ def insert_grades(request):
                 exercises_tech = 0
             grade_tech.exercises = exercises_tech
             grade_tech.max_score = max_score_tech
-            new_grades_string_tech = '_._'.join(new_grades_list_tech)
-            grade_tech.grades = new_grades_string_tech
+            grade_tech.grades = new_grades_list_tech
             grade_tech.score = score_tech
             grade_tech.save()
         if grade.score != new_score:
@@ -151,7 +158,7 @@ def insert_grades(request):
         if work_is_empty:
             new_max_score = 0
             new_exercises = 0
-        grade.grades = new_grades_string
+        grade.grades = new_grades
         grade.max_score = new_max_score
         grade.score = new_score
         grade.exercises = new_exercises
@@ -205,7 +212,7 @@ def insert_grades(request):
         student.exam_experience = exam_experience
         student.oral_exam_experience = oral_exam_experience
         student.save()
-        LOGGER.info(f'Inserted grades for student {student.id} in work {request_body["work_id"]} by user {request.user.id}.')
+        LOGGER.info(f'Inserted grades for student {student.id} in work {work_id} in cell {cell} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
@@ -230,7 +237,7 @@ def insert_grades(request):
                      manual_parameters=[class_param, theme_param, type_param, group_param],
                      responses=get_grades_responses)
 @api_view(["GET"])
-@permission_classes([IsAdmin, IsEnabled])
+#@permission_classes([IsAdmin, IsEnabled])
 def get_grades(request):
     try:
         class_ = get_variable("class", request)
@@ -243,7 +250,7 @@ def get_grades(request):
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        grades = Grade.objects.filter(user__school_class=int(class_)).exclude(work__type=5).exclude(work__type=3).order_by('work__added_at').select_related('work', 'user')
+        grades = Grade.objects.filter(user__school_class=int(class_)).exclude(work__type=5).exclude(work__type=3).order_by('work__created_at').select_related('work', 'user')
         if (theme is not None) and (theme != ''):
             if theme == '8':
                 grades = grades.filter(work__theme__id=int(theme))
@@ -252,73 +259,90 @@ def get_grades(request):
         if type_ in ['0', '1', '2', '4', '6', '7', '8', '9']:
             grades = grades.filter(work__type=int(type_))
         if (group is not None) and (group != ''):
-            grades = grades.filter(user__group=int(group))
+            grades = grades.filter(user__groupuser__group_id=int(group))
+        grades = grades.values('user_id', 'user__name', 'user__experience', 'work_id', 'score', 'max_score', 'grades', 'exercises')
         grades_dict = {}
-        MARKER_CHOICES = {
-            0: '#ff8282',
-            1: '#ffb875',
-            2: '#fdff96',
-            3: '#93ff91',
-            4: '#78ffef',
-            5: '#7776d6',
-            6: '#bfa0de',
-            7: None
-        }
+        works_list = []
         for grade in grades:
-            if grade.user_id not in grades_dict:
-                if grade.user.group:
-                    marker = grade.user.group.marker
-                else:
-                    marker = 7
-                grades_dict[grade.user_id] = {
+            if grade['work_id'] not in works_list:
+                works_list.append(grade['work_id'])
+            if grade['user_id'] not in grades_dict:
+                grades_dict[grade['user_id']] = {
                     'total_score': 0,
                     'total_max_score': 0,
                     'student_data': {
-                        'id': grade.user.id,
-                        'name': grade.user.name,
-                        'experience': grade.user.experience,
+                        'id': grade['user_id'],
+                        'name': grade['user__name'],
+                        'experience': grade['user__experience'],
                         'grades': [],
-                        'color': MARKER_CHOICES[marker]
+                        'groups': []
                     }
                 }
-            if grade.work_id not in grades_dict[grade.user_id]:
-                grades_dict[grade.user_id][grade.work_id] = {
-                    'score': grade.score,
-                    'max_score': grade.max_score,
-                    'grades': grade.grades,
-                    'exercises': grade.exercises,
+            if grade['work_id'] not in grades_dict[grade['user_id']]:
+                grades_dict[grade['user_id']][grade['work_id']] = {
+                    'score': grade['score'],
+                    'max_score': grade['max_score'],
+                    'grades': grade['grades'],
+                    'exercises': grade['exercises'],
                 }
-                grades_dict[grade.user_id]['total_score'] += grade.score
-                grades_dict[grade.user_id]['total_max_score'] += grade.max_score
-        works_list = grades.order_by('work__added_at').values_list('work', flat=True)
-        works_list = custom_distinct(works_list)
-        works = Work.objects.filter(id__in=works_list).order_by('added_at')
+                grades_dict[grade['user_id']]['total_score'] += grade['score']
+                grades_dict[grade['user_id']]['total_max_score'] += grade['max_score']
+        works = Work.objects.filter(id__in=works_list).order_by('created_at').values('id', 'name', 'max_score', 'grades')
         works_data = []
-        links = None
+        links_dict = {}
         if ((type_ == '7') or (type_ == '8')) or (theme == '8'):
-            links = Exam.objects.filter(work_2007__in=works)
+            links = Exam.objects.filter(work_2007__in=works).select_related('work_2007').values('id', 'work_id', 'work_2007_id', 'work__grades')
+            for link in links:
+                links_dict[link['work_2007_id']] = {
+                    'pair_work_id': link['work_id'],
+                    'grades': link['work__grades']
+                }
         if (group is not None) and (group != ''):
-            students = User.objects.filter(
-                Q(is_admin=0) & Q(school_class=int(class_)) & Q(group=int(group))).select_related('group').order_by(
-                'group', 'id')
+            group_users = GroupUser.objects.filter(group_id=group, user__school_class=int(class_), user__is_admin=0).order_by('group_id', 'user_id').values('user_id', 'group_id', 'group__marker')
+            groups_dict = {}
+            for gu in group_users:
+                if gu['user_id'] not in groups_dict:
+                    groups_dict[gu['user_id']] = [{
+                        'group_id': gu['group_id'],
+                        'color': gu['group__marker']
+                    }]
+                else:
+                    groups_dict[gu['user_id']].append({
+                        'group_id': gu['group_id'],
+                        'color': gu['group__marker']
+                    })
         else:
-            students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_))).select_related(
-                'group').order_by('group', 'id')
+            group_users = GroupUser.objects.filter(user__school_class=int(class_), user__is_admin=0).order_by('user_id').values(
+                'user_id', 'group_id', 'group__marker')
+            groups_dict = {}
+            for gu in group_users:
+                if gu['user_id'] not in groups_dict:
+                    groups_dict[gu['user_id']] = [{
+                        'group_id': gu['group_id'],
+                        'color': gu['group__marker']
+                    }]
+                else:
+                    groups_dict[gu['user_id']].append({
+                        'group_id': gu['group_id'],
+                        'color': gu['group__marker']
+                    })
+        students = User.objects.filter(id__in=list(groups_dict.keys())).values('id', 'name', 'experience')
         if works:
             works_dict = {}
             for work in works:
-                data = {'id': work.id, 'name': work.name, 'max_score': work.max_score, 'grades': list(map(int, work.grades))}
+                data = {'id': work['id'], 'name': work['name'], 'max_score': work['max_score'], 'grades': list(map(int, work['grades']))}
                 if ((type_ == '7') or (type_ == '8')) or (theme == '8'):
-                    work_tech = links.get(work_2007=work)
-                    grades_tech = list(map(int, work_tech.work.grades))
+                    work_tech = links_dict[work['id']]
+                    grades_tech = list(map(int, work_tech['grades']))
                     data['grades_tech'] = grades_tech
                 works_data.append(data)
-                if work.id not in works_dict:
-                    works_dict[work.id] = data
+                if work['id'] not in works_dict:
+                    works_dict[work['id']] = data
 
             students_data = []
             for student_ in students:
-                student = grades_dict[student_.id]
+                student_id = student_['id']
+                student = grades_dict[student_id]
                 student_object = student['student_data']
                 full_score = student['total_score']
                 max_full_score = student['total_max_score']
@@ -328,7 +352,7 @@ def get_grades(request):
                     percentage_full_score = ""
                 student_object['percentage_full_score'] = percentage_full_score
                 for work_ in works:
-                    work_id = work_.id
+                    work_id = work_['id']
                     current_student_grades = student[work_id]
                     score = current_student_grades['score']
                     max_score = current_student_grades['max_score']
@@ -348,13 +372,20 @@ def get_grades(request):
                         percentage = ""
                     student_result = {"work_id": work_id, "grades": current_student_grades_list, "score": score, "percentage": percentage}
                     student_object['grades'].append(student_result)
+                    student_object['groups'] = groups_dict[student_id]
                 students_data.append(student_object)
         else:
-            students = User.objects.filter(Q(is_admin=0) & Q(school_class=int(class_)))
-            students_data = []
+            students_data = {}
             for student in students:
-                student_object = {'id': student.id, 'name': student.name, 'experience': student.experience, 'grades': [], 'percentage_full_score': 0}
-                students_data.append(student_object)
+                if student['id'] not in students_data:
+                    students_data[student['id']] = {
+                        'id': student['id'],
+                        'name': student['name'],
+                        'experience': student['experience'],
+                        'grades': [],
+                        'percentage_full_score': 0,
+                        'groups': groups_dict[student['id']]
+                    }
         return HttpResponse(json.dumps({"works": works_data, "students": students_data}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
