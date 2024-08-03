@@ -12,25 +12,21 @@ LOGGER = settings.LOGGER
 @app.task
 def open_homeworks():
     try:
-        print("start")
         today = datetime.today()
         print(today)
-        group_work_dates = GroupWorkDate.objects.filter(date__lte=today, is_given=False).values('group_id', 'work_id')
-        print("step1")
+        group_work_dates = GroupWorkDate.objects.filter(date__lte=today, is_given=False)
         for group_work_date in group_work_dates:
-            work_id = group_work_date['work_id']
-            group_id = group_work_date['group_id']
-            print(work_id)
-            print(group_id)
+            work_id = group_work_date.work_id
+            group_id = group_work_date.group_id
             try:
                 work = Work.objects.get(id=work_id)
                 group = Group.objects.get(id=group_id)
                 students = GroupUser.objects.filter(group=group).select_related('user')
                 for student in students:
-                    print(student)
+                    user = student.user
                     try:
-                        if student.user.school_class == work.school_class:
-                            work_user = WorkUser(user=student, work=work)
+                        if user.school_class == work.school_class:
+                            work_user = WorkUser(user=user, work=work)
                             work_user.save()
                             LOGGER.info(f'[CELERY | open_homeworks] Added student {student.id} to work {work_id}.')
                         else:
