@@ -35,6 +35,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     default_password = models.CharField('default password', max_length=5, null=True, blank=True)
     is_default = models.BooleanField('is default password', default=True)
     is_disabled = models.BooleanField('is user disabled', default=False)
+    created_at = models.DateTimeField('user created at', auto_now_add=True)
 
     USERNAME_FIELD = 'login'
     REQUIRED_FIELDS = ['name', 'default_password', 'is_admin']
