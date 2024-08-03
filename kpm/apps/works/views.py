@@ -1035,13 +1035,14 @@ def get_classwork_files(request):
         work = Work.objects.get(id=id_)
         school_class = work.school_class
         host = settings.MEDIA_HOST_PATH
-        group_files = GroupWorkFile.objects.filter(work=work).values('file', 'ext', 'group_id')
+        group_files = GroupWorkFile.objects.filter(work=work).values('id', 'file', 'ext', 'group_id')
         files_dict = defaultdict(list)
         for file in group_files:
             name = file['file'].split('/')[1]
             link = f"{host}/{file['file']}"
             ext = file['ext']
             files_dict[file['group_id']].append({
+                'id': file['id'],
                 'name': name,
                 'link': link,
                 'ext': ext
