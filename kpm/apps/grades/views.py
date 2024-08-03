@@ -237,7 +237,7 @@ def insert_grades(request):
                      manual_parameters=[class_param, theme_param, type_param, group_param],
                      responses=get_grades_responses)
 @api_view(["GET"])
-#@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsAdmin, IsEnabled])
 def get_grades(request):
     try:
         class_ = get_variable("class", request)
