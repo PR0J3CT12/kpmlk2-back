@@ -1,0 +1,4 @@
+celery -A kpm worker -l INFO -P threads -n kpm@%h -P gevent -E  # WINDOWS
+celery -A kpm worker -l INFO -P threads -n kpm@%h
+celery -A kpm beat -l INFO
+celery -A kpm flower --port=5555
