@@ -43,6 +43,7 @@ class GroupWorkDate(models.Model):
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
     work = models.OneToOneField(Work, on_delete=models.CASCADE)
     date = models.DateField('Дата выполнения работы', null=True, blank=True, default=None)
+    is_given = models.BooleanField('Отработала ли таска', default=False)
 
     class Meta:
         unique_together = ('group', 'work')
