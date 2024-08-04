@@ -191,7 +191,7 @@ def create_work(request):
             max_score += cast
 
         theme = Theme.objects.get(id=data["theme_id"])
-        if type_ in [0, 5, 6, 7]:
+        if type_ in ['0', '5', '6', '7']:
             is_homework = True
         else:
             is_homework = False
