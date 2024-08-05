@@ -14,6 +14,7 @@ import random
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.grades.docs import *
 from django.core.exceptions import ObjectDoesNotExist
+from xlsxwriter import Workbook
 
 
 # todo: внимательно потестить ману, чтобы не генерилось лишнее(в том числе когда вносят новые оценки и удаляется старая мана)
@@ -451,6 +452,115 @@ def give_mana_all(request):
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+#@swagger_auto_schema(method='GET', operation_summary="Сгенерировать xlsx файл.",
+#                     manual_parameters=[class_param],
+#                     responses=generate_xlsx_responses)
+@api_view(["GET"])
+#@permission_classes([IsAdmin])
+def generate_xlsx(request):
+    try:
+        class_ = get_variable("class", request)
+        if not class_:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        else:
+            if class_ not in ['4']:
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=404)
+        data = {}
+        grades = Grade.objects.filter(user__school_class=class_, user__is_admin=0).select_related('user', 'work', 'work__theme').values(
+            'user__id', 'user__name', 'user__experience', 'user__exam_experience', 'user__oral_exam_experience',
+            'work__id', 'work__name', 'work__type', 'work__theme__name', 'work__theme__id', 'work__grades', 'work__max_score'
+            'grades'
+        )
+        sheets = {
+            '1_2': {'name': 'Блицы', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '2_0': {'name': 'Площадь дз', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '2_1': {'name': 'Площадь кл', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '3_0': {'name': 'Части дз', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '3_1': {'name': 'Части кл', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '4_0': {'name': 'Движение дз', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '4_1': {'name': 'Движение кл', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '5_0': {'name': 'Совместная работа дз', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '5_1': {'name': 'Совместная работа кл', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '6_0': {'name': 'Обратный ход дз', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '6_1': {'name': 'Обратный ход кл', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '7_0': {'name': 'Головы и ноги дз', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '7_1': {'name': 'Головы и ноги кл', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '8_3': {'name': 'Экзамен письменный кл', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '8_5': {'name': 'Экзамен письменный дз', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '8_7': {'name': 'Экзамен письменный дз 2007', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '8_8': {'name': 'Экзамен письменный кл 2007', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '9_3': {'name': 'Экзамен устный кл', 'works': {}, 'headers': {'Имя фамилия': 1}},
+            '9_6': {'name': 'Экзамен устный дз', 'works': {}, 'headers': {'Имя фамилия': 1}},
+        }
+        works = {}
+        for row in grades:
+            current_sheet = f'{row["work__theme__id"]}_{row["work__type"]}'
+            if row['work__name'] not in sheets[current_sheet]['headers']:
+                sheets[current_sheet]['headers'][row['work__name']] = len(row['work__grades'].split('_._')) + 1
+                sheets[current_sheet]['works'][row['work__name']] = row['work__grades'].split('_._') + row['work__max_score']
+            if row['work__id'] not in works:
+                works[row['work__id']] = {
+                    'work_name': row['work__name'],
+                    'grades': row['work__grades'].split('_._'),
+                }
+            if row['user__id'] not in data:
+                data[row['user__id']] = {
+                    'user_name': row['user__name'],
+                    'user_experience': row['user__experience'],
+                    'user_exam_experience': row['user__exam_experience'],
+                    'user_oral_exam_experience': row['user__oral_exam_experience'],
+                    'sheets': {}
+                }
+            if current_sheet not in data[row['user__id']]['sheets']:
+                data[row['user__id']]['sheets'][current_sheet] = {}
+            if row['work__id'] not in data[row['user__id']]['sheets'][current_sheet]:
+                grades = row['grades'].replace('#', '0').split('_._') + row['max_score']
+                data[row['user__id']]['sheets'][current_sheet][row['work__id']] = grades
+        wb = Workbook("data_dump.xlsx")
+        for sheet_ in sheets:
+            sheet = sheets[sheet_]
+            row = 0
+            col = 0
+            ws = wb.add_worksheet(sheets[sheet])
+            merge_format = wb.add_format({
+                'bold': True,
+                'border': 2,
+                'align': 'center',
+                'fg_color': '#E7E7E7',
+            })
+            for i, header in enumerate(sheet['headers']):
+                gap = sheet['headers'][header] - 1
+                ws.merge_range(row, col, row, col + gap, header, merge_format)
+                if i != 0:
+                    for j in range(gap):
+                        ws.write(row + 1, col, str(j + 1))
+                        ws.write(row + 2, col, sheet['works'][header][j])
+                        col += 1
+                    ws.write(row + 1, col, 'Сумма')
+                    ws.write(row + 1, col, sheet['works'][header][-1])
+                    col += 1
+                else:
+                    col += 1
+            row += 2
+            col = 0
+            for student in data:
+                student_data = student[data]
+
+
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
