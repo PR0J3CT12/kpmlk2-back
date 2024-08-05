@@ -120,7 +120,7 @@ get_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                example=True)
 
                                        })
-get_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
+get_homeworks_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                        properties={
                                            "id": openapi.Schema(
                                                type=openapi.TYPE_INTEGER, example=3),

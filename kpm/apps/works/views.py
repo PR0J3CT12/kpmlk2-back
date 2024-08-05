@@ -1206,7 +1206,7 @@ def get_homeworks_dates(request):
 
 @swagger_auto_schema(method='GET', operation_summary="Получение списка домашних работ.",
                      manual_parameters=[class_param, theme_param, type_param],
-                     responses=get_works_responses,
+                     responses=get_homeworks_responses,
                      operation_description=operation_description)
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
