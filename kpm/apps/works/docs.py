@@ -120,6 +120,38 @@ get_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                example=True)
 
                                        })
+get_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                       properties={
+                                           "id": openapi.Schema(
+                                               type=openapi.TYPE_INTEGER, example=3),
+                                           "name": openapi.Schema(
+                                               type=openapi.TYPE_STRING,
+                                               example="Классная работа 1"),
+                                           "grades": openapi.Schema(
+                                               type=openapi.TYPE_ARRAY,
+                                               items=openapi.Schema(
+                                                   type=openapi.TYPE_OBJECT,
+                                                   example=["5", "5", "5", "10", "15"])),
+                                           "max_score": openapi.Schema(
+                                               type=openapi.TYPE_INTEGER, example=40),
+                                           "exercises": openapi.Schema(
+                                               type=openapi.TYPE_INTEGER, example=5),
+                                           "theme_id": openapi.Schema(
+                                               type=openapi.TYPE_INTEGER, example=1),
+                                           "theme_name": openapi.Schema(
+                                               type=openapi.TYPE_STRING, example="Площадь"),
+                                           "type": openapi.Schema(
+                                               type=openapi.TYPE_INTEGER, example=0),
+                                           "is_homework": openapi.Schema(
+                                               type=openapi.TYPE_BOOLEAN,
+                                               example=True),
+                                           "amount": openapi.Schema(
+                                               type=openapi.TYPE_INTEGER,
+                                               example=25),
+                                           "not_checked": openapi.Schema(
+                                               type=openapi.TYPE_INTEGER,
+                                               example=5),
+                                       })
 create_work_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                           required=['grades', 'name', 'theme_id', 'class', 'type'],
                                           properties={
@@ -369,4 +401,5 @@ get_classwork_files_responses = {200: get_classwork_files_response_200}
 set_homework_date_responses = {200: set_homework_date_response_200}
 delete_homework_date_responses = {200: delete_homework_date_response_200}
 get_homeworks_dates_responses = {200: get_homeworks_dates_response_200}
+get_homeworks_responses = {200: get_homeworks_response_200}
 operation_description = "Type: 0 - Домашняя работа, 1 - Классная работа, 2 - Блиц, 3 - Письменный экзамен, 4 - Устный экзамен, 5 - Письменный экзамен дз, 6 - Устный экзамен дз, 7 - Письменный экзамен дз(баллы 2007), 8 - Вне статистики"
