@@ -247,7 +247,7 @@ def get_sent_messages(request):
                     'viewed_at': str(message.viewed_at),
                 }
             )
-        files = MessageGroupFile.objects.filter(message_group__in=list(messages_groups.keys())).values(
+        files = MessageGroupFile.objects.filter(message_group__in=messages_groups).values(
             'file',
             'ext,'
             'message_group_id')
