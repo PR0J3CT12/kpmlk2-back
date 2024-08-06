@@ -60,7 +60,7 @@ def insert_grades(request):
         work_grades = list(map(float, work.grades))
         new_max_score = sum(work_grades)
         new_grades = list(grade.grades)
-        log_grades = new_grades
+        log_grades = '_._'.join(new_grades)
         new_exercises = work.exercises
         new_score = 0
         value = request_body["value"]
@@ -70,22 +70,22 @@ def insert_grades(request):
         new_grades[cell] = value
         coefficient_2007 = []
         work_is_empty = True
-        for i, grade in enumerate(new_grades):
-            if ',' in grade:
-                grade = grade.replace(',', '.')
-            if grade == '-':
+        for i in range(len(new_grades)):
+            if ',' in new_grades[i]:
+                new_grades[i] = new_grades[i].replace(',', '.')
+            if new_grades[i] == '-':
                 new_exercises -= 1
                 new_max_score -= work_grades[i]
                 if work.type in [7, 8]:
                     coefficient_2007.append('-')
                 work_is_empty = False
                 continue
-            elif grade == '#':
+            elif new_grades[i] == '#':
                 cast = 0
                 if work.type in [7, 8]:
                     coefficient_2007.append('#')
             else:
-                cast = float(grade)
+                cast = float(new_grades[i])
                 if cast < 0:
                     return HttpResponse(
                         json.dumps({'state': 'error', 'message': f'Указано недопустимое значение.',
@@ -104,7 +104,8 @@ def insert_grades(request):
                     coefficient_2007.append(cast / work_grades[i])
                 work_is_empty = False
             new_score += cast
-        if log_grades == new_grades:
+        new_grades_check = '_._'.join(new_grades)
+        if log_grades == new_grades_check:
             return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
         if work_tech:
             grade_tech = Grade.objects.get(user=student, work=work_tech)
@@ -170,7 +171,7 @@ def insert_grades(request):
                 else:
                     try:
                         last_homework = Work.objects.get(id=student.last_homework_id)
-                        if work.added_at > last_homework.added_at:
+                        if work.created_at > last_homework.created_at:
                             student.last_homework_id = work.id
                     except ObjectDoesNotExist:
                         student.last_homework_id = work.id
@@ -180,7 +181,7 @@ def insert_grades(request):
                 else:
                     try:
                         last_classwork = Work.objects.get(id=student.last_classwork_id)
-                        if work.added_at > last_classwork.added_at:
+                        if work.created_at > last_classwork.created_at:
                             student.last_classwork_id = work.id
                     except ObjectDoesNotExist:
                         student.last_classwork_id = work.id
