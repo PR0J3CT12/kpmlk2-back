@@ -1206,7 +1206,7 @@ def get_homeworks_dates(request):
 
 @swagger_auto_schema(method='GET', operation_summary="Получение списка домашних работ.",
                      manual_parameters=[class_param, theme_param, type_param],
-                     responses=get_works_responses,
+                     responses=get_homeworks_responses,
                      operation_description=operation_description)
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
@@ -1221,7 +1221,19 @@ def get_homeworks(request):
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        works = Work.objects.filter(is_homework=True, school_class=int(class_)).exclude(type__in=[1, 2, 3, 4, 7, 8, 9]).select_related("theme").order_by('-id')
+        works = Work.objects.filter(is_homework=True, school_class=int(class_)).exclude(type__in=[1, 2, 3, 4, 7, 8, 9]).select_related("theme").order_by('-created_at')
+        works_users = WorkUser.objects.filter(work__in=works).select_related('user').values('work_id', 'user_id', 'is_checked', 'is_done')
+        works_users_dict = {}
+        for wu in works_users:
+            if wu['work_id'] not in works_users_dict:
+                works_users_dict[wu['work_id']] = {
+                    'amount': 0,
+                    'not_checked': 0
+                }
+            works_users_dict[wu['work_id']['amount']] += 1
+            if wu['is_done'] and not wu['is_checked']:
+                works_users_dict[wu['work_id']['not_checked']] += 1
+        works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'theme__id', 'theme__name', 'type', 'is_homework')
         if (theme is not None) and (theme != ''):
             works = works.filter(theme_id=theme)
         if type_ in ['0', '5', '6']:
@@ -1229,15 +1241,17 @@ def get_homeworks(request):
         works_list = []
         for work in works:
             works_list.append({
-                "id": work.id,
-                "name": work.name,
-                "grades": work.grades,
-                "max_score": work.max_score,
-                "exercises": work.exercises,
-                "theme_id": work.theme_id,
-                "theme_name": work.theme.name,
-                "work_type": work.type,
-                "is_homework": work.is_homework
+                "id": work['id'],
+                "name": work['name'],
+                "grades": work['grades'],
+                "max_score": work['max_score'],
+                "exercises": work['exercises'],
+                "theme_id": work['theme__id'],
+                "theme_name": work['theme__name'],
+                "work_type": work['type'],
+                "is_homework": work['is_homework'],
+                "amount": works_users_dict[work['id']]['amount'],
+                "not_checked": works_users_dict[work['id']]['not_checked'],
             })
         return HttpResponse(json.dumps({'works': works_list}, ensure_ascii=False), status=200)
     except KeyError as e:
