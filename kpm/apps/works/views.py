@@ -644,7 +644,6 @@ def get_user_work(request):
             'id': work.id,
             'name': work.name,
             'text': work.text,
-            'max_score': work.score,
             'fields': work.exercises,
             'files': files_list,
             'class': work.school_class,
@@ -652,8 +651,10 @@ def get_user_work(request):
             'is_checked': work.is_checked,
             'created_at': str(work.created_at)
         }
+        grade = Grade.objects.get(work=work, user=student)
+        max_score = grade.max_score
+        score = grade.max_score
         if work_user.is_done:
-            response['answers'] = work.answers
             response['user_answers'] = work_user.answers
             user_files = WorkUserFile.objects.filter(link=work_user)
             user_files_list = []
@@ -663,9 +664,10 @@ def get_user_work(request):
                 user_files_list.append({'link': link, 'name': name, 'ext': file.ext})
             response['user_files'] = user_files_list
             response['answered_at'] = str(work_user.answered_at)
-        # TODO: не score а grades
         if work_user.is_checked:
-            response['user_score'] = work_user.score
+            response['answers'] = work.answers
+            response['score'] = score
+            response['max_score'] = max_score
         response['comment'] = work_user.comment
         return HttpResponse(json.dumps(response, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
@@ -872,6 +874,63 @@ def check_user_homework(request):
             for i in range(0, blue):
                 mana = Mana(user=student, work=work, color='blue')
                 mana.save()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {},
+                        'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except KeyError as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='PATCH', operation_summary="Вернуть домашнюю работу с комментариями(админка).",
+                     request_body=return_user_homework_request_body,
+                     responses=return_user_homework_responses)
+@api_view(["PATCH"])
+@permission_classes([IsAdmin, IsEnabled])
+def return_user_homework(request):
+    try:
+        if request.body:
+            request_body = json.loads(request.body)
+        else:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
+        id_ = request_body['id']
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        student_id = request_body['student']
+        if (student_id is None) or (student_id == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        work = Work.objects.get(id=id_)
+        student = User.objects.get(id=student_id)
+        admin = User.objects.get(id=request.user.id)
+        work_user = WorkUser.objects.filter(user=student, work=work)
+        if not work_user:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=403)
+        work_user = work_user[0]
+        comment = request_body["comment"]
+        work_user.checker = admin
+        work_user.is_done = False
+        work_user.comment = comment
+        work_user.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(

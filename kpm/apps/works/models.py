@@ -94,7 +94,7 @@ class WorkUser(models.Model):
     comment = models.TextField('Комментарий преподавателя', default="")
     is_checked = models.BooleanField('Проверена ли работа', default=False)
     checker = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='checker', null=True)
-    score = models.IntegerField('Оценка за работу', default=0)
+    #score = models.IntegerField('Оценка за работу', default=0)
     answers = models.JSONField('Форма с ответами')
 
     answered_at = models.DateTimeField('Дата ответа', default=None, null=True)
