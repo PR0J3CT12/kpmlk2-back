@@ -780,36 +780,33 @@ def check_user_homework(request):
                     {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=403)
         work_user = work_user[0]
-        if 'value' in request_body.keys():
-            value = request_body['value']
+        grade_row = Grade.objects.get(user=student, work=work)
+        work_grades = work.grades
+        new_grades = grade_row.grades
+        grades = request_body["grades"]
+        score = 0
+        max_score = 0
+        exercises = 0
+        is_empty = True
+        for i, value in enumerate(grades):
             if ',' in value:
                 value = value.replace(',', '.')
-            cell = request_body['cell']
             if not validate_grade(value):
                 return HttpResponse(
                     json.dumps({'state': 'error', 'message': 'Некорректное значение оценки.', 'details': {},
                                 'instance': request.path},
                                ensure_ascii=False), status=400)
-            work_grades = work.grades
-            grade = Grade.objects.get(user=student, work=work)
-            new_grades = grade.grades
-            new_grades[cell] = value
-            score = 0
-            max_score = 0
-            exercises = 0
-            is_empty = True
-            for i, grade_ in enumerate(new_grades):
-                if grade_ == '-':
-                    is_empty = False
-                    pass
-                elif grade_ == '#':
-                    exercises += 1
-                    max_score += work_grades[i]
-                else:
-                    is_empty = False
-                    exercises += 1
-                    max_score += work_grades[i]
-                    score += float(grade_)
+            if value == '-':
+                is_empty = False
+                pass
+            elif value == '#':
+                exercises += 1
+                max_score += work_grades[i]
+            else:
+                is_empty = False
+                exercises += 1
+                max_score += work_grades[i]
+                score += float(value)
             if score > work.max_score:
                 return HttpResponse(
                     json.dumps(
@@ -830,11 +827,12 @@ def check_user_homework(request):
                 work_user.checked_at = timezone.now()
                 work_user.is_done = True
                 work_user.checker = admin
-            grade.score = score
-            grade.exercises = exercises
-            grade.max_score = max_score
-            grade.grades = new_grades
-            grade.save()
+            new_grades[i] = value
+        grade_row.score = score
+        grade_row.exercises = exercises
+        grade_row.max_score = max_score
+        grade_row.grades = new_grades
+        grade_row.save()
         if 'comment' in request_body.keys():
             comment = request_body['comment']
             work_user.comment = comment
