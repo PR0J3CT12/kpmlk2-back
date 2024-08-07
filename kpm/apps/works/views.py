@@ -82,7 +82,7 @@ def get_works(request):
                      responses=get_work_responses,
                      operation_description=operation_description)
 @api_view(["GET"])
-@permission_classes([IsAdmin, IsEnabled])
+#@permission_classes([IsAdmin, IsEnabled])
 def get_work(request):
     try:
         id_ = get_variable("id", request)
@@ -122,6 +122,20 @@ def get_work(request):
             result['answers'] = work.answers
             result['files'] = files_list
             result['users'] = users_list
+        if work.is_homework:
+            groups_dict = {}
+            groups = Group.objects.filter(school_class=work.school_class).values("id", "name", "marker").order_by("created_at")
+            for group in groups:
+                groups_dict[group['id']] = {
+                    "id": group['id'],
+                    "name": group['name'],
+                    "color": group['marker'],
+                    "date": None
+                }
+            groups_in_work = GroupWorkDate.objects.filter(work=work).values("id", "date")
+            for gin in groups_in_work:
+                groups_dict[gin['id']]['date'] = str(gin['date'])
+            result["groups"] = list(groups_dict.values())
         return HttpResponse(
             json.dumps(result, ensure_ascii=False), status=200)
     except KeyError as e:
