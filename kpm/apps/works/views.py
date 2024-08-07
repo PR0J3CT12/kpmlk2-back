@@ -7,7 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from kpm.apps.works.models import *
 from kpm.apps.users.models import User
 from kpm.apps.themes.models import Theme
-from kpm.apps.grades.models import Grade
+from kpm.apps.grades.models import Grade, Mana
 import json
 from django.db.models import Sum, Q, Count, Prefetch, F, Value, OuterRef, Subquery
 from django.contrib.postgres.aggregates import ArrayAgg
@@ -22,6 +22,7 @@ from django.conf import settings
 from kpm.apps.grades.functions import validate_grade
 from kpm.apps.groups.models import GroupUser, GroupWorkFile, Group, GroupWorkDate
 from datetime import datetime
+from kpm.apps.grades.functions import is_number_float, mana_generation
 
 
 MEDIA_ROOT = settings.MEDIA_ROOT
@@ -784,6 +785,7 @@ def check_user_homework(request):
         work_grades = list(map(float, work.grades))
         new_grades = grade_row.grades
         grades = request_body["grades"]
+        old_score = grade_row.score
         score = 0
         max_score = 0
         exercises = 0
@@ -837,6 +839,25 @@ def check_user_homework(request):
             comment = request_body['comment']
             work_user.comment = comment
         work_user.save()
+        if score != old_score:
+            manas_delete = Mana.objects.filter(Q(user=student) & Q(work=work))
+            manas_delete.delete()
+        if work.type == 6:
+            count = 0
+            for grade_ in new_grades:
+                if is_number_float(grade_):
+                    if float(grade_) > 0:
+                        count += 1
+            green, blue = mana_generation(int(work.type), work.is_homework, count, 0)
+        else:
+            green, blue = mana_generation(int(work.type), work.is_homework, score, max_score)
+        if score != old_score:
+            for i in range(0, green):
+                mana = Mana(user=student, work=work, color='green')
+                mana.save()
+            for i in range(0, blue):
+                mana = Mana(user=student, work=work, color='blue')
+                mana.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
