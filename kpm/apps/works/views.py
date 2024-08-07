@@ -781,7 +781,7 @@ def check_user_homework(request):
                     ensure_ascii=False), status=403)
         work_user = work_user[0]
         grade_row = Grade.objects.get(user=student, work=work)
-        work_grades = work.grades
+        work_grades = list(map(float, work.grades))
         new_grades = grade_row.grades
         grades = request_body["grades"]
         score = 0
@@ -842,6 +842,10 @@ def check_user_homework(request):
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {},
                         'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except KeyError as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
