@@ -170,6 +170,7 @@ def update_group(request):
             current_students.delete()
             for student in request_body["students"]:
                 group_user = GroupUser.objects.create(group=group, user_id=student)
+        group.save()
         LOGGER.info(f'Updated group {group.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
