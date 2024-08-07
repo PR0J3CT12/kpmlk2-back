@@ -38,8 +38,11 @@ check_user_homework_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                   properties={
                                                       'id': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
                                                       'student': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
-                                                      'value': openapi.Schema(type=openapi.TYPE_STRING, example='-'),
-                                                      'cell': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
+                                                      'grades': openapi.Schema(
+                                                            type=openapi.TYPE_ARRAY,
+                                                            items=openapi.Schema(
+                                                                type=openapi.TYPE_OBJECT,
+                                                                example=["5", "5", "5", "10", "15"])),
                                                       'comment': openapi.Schema(type=openapi.TYPE_STRING,
                                                                                 example="Комментарий преподавателя"),
                                                   },
