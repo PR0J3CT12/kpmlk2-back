@@ -1230,9 +1230,9 @@ def get_homeworks(request):
                     'amount': 0,
                     'not_checked': 0
                 }
-            works_users_dict[wu['work_id']['amount']] += 1
+            works_users_dict[wu['work_id']]['amount'] += 1
             if wu['is_done'] and not wu['is_checked']:
-                works_users_dict[wu['work_id']['not_checked']] += 1
+                works_users_dict[wu['work_id']]['not_checked'] += 1
         works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'theme__id', 'theme__name', 'type', 'is_homework')
         if (theme is not None) and (theme != ''):
             works = works.filter(theme_id=theme)
@@ -1240,6 +1240,12 @@ def get_homeworks(request):
             works = works.filter(type=type_)
         works_list = []
         for work in works:
+            if work['id'] in works_users_dict:
+                amount = works_users_dict[work['id']]['amount']
+                not_checked = works_users_dict[work['id']]['not_checked']
+            else:
+                amount = 0
+                not_checked = 0
             works_list.append({
                 "id": work['id'],
                 "name": work['name'],
@@ -1250,8 +1256,8 @@ def get_homeworks(request):
                 "theme_name": work['theme__name'],
                 "work_type": work['type'],
                 "is_homework": work['is_homework'],
-                "amount": works_users_dict[work['id']]['amount'],
-                "not_checked": works_users_dict[work['id']]['not_checked'],
+                "amount": amount,
+                "not_checked": not_checked,
             })
         return HttpResponse(json.dumps({'works': works_list}, ensure_ascii=False), status=200)
     except KeyError as e:
