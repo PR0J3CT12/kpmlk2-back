@@ -82,7 +82,7 @@ def get_works(request):
                      responses=get_work_responses,
                      operation_description=operation_description)
 @api_view(["GET"])
-#@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsAdmin, IsEnabled])
 def get_work(request):
     try:
         id_ = get_variable("id", request)
@@ -114,10 +114,10 @@ def get_work(request):
                 name = link.split('/')[1]
                 ext = name.split('.')[-1]
                 files_list.append({'id': file.id, 'link': f'{host}/link', 'name': name, 'ext': ext})
-            work_users = WorkUser.objects.filter(work=work).select_related('user')
+            work_users = WorkUser.objects.filter(work=work).select_related('user').values('user__id', 'user__name')
             users_list = []
             for user in work_users:
-                users_list.append({'id': user.user.id, 'name': user.user.name})
+                users_list.append({'id': user['user__id'], 'name': user['user__name']})
             result['text'] = work.text
             result['answers'] = work.answers
             result['files'] = files_list
