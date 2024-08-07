@@ -11,5 +11,6 @@ urlpatterns = [
     path('delete-from-homework', views.delete_from_work, name='delete user from work'),
     path('set-homework-dates', views.set_homework_date, name='set homework date'),
     path('delete-homework-dates', views.delete_homework_date, name='delete homework date'),
-    path('get-homeworks-dates', views.get_homeworks_dates, name='get homeworks dates')
+    path('get-homeworks-dates', views.get_homeworks_dates, name='get homeworks dates'),
+    path('return-homework', views.return_user_homework, name='get return homework'),
 ]
