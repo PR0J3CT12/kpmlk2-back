@@ -249,7 +249,7 @@ def get_sent_messages(request):
             )
         files = MessageGroupFile.objects.filter(message_group__in=messages_groups).values(
             'file',
-            'ext,'
+            'ext',
             'message_group_id')
         host = settings.MEDIA_HOST_PATH
         files_dict = {}
