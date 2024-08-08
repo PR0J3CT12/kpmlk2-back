@@ -13,4 +13,5 @@ urlpatterns = [
     path('delete-homework-dates', views.delete_homework_date, name='delete homework date'),
     path('get-homeworks-dates', views.get_homeworks_dates, name='get homeworks dates'),
     path('return-homework', views.return_user_homework, name='get return homework'),
+    path('get-all-answers', views.get_all_answers, name='get all answers'),
 ]

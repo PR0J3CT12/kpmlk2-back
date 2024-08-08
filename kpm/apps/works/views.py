@@ -1412,3 +1412,119 @@ def get_classworks(request):
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
              'instance': request.path},
             ensure_ascii=False), status=404)
+
+
+
+#@swagger_auto_schema(method='GET', operation_summary="Получение ответов на работу(для таблицы).",
+#                     manual_parameters=[id_param],
+#                     responses=get_all_answers_responses)
+@api_view(["GET"])
+@permission_classes([IsAdmin, IsEnabled])
+def get_all_answers(request):
+    try:
+        id_ = get_variable("id", request)
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=404)
+        admin = Admin.objects.get(user_id=request.user.id)
+        work = Work.objects.get(id=id_)
+        response = {'id': work.id, 'name': work.name, 'answers': work.answers,
+                    'students': [], 'max_score': work.max_score}
+        work_users = WorkUser.objects.filter(work=work).order_by('user_id').select_related('user', 'checker').values(
+            'id', 'user_id', 'user__name', 'is_done', 'is_checked', 'comment', 'checker_id', 'checker__name',
+            'checked_at', 'added_at', 'answered_at', 'answers'
+        )
+        groups_users = GroupUser.objects.filter(group__school_class=4).select_related('group').values('user_id', 'group_id', 'group__marker', 'group__name')
+        user_groups_dict = {}
+        for gu in groups_users:
+            if gu['user_id'] not in user_groups_dict:
+                user_groups_dict[gu['user_id']] = []
+            user_groups_dict[gu['user_id']].append({
+                'id': gu['group_id'],
+                'color': gu['group__marker'],
+                'name': gu['group__name']
+            })
+        work_user_files = WorkUserFile.objects.filter(link__work=work).values('link', 'file', 'ext')
+        files_dict = {}
+        for user_file in work_user_files:
+            if user_file['link'] not in files_dict:
+                files_dict[user_file['link']] = []
+            files_dict[user_file['link']].append({
+                'file': user_file['file'],
+                'ext': user_file['ext']
+            })
+        students_list = []
+        host = settings.MEDIA_HOST_PATH
+        for wu in work_users:
+            student_data = {'id': wu['user_id'], 'name': wu['user__name'], 'answers': [], 'files': [], 'groups': []}
+            if wu['user_id'] in user_groups_dict:
+                student_data['groups'] = user_groups_dict[wu['user_id']]
+            if wu['is_done']:
+                is_done = True
+                answers_list = wu['answers']
+                if wu['id'] in files_dict:
+                    files = files_dict[wu['id']]
+                    for file in files:
+                        name = file['file'].split('/')[1]
+                        link = f"{host}/{file['file']}"
+                        ext = file['ext']
+                        student_data['files'].append({'link': link, 'name': name, 'ext': ext})
+            else:
+                is_done = False
+                answers_list = [''] * len(work.answers)
+            if wu['is_checked']:
+                is_checked = True
+                #score = homework_user.score
+            else:
+                is_checked = False
+                score = None
+            if wu['checker_id']:
+                if admin.user_id == wu['checker_id']:
+                    checker = wu['checker__name']
+                elif admin.tier == 0:
+                    checker = ""
+                else:
+                    checker = wu['checker__name']
+            else:
+                checker = ""
+            comment = wu['comment']
+            student_data['answers'] = answers_list
+            student_data['score'] = score
+            student_data['comment'] = comment
+            student_data['checker'] = checker
+            if wu['checked_at']:
+                checked_at = str(wu['checked_at'])
+            else:
+                checked_at = None
+            if wu['answered_at']:
+                answered_at = str(wu['answered_at'])
+            else:
+                answered_at = None
+            if wu['added_at']:
+                added_at = str(wu['added_at'])
+            else:
+                added_at = None
+            student_data['checked_at'] = checked_at
+            student_data['answered_at'] = answered_at
+            student_data['added_at'] = added_at
+            students_list.append(student_data)
+            if is_checked and is_done:
+                color = '#b9ffbb'
+            elif is_done and not is_checked:
+                color = '#ffa3a7'
+            else:
+                color = None
+            student_data['row_color'] = color
+        response['students'] = students_list
+        return HttpResponse(json.dumps(response, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+                json.dumps({'state': 'error', 'message': f'Работа не существует.', 'details': {}, 'instance': request.path},
+                           ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)

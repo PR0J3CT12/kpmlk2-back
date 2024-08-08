@@ -57,11 +57,12 @@ def get_user(request):
         else:
             login_obj = History(user=student)
             login_obj.save()
-        name_splitted = student.name.split(' ')
-        if len(name_splitted) == 2:
-            name = name_splitted[1]
-        else:
-            name = student.name
+        #name_splitted = student.name.split(' ')
+        #if len(name_splitted) == 2:
+        #    name = name_splitted[1]
+        #else:
+        #    name = student.name
+        name = student.name
         groups = GroupUser.objects.filter(user=student).select_related('group').values('group_id', 'group__name', 'group__marker')
         groups_list = []
         for group in groups:
