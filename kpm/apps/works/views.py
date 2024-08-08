@@ -132,9 +132,9 @@ def get_work(request):
                     "color": group['marker'],
                     "date": None
                 }
-            groups_in_work = GroupWorkDate.objects.filter(work=work).values("id", "date")
+            groups_in_work = GroupWorkDate.objects.filter(work=work).values("group_id", "date")
             for gin in groups_in_work:
-                groups_dict[gin['id']]['date'] = str(gin['date'])
+                groups_dict[gin['group_id']]['date'] = str(gin['date'])
             result["groups"] = list(groups_dict.values())
         return HttpResponse(
             json.dumps(result, ensure_ascii=False), status=200)
