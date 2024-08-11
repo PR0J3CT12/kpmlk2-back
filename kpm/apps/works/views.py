@@ -1414,10 +1414,9 @@ def get_classworks(request):
             ensure_ascii=False), status=404)
 
 
-
-#@swagger_auto_schema(method='GET', operation_summary="Получение ответов на работу(для таблицы).",
-#                     manual_parameters=[id_param],
-#                     responses=get_all_answers_responses)
+@swagger_auto_schema(method='GET', operation_summary="Получение ответов на работу(для таблицы).",
+                     manual_parameters=[id_param],
+                     responses=get_all_answers_responses)
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_all_answers(request):
@@ -1430,8 +1429,15 @@ def get_all_answers(request):
                     ensure_ascii=False), status=404)
         admin = Admin.objects.get(user_id=request.user.id)
         work = Work.objects.get(id=id_)
+        grades = Grade.objects.filter(work=work).values('user_id', 'score', 'max_score')
+        grades_dict = {}
+        for grade in grades:
+            if grade['user_id'] not in grades_dict:
+                grades_dict[grade['user_id']] = {'score': 0,'max_score': 0}
+            grades_dict[grade['user_id']]['score'] = grade['score']
+            grades_dict[grade['user_id']]['max_score'] = grade['max_score'] if grade['max_score'] else work.max_score
         response = {'id': work.id, 'name': work.name, 'answers': work.answers,
-                    'students': [], 'max_score': work.max_score}
+                    'students': []}
         work_users = WorkUser.objects.filter(work=work).order_by('user_id').select_related('user', 'checker').values(
             'id', 'user_id', 'user__name', 'is_done', 'is_checked', 'comment', 'checker_id', 'checker__name',
             'checked_at', 'added_at', 'answered_at', 'answers'
@@ -1462,7 +1468,6 @@ def get_all_answers(request):
             if wu['user_id'] in user_groups_dict:
                 student_data['groups'] = user_groups_dict[wu['user_id']]
             if wu['is_done']:
-                is_done = True
                 answers_list = wu['answers']
                 if wu['id'] in files_dict:
                     files = files_dict[wu['id']]
@@ -1472,14 +1477,13 @@ def get_all_answers(request):
                         ext = file['ext']
                         student_data['files'].append({'link': link, 'name': name, 'ext': ext})
             else:
-                is_done = False
                 answers_list = [''] * len(work.answers)
             if wu['is_checked']:
-                is_checked = True
-                #score = homework_user.score
+                score = grades_dict[wu['user_id']]['score']
+                max_score = grades_dict[wu['user_id']]['max_score']
             else:
-                is_checked = False
                 score = None
+                max_score = None
             if wu['checker_id']:
                 if admin.user_id == wu['checker_id']:
                     checker = wu['checker__name']
@@ -1492,8 +1496,11 @@ def get_all_answers(request):
             comment = wu['comment']
             student_data['answers'] = answers_list
             student_data['score'] = score
+            student_data['max_score'] = max_score
             student_data['comment'] = comment
             student_data['checker'] = checker
+            student_data['is_done'] = wu['is_done']
+            student_data['is_checked'] = wu['is_checked']
             if wu['checked_at']:
                 checked_at = str(wu['checked_at'])
             else:
@@ -1510,13 +1517,6 @@ def get_all_answers(request):
             student_data['answered_at'] = answered_at
             student_data['added_at'] = added_at
             students_list.append(student_data)
-            if is_checked and is_done:
-                color = '#b9ffbb'
-            elif is_done and not is_checked:
-                color = '#ffa3a7'
-            else:
-                color = None
-            student_data['row_color'] = color
         response['students'] = students_list
         return HttpResponse(json.dumps(response, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
