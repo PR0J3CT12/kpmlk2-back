@@ -1433,9 +1433,15 @@ def get_all_answers(request):
         grades_dict = {}
         for grade in grades:
             if grade['user_id'] not in grades_dict:
-                grades_dict[grade['user_id']] = {'score': 0,'max_score': 0}
+                grades_dict[grade['user_id']] = {'score': 0,'max_score': 0, 'green': 0, 'blue': 0}
             grades_dict[grade['user_id']]['score'] = grade['score']
             grades_dict[grade['user_id']]['max_score'] = grade['max_score'] if grade['max_score'] else work.max_score
+        manas = Mana.objects.filter(work=work, is_given=False).values('user_id', 'color')
+        for mana in manas:
+            if mana['color'] == 'blue':
+                grades_dict[mana['user_id']]['blue'] += 1
+            if mana['color'] == 'green':
+                grades_dict[mana['user_id']]['green'] += 1
         response = {'id': work.id, 'name': work.name, 'answers': work.answers,
                     'students': []}
         work_users = WorkUser.objects.filter(work=work).order_by('user_id').select_related('user', 'checker').values(
@@ -1481,9 +1487,13 @@ def get_all_answers(request):
             if wu['is_checked']:
                 score = grades_dict[wu['user_id']]['score']
                 max_score = grades_dict[wu['user_id']]['max_score']
+                green = grades_dict[wu['user_id']]['green']
+                blue = grades_dict[wu['user_id']]['blue']
             else:
                 score = None
                 max_score = None
+                green = None
+                blue = None
             if wu['checker_id']:
                 if admin.user_id == wu['checker_id']:
                     checker = wu['checker__name']
@@ -1501,6 +1511,8 @@ def get_all_answers(request):
             student_data['checker'] = checker
             student_data['is_done'] = wu['is_done']
             student_data['is_checked'] = wu['is_checked']
+            student_data['green'] = green
+            student_data['blue'] = blue
             if wu['checked_at']:
                 checked_at = str(wu['checked_at'])
             else:
