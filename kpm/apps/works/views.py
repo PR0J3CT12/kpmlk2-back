@@ -113,7 +113,7 @@ def get_work(request):
                 link = file.file.name
                 name = link.split('/')[1]
                 ext = name.split('.')[-1]
-                files_list.append({'id': file.id, 'link': f'{host}/link', 'name': name, 'ext': ext})
+                files_list.append({'id': file.id, 'link': f'{host}/{link}', 'name': name, 'ext': ext})
             work_users = WorkUser.objects.filter(work=work).select_related('user').values('user__id', 'user__name')
             users_list = []
             for user in work_users:
@@ -639,7 +639,7 @@ def get_user_work(request):
             link = file.file.name
             name = link.split('/')[1]
             ext = name.split('.')[-1]
-            files_list.append({'link': f'{host}/link', 'name': name, 'ext': ext})
+            files_list.append({'link': f'{host}/{link}', 'name': name, 'ext': ext})
         response = {
             'id': work.id,
             'name': work.name,
@@ -1016,7 +1016,7 @@ def get_my_classworks(request):
                 classworks_list[file['work__id']] = {
                     'name': file['work__name'],
                     'files': [{
-                        'link': f'{host}/link',
+                        'link': f'{host}/{link}',
                         'name': name,
                         'ext': ext,
                     }]
