@@ -9,6 +9,7 @@ from kpm.apps.users.permissions import *
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.themes.docs import *
 from django.conf import settings
+from kpm.apps.users.docs import permissions_operation_description
 
 
 LOGGER = settings.LOGGER
@@ -16,7 +17,8 @@ LOGGER = settings.LOGGER
 
 @swagger_auto_schema(method='GET', operation_summary="Получение темы.",
                      manual_parameters=[id_param],
-                     responses=get_theme_responses)
+                     responses=get_theme_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_theme(request):
@@ -47,7 +49,8 @@ def get_theme(request):
 
 @swagger_auto_schema(method='GET', operation_summary="Получение тем.",
                      manual_parameters=[class_param],
-                     responses=get_themes_responses)
+                     responses=get_themes_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsEnabled])
 def get_themes(request):
@@ -86,9 +89,10 @@ def get_themes(request):
 
 @swagger_auto_schema(method='POST', operation_summary="Создание темы.",
                      request_body=create_theme_request_body,
-                     responses=create_theme_responses)
+                     responses=create_theme_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["POST"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsTierTwo, IsEnabled])
 def create_theme(request):
     try:
         if request.body:
@@ -118,7 +122,8 @@ def create_theme(request):
 
 @swagger_auto_schema(method='DELETE', operation_summary="Удаление темы.",
                      manual_parameters=[id_param],
-                     responses=delete_theme_responses)
+                     responses=delete_theme_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["DELETE"])
 @permission_classes([IsTierTwo, IsEnabled])
 def delete_theme(request):
@@ -146,7 +151,8 @@ def delete_theme(request):
 
 @swagger_auto_schema(method='DELETE', operation_summary="Удаление тем.",
                      manual_parameters=[class_param],
-                     responses=delete_themes_responses)
+                     responses=delete_themes_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["DELETE"])
 @permission_classes([IsTierTwo, IsEnabled])
 def delete_themes(request):

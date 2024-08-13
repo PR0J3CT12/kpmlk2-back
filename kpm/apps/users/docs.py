@@ -138,3 +138,12 @@ get_users_responses = {200: get_users_response_200}
 change_password_responses = {200: change_password_response_200}
 get_all_logons_responses = {200: get_all_logons_response_200}
 toggle_suspending_user_responses = {200: toggle_suspending_user_response_200}
+
+permissions_operation_description = {
+    "IsAdmin": "Стажер, Админ, Супер-админ",
+    "IsAuthenticated": "Любой авторизованный пользователь",
+    "Nothing": "Нет ограничений",
+    "IsTierZero": "Стажер, Админ, Супер-админ",
+    "IsTierOne": "Админ, Супер-админ",
+    "IsTierTwo": "Супер-админ",
+}

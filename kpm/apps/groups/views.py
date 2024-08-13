@@ -14,15 +14,18 @@ from kpm.apps.groups.docs import *
 from django.utils import timezone
 from datetime import datetime, timedelta
 from django.db import IntegrityError
+from kpm.apps.users.docs import permissions_operation_description
+
 
 LOGGER = settings.LOGGER
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение групп.",
                      manual_parameters=[class_param],
-                     responses=get_groups_responses)
+                     responses=get_groups_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["GET"])
-#@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsAdmin, IsEnabled])
 def get_groups(request):
     try:
         class_ = get_variable("class", request)
@@ -60,7 +63,8 @@ def get_groups(request):
 
 @swagger_auto_schema(method='GET', operation_summary="Получение группы.",
                      manual_parameters=[id_group_param],
-                     responses=get_group_responses)
+                     responses=get_group_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_group(request):
@@ -100,9 +104,10 @@ def get_group(request):
 
 @swagger_auto_schema(method='POST', operation_summary="Создание группы.",
                      request_body=create_group_request_body,
-                     responses=create_group_responses)
+                     responses=create_group_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierOne']}")
 @api_view(["POST"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsTierOne, IsEnabled])
 def create_group(request):
     try:
         if request.body:
@@ -148,9 +153,10 @@ def create_group(request):
 
 @swagger_auto_schema(method='PATCH', operation_summary="Изменение группы.",
                      request_body=update_group_request_body,
-                     responses=update_group_responses)
+                     responses=update_group_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierOne']}")
 @api_view(["PATCH"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsTierOne, IsEnabled])
 def update_group(request):
     try:
         if request.body:
@@ -192,7 +198,8 @@ def update_group(request):
 
 @swagger_auto_schema(method='DELETE', operation_summary="Удаление группы.",
                      manual_parameters=[id_group_param],
-                     responses=delete_group_responses)
+                     responses=delete_group_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["DELETE"])
 @permission_classes([IsTierTwo, IsEnabled])
 def delete_group(request):
@@ -220,9 +227,10 @@ def delete_group(request):
 
 @swagger_auto_schema(method='PATCH', operation_summary="Добавление учеников в группу.",
                      request_body=add_to_group_request_body,
-                     responses=add_to_group_responses)
+                     responses=add_to_group_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierOne']}")
 @api_view(["PATCH"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsTierOne, IsEnabled])
 def add_to_group(request):
     try:
         if request.body:
@@ -257,9 +265,10 @@ def add_to_group(request):
 
 @swagger_auto_schema(method='PATCH', operation_summary="Удаление учеников из группы.",
                      request_body=delete_from_group_request_body,
-                     responses=delete_from_group_responses)
+                     responses=delete_from_group_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierOne']}")
 @api_view(["PATCH"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsTierOne, IsEnabled])
 def delete_from_group(request):
     try:
         if request.body:

@@ -14,6 +14,7 @@ from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.grades.docs import *
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
+from kpm.apps.users.docs import permissions_operation_description
 
 
 LOGGER = settings.LOGGER
@@ -22,7 +23,8 @@ LOGGER = settings.LOGGER
 # todo: внимательно потестить ману, чтобы не генерилось лишнее(в том числе когда вносят новые оценки и удаляется старая мана)
 @swagger_auto_schema(method='POST', operation_summary="Проставить оценки.",
                      request_body=insert_grades_request_body,
-                     responses=insert_grades_responses)
+                     responses=insert_grades_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["POST"])
 @permission_classes([IsAdmin, IsEnabled])
 def insert_grades(request):
@@ -236,7 +238,8 @@ def insert_grades(request):
 
 @swagger_auto_schema(method='GET', operation_summary="Получить оценки.",
                      manual_parameters=[class_param, theme_param, type_param, group_param],
-                     responses=get_grades_responses)
+                     responses=get_grades_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_grades(request):
@@ -401,7 +404,8 @@ def get_grades(request):
 
 @swagger_auto_schema(method='GET', operation_summary="Получить список ожидающих ману.",
                      manual_parameters=[class_param],
-                     responses=get_mana_waiters_responses)
+                     responses=get_mana_waiters_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_mana_waiters(request):
@@ -442,7 +446,8 @@ def get_mana_waiters(request):
 
 @swagger_auto_schema(method='POST', operation_summary="Выдать ману ученику.",
                      manual_parameters=[id_param],
-                     responses=give_mana_responses)
+                     responses=give_mana_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["POST"])
 @permission_classes([IsAdmin, IsEnabled])
 def give_mana_all(request):

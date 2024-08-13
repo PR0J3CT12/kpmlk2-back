@@ -13,6 +13,7 @@ from kpm.apps.ratings.docs import *
 from django.db.models import Count
 from django.conf import settings
 from django.db import IntegrityError
+from kpm.apps.users.docs import permissions_operation_description
 
 
 LOGGER = settings.LOGGER
@@ -20,7 +21,8 @@ LOGGER = settings.LOGGER
 
 @swagger_auto_schema(method='GET', operation_summary="Получение рейтингов.",
                      manual_parameters=[class_param],
-                     responses=get_ratings_responses)
+                     responses=get_ratings_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_ratings(request):
@@ -60,7 +62,8 @@ def get_ratings(request):
 
 @swagger_auto_schema(method='GET', operation_summary="Получение рейтинга.",
                      manual_parameters=[id_param],
-                     responses=get_rating_responses)
+                     responses=get_rating_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_rating(request):
@@ -134,9 +137,10 @@ def get_rating(request):
 
 @swagger_auto_schema(method='POST', operation_summary="Создание рейтинга.",
                      request_body=create_rating_request_body,
-                     responses=create_rating_responses)
+                     responses=create_rating_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["POST"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsTierTwo, IsEnabled])
 def create_rating(request):
     try:
         if request.body:
@@ -188,7 +192,8 @@ def create_rating(request):
 
 @swagger_auto_schema(method='PATCH', operation_summary="Изменение рейтинга.",
                      request_body=update_rating_request_body,
-                     responses=update_rating_responses)
+                     responses=update_rating_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["PATCH"])
 @permission_classes([IsTierTwo, IsEnabled])
 def update_rating(request):
@@ -229,7 +234,8 @@ def update_rating(request):
 
 @swagger_auto_schema(method='DELETE', operation_summary="Удаление рейтинга.",
                      manual_parameters=[id_param],
-                     responses=delete_rating_responses)
+                     responses=delete_rating_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["DELETE"])
 @permission_classes([IsTierTwo, IsEnabled])
 def delete_rating(request):
@@ -259,9 +265,10 @@ def delete_rating(request):
 @swagger_auto_schema(method='PATCH', operation_summary="Добавление учеников в рейтинг.",
                      manual_parameters=[id_param],
                      request_body=add_to_rating_request_body,
-                     responses=add_to_rating_responses)
+                     responses=add_to_rating_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["PATCH"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsTierTwo, IsEnabled])
 def add_to_rating(request):
     try:
         if request.body:
@@ -299,9 +306,10 @@ def add_to_rating(request):
 
 @swagger_auto_schema(method='PATCH', operation_summary="Удаление учеников из рейтинга.",
                      request_body=delete_from_rating_request_body,
-                     responses=delete_from_rating_responses)
+                     responses=delete_from_rating_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["PATCH"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsTierTwo, IsEnabled])
 def delete_from_rating(request):
     try:
         if request.body:
@@ -337,7 +345,8 @@ def delete_from_rating(request):
 
 @swagger_auto_schema(method='GET', operation_summary="Получение рейтингов ученика.",
                      manual_parameters=[user_param],
-                     responses=get_user_ratings_responses)
+                     responses=get_user_ratings_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsEnabled])
 def get_user_ratings(request):
@@ -377,7 +386,8 @@ def get_user_ratings(request):
 
 @swagger_auto_schema(method='GET', operation_summary="Получение рейтинга ученика.",
                      manual_parameters=[user_param, id_param],
-                     responses=get_user_rating_responses)
+                     responses=get_user_rating_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsEnabled])
 def get_user_rating(request):

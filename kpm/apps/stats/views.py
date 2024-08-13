@@ -17,6 +17,7 @@ from kpm.apps.users.docs import *
 from django.utils import timezone
 from datetime import datetime, timedelta
 from django.conf import settings
+from kpm.apps.users.docs import permissions_operation_description
 
 
 LOGGER = settings.LOGGER
@@ -24,7 +25,8 @@ LOGGER = settings.LOGGER
 
 #@swagger_auto_schema(method='GET', operation_summary="Получить персональную статистику ученика.",
 #                     manual_parameters=[id_param],
-#                     responses=get_stats_responses)
+#                     responses=get_stats_responses,
+#                      operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsEnabled])
 def get_stats(request):
@@ -156,7 +158,8 @@ def get_stats(request):
 
 #@swagger_auto_schema(method='GET', operation_summary="Получить персональную статистику ученика.",
 #                     manual_parameters=[id_param],
-#                     responses=get_stats_responses)
+#                     responses=get_stats_responses,
+#                      operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsEnabled])
 def get_graph(request):

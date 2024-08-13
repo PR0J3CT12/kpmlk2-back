@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from kpm.apps.users.permissions import IsAdmin, IsEnabled
+from kpm.apps.users.permissions import IsAdmin, IsEnabled, IsTierOne
 from kpm.apps.users.functions import is_trusted
 from .functions import get_variable
 from kpm.apps.users.models import User
@@ -14,15 +14,18 @@ from django.conf import settings
 from django.utils import timezone
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import F
+from kpm.apps.users.docs import permissions_operation_description
+
 
 LOGGER = settings.LOGGER
 
 
 @swagger_auto_schema(method='POST', operation_summary="Отправить сообщение.",
                      request_body=send_message_request_body,
-                     responses=send_message_responses)
+                     responses=send_message_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierOne']}")
 @api_view(["POST"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsTierOne, IsEnabled])
 def send_message(request):
     try:
         if request.POST or request.FILES:
@@ -78,7 +81,8 @@ def send_message(request):
 
 @swagger_auto_schema(method='POST', operation_summary="Прочитать сообщение.",
                      manual_parameters=[id_param],
-                     responses=read_message_responses)
+                     responses=read_message_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsEnabled])
 def read_message(request):
@@ -107,7 +111,8 @@ def read_message(request):
 
 @swagger_auto_schema(method='GET', operation_summary="Получить сообщение.",
                      manual_parameters=[id_param],
-                     responses=get_message_responses)
+                     responses=get_message_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsEnabled])
 def get_message(request):
@@ -159,7 +164,8 @@ def get_message(request):
 
 @swagger_auto_schema(method='GET', operation_summary="Получить сообщения.",
                      manual_parameters=[id_user_param],
-                     responses=get_messages_responses)
+                     responses=get_messages_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsEnabled])
 def get_messages(request):
@@ -210,7 +216,8 @@ def get_messages(request):
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получить отправленные сообщения.",
-                     responses=get_sent_messages_responses)
+                     responses=get_sent_messages_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsEnabled])
 def get_sent_messages(request):
@@ -274,9 +281,10 @@ def get_sent_messages(request):
 
 @swagger_auto_schema(method='DELETE', operation_summary="Удалить сообщение.",
                      manual_parameters=[id_param],
-                     responses=delete_message_responses)
+                     responses=delete_message_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierOne']}")
 @api_view(["DELETE"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsTierOne, IsEnabled])
 def delete_message(request):
     try:
         id_ = get_variable('id', request)

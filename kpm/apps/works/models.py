@@ -95,6 +95,7 @@ class WorkUser(models.Model):
     is_checked = models.BooleanField('Проверена ли работа', default=False)
     checker = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='checker', null=True)
     answers = models.JSONField('Форма с ответами')
+    is_closed = models.BooleanField('Закрыта ли работа', default=False)
 
     answered_at = models.DateTimeField('Дата ответа', default=None, null=True)
     checked_at = models.DateTimeField('Дата проверки', default=None, null=True)

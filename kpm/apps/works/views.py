@@ -23,6 +23,7 @@ from kpm.apps.grades.functions import validate_grade
 from kpm.apps.groups.models import GroupUser, GroupWorkFile, Group, GroupWorkDate
 from datetime import datetime
 from kpm.apps.grades.functions import is_number_float, mana_generation
+from kpm.apps.users.docs import permissions_operation_description
 
 
 MEDIA_ROOT = settings.MEDIA_ROOT
@@ -32,7 +33,7 @@ LOGGER = settings.LOGGER
 @swagger_auto_schema(method='GET', operation_summary="Получение списка работ.",
                      manual_parameters=[class_param, theme_param, type_param],
                      responses=get_works_responses,
-                     operation_description=operation_description)
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']} | {operation_description}")
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_works(request):
@@ -80,7 +81,7 @@ def get_works(request):
 @swagger_auto_schema(method='GET', operation_summary="Получение работы.",
                      manual_parameters=[id_param],
                      responses=get_work_responses,
-                     operation_description=operation_description)
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']} | {operation_description}")
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_work(request):
@@ -156,9 +157,9 @@ def get_work(request):
 @swagger_auto_schema(method='POST', operation_summary="Создание работы.",
                      request_body=create_work_request_body,
                      responses=create_work_responses,
-                     operation_description=operation_description)
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']} | {operation_description}")
 @api_view(["POST"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsTierTwo, IsEnabled])
 def create_work(request):
     try:
         if request.POST or request.FILES:
@@ -324,9 +325,9 @@ def create_work(request):
 @swagger_auto_schema(method='PATCH', operation_summary="Изменение работы.",
                      request_body=update_work_request_body,
                      responses=update_work_responses,
-                     operation_description=operation_description)
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']} | {operation_description}")
 @api_view(["PATCH"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsTierTwo, IsEnabled])
 def update_work(request):
     try:
         if request.POST or request.FILES:
@@ -416,7 +417,7 @@ def update_work(request):
 @swagger_auto_schema(method='DELETE', operation_summary="Удаление работы.",
                      manual_parameters=[id_param],
                      responses=delete_work_responses,
-                     operation_description=operation_description)
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']} | {operation_description}")
 @api_view(["DELETE"])
 @permission_classes([IsTierTwo, IsEnabled])
 def delete_work(request):
@@ -460,7 +461,7 @@ def delete_work(request):
 @swagger_auto_schema(method='DELETE', operation_summary="Удаление работ.",
                      manual_parameters=[class_param],
                      responses=delete_work_responses,
-                     operation_description=operation_description)
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']} | {operation_description}")
 @api_view(["DELETE"])
 @permission_classes([IsTierTwo, IsEnabled])
 def delete_works(request):
@@ -495,7 +496,8 @@ def delete_works(request):
 
 @swagger_auto_schema(method='PATCH', operation_summary="Удаление файла у работы.",
                      manual_parameters=[file_param],
-                     responses=delete_file_from_homework_responses)
+                     responses=delete_file_from_homework_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierOne']}")
 @api_view(["PATCH"])
 @permission_classes([IsTierOne, IsEnabled])
 def delete_file_from_work(request):
@@ -530,9 +532,10 @@ def delete_file_from_work(request):
 
 @swagger_auto_schema(method='PATCH', operation_summary="Открыть доступ к работе ученику.",
                      manual_parameters=[id_param, student_param],
-                     responses=add_to_homework_responses)
+                     responses=add_to_homework_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierOne']}")
 @api_view(["PATCH"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsTierOne, IsEnabled])
 def add_to_work(request):
     try:
         id_ = get_variable("id", request)
@@ -556,7 +559,12 @@ def add_to_work(request):
                      'instance': request.path},
                     ensure_ascii=False), status=404)
         answers = ['#'] * work.exercises
-        work_user = WorkUser(work=work, user=student, answers=answers)
+        work_user = WorkUser.objects.filter(work=work, user=student)
+        if work_user:
+            work_user = work_user[0]
+            work_user.is_closed = False
+        else:
+            work_user = WorkUser(work=work, user=student, answers=answers)
         work_user.save()
         LOGGER.info(f'Added student {student_id} to work {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
@@ -574,9 +582,10 @@ def add_to_work(request):
 
 @swagger_auto_schema(method='PATCH', operation_summary="Закрыть доступ к работе ученику.",
                      manual_parameters=[id_param, student_param],
-                     responses=delete_from_homework_responses)
+                     responses=delete_from_homework_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierOne']}")
 @api_view(["PATCH"])
-@permission_classes([IsTierTwo, IsEnabled])
+@permission_classes([IsTierOne, IsEnabled])
 def delete_from_work(request):
     try:
         id_ = get_variable("id", request)
@@ -594,13 +603,14 @@ def delete_from_work(request):
         work = Work.objects.get(id=id_)
         student = User.objects.get(id=student_id)
         work_user = WorkUser.objects.get(work=work, user=student)
-        work_user.delete()
+        work_user.is_closed = True
+        work_user.save()
         LOGGER.info(f'Deleted student {student_id} from work {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
             json.dumps(
-                {'state': 'error', 'message': f'Работа, объект работы или пользователь не существует.', 'details': {},
+                {'state': 'error', 'message': f'Работа или пользователь не существует или у пользователя нет доступа к этой работе.', 'details': {},
                  'instance': request.path},
                 ensure_ascii=False), status=404)
     except Exception as e:
@@ -612,7 +622,8 @@ def delete_from_work(request):
 
 @swagger_auto_schema(method='GET', operation_summary="Получение работы(пользователь).",
                      manual_parameters=[id_param],
-                     responses=get_user_homework_responses)
+                     responses=get_user_homework_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsEnabled])
 def get_user_work(request):
@@ -683,7 +694,8 @@ def get_user_work(request):
 
 @swagger_auto_schema(method='POST', operation_summary="Ответ на домашнюю работу.",
                      request_body=create_response_request_body,
-                     responses=create_response_responses)
+                     responses=create_response_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsEnabled])
 def create_response(request):
@@ -711,6 +723,11 @@ def create_response(request):
                     {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=403)
         work_user = work_user[0]
+        if work_user.is_closed:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Работа закрыта.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=403)
         answers = data.getlist("answers")
         fields = len(answers)
         if fields != work.exercises:
@@ -764,7 +781,8 @@ def create_response(request):
 
 @swagger_auto_schema(method='PATCH', operation_summary="Проверка домашней работы(админка).",
                      request_body=check_user_homework_request_body,
-                     responses=check_user_homework_responses)
+                     responses=check_user_homework_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["PATCH"])
 @permission_classes([IsAdmin, IsEnabled])
 def check_user_homework(request):
@@ -893,7 +911,8 @@ def check_user_homework(request):
 
 @swagger_auto_schema(method='PATCH', operation_summary="Вернуть домашнюю работу с комментариями(админка).",
                      request_body=return_user_homework_request_body,
-                     responses=return_user_homework_responses)
+                     responses=return_user_homework_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["PATCH"])
 @permission_classes([IsAdmin, IsEnabled])
 def return_user_homework(request):
@@ -949,28 +968,29 @@ def return_user_homework(request):
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение списка домашних(пользователь).",
-                     responses=get_my_homeworks_responses)
+                     responses=get_my_homeworks_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsEnabled])
 def get_my_homeworks(request):
     try:
         student = User.objects.get(id=request.user.id)
-        work_user = WorkUser.objects.filter(user=student).select_related('work').order_by('work__created_at')
+        work_user = WorkUser.objects.filter(user=student, is_closed=False).select_related('work').order_by('work__created_at').values('name', 'is_done', 'is_checked')
         works_list = {}
         for work in work_user:
-            works_list[work.id] = {
-                'name': work.name,
-                'is_done': work.is_done,
-                'is_checked': work.is_checked,
+            works_list[work['id']] = {
+                'name': work['name'],
+                'is_done': work['is_done'],
+                'is_checked': work['is_checked'],
             }
         grades = Grade.objects.filter(work_id__in=list(works_list.keys()), work__is_homework=True).select_related(
-            'work')
+            'work').values('max_score', 'work_id', 'work__max_score', 'score')
         for grade in grades:
-            if grade.max_score:
-                works_list[grade.work_id]['max_score'] = grade.max_score
+            if grade['max_score']:
+                works_list[grade['work_id']]['max_score'] = grade['max_score']
             else:
-                works_list[grade.work_id]['max_score'] = grade.work.max_score
-            works_list[grade.work_id]['score'] = grade.score
+                works_list[grade['work_id']]['max_score'] = grade['work__max_score']
+            works_list[grade['work_id']]['score'] = grade['score']
         homeworks_list = []
         for homework in works_list:
             result = {
@@ -997,7 +1017,8 @@ def get_my_homeworks(request):
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение списка классных(пользователь).",
-                     responses=get_my_classworks_responses)
+                     responses=get_my_classworks_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsEnabled])
 def get_my_classworks(request):
@@ -1023,7 +1044,7 @@ def get_my_classworks(request):
                 }
             else:
                 classworks_list[file['work_id']]['files'].append({
-                    'link': f'{host}/link',
+                    'link': f'{host}/{link}',
                     'name': name,
                     'ext': ext,
                 })
@@ -1042,7 +1063,8 @@ def get_my_classworks(request):
 
 @swagger_auto_schema(method='POST', operation_summary="Прикрепить файлы к классной работе(админ).",
                      request_body=apply_files_to_classwork_request_body,
-                     responses=apply_files_to_classwork_responses)
+                     responses=apply_files_to_classwork_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["POST"])
 @permission_classes([IsAdmin, IsEnabled])
 def apply_files_to_classwork(request):
@@ -1089,7 +1111,8 @@ def apply_files_to_classwork(request):
 
 @swagger_auto_schema(method='DELETE', operation_summary="Удалить файл классной работы(админ).",
                      manual_parameters=[file_param],
-                     responses=delete_file_from_classwork_responses)
+                     responses=delete_file_from_classwork_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["DELETE"])
 @permission_classes([IsAdmin, IsEnabled])
 def delete_file_from_classwork(request):
@@ -1117,7 +1140,8 @@ def delete_file_from_classwork(request):
 
 @swagger_auto_schema(method='GET', operation_summary="Получить файлы классной работы подгрупп(админ).",
                      manual_parameters=[id_param],
-                     responses=get_classwork_files_responses)
+                     responses=get_classwork_files_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_classwork_files(request):
@@ -1169,9 +1193,10 @@ def get_classwork_files(request):
 
 @swagger_auto_schema(method='POST', operation_summary="Установить дату проведения домашней работы для группы.",
                      request_body=set_homework_date_request_body,
-                     responses=set_homework_date_responses)
+                     responses=set_homework_date_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierOne']}")
 @api_view(["POST"])
-@permission_classes([IsTierTwo, IsEnabled])
+@permission_classes([IsTierOne, IsEnabled])
 def set_homework_date(request):
     try:
         if request.body:
@@ -1193,6 +1218,18 @@ def set_homework_date(request):
             row.date = date
         else:
             row = GroupWorkDate(work=work, group=group, date=date)
+        if date <= datetime.today():
+            row.is_given = True
+            answers = ['#'] * work.exercises
+            students = GroupUser.objects.filter(group=group).select_related('user')
+            for student in students:
+                user = student.user
+                try:
+                    if user.school_class == work.school_class:
+                        work_user = WorkUser(user=user, work=work, answers=answers)
+                        work_user.save()
+                except Exception as e:
+                    pass
         row.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
@@ -1212,9 +1249,10 @@ def set_homework_date(request):
 
 @swagger_auto_schema(method='DELETE', operation_summary="Удалить дату проведения домашней работы для группы.",
                      manual_parameters=[work_param, group_param],
-                     responses=delete_homework_date_responses)
+                     responses=delete_homework_date_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierOne']}")
 @api_view(["DELETE"])
-@permission_classes([IsTierTwo, IsEnabled])
+@permission_classes([IsTierOne, IsEnabled])
 def delete_homework_date(request):
     try:
         group_id = get_variable("group", request)
@@ -1249,7 +1287,8 @@ def delete_homework_date(request):
 
 @swagger_auto_schema(method='GET', operation_summary="Получить даты проведения домашних работ для группы, либо для домашней работы получить даты проведения в группах.",
                      manual_parameters=[work_param, group_param],
-                     responses=get_homeworks_dates_responses)
+                     responses=get_homeworks_dates_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_homeworks_dates(request):
@@ -1303,7 +1342,7 @@ def get_homeworks_dates(request):
 @swagger_auto_schema(method='GET', operation_summary="Получение списка домашних работ.",
                      manual_parameters=[class_param, theme_param, type_param],
                      responses=get_homeworks_responses,
-                     operation_description=operation_description)
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']} | {operation_description}")
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_homeworks(request):
@@ -1370,7 +1409,7 @@ def get_homeworks(request):
 @swagger_auto_schema(method='GET', operation_summary="Получение списка классных работ.",
                      manual_parameters=[class_param, theme_param, type_param],
                      responses=get_works_responses,
-                     operation_description=operation_description)
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']} | {operation_description}")
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_classworks(request):
@@ -1416,7 +1455,8 @@ def get_classworks(request):
 
 @swagger_auto_schema(method='GET', operation_summary="Получение ответов на работу(для таблицы).",
                      manual_parameters=[id_param],
-                     responses=get_all_answers_responses)
+                     responses=get_all_answers_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_all_answers(request):

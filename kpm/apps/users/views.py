@@ -18,6 +18,7 @@ from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.users.docs import *
 from django.utils import timezone
 from datetime import datetime, timedelta
+from kpm.apps.users.docs import permissions_operation_description
 
 
 SECRET_KEY = settings.SECRET_KEY
@@ -27,7 +28,8 @@ LOGGER = settings.LOGGER
 
 @swagger_auto_schema(method='GET', operation_summary="Получение пользователя.",
                      manual_parameters=[id_param],
-                     responses=get_user_responses)
+                     responses=get_user_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsEnabled])
 def get_user(request):
@@ -57,11 +59,6 @@ def get_user(request):
         else:
             login_obj = History(user=student)
             login_obj.save()
-        #name_splitted = student.name.split(' ')
-        #if len(name_splitted) == 2:
-        #    name = name_splitted[1]
-        #else:
-        #    name = student.name
         name = student.name
         groups = GroupUser.objects.filter(user=student).select_related('group').values('group_id', 'group__name', 'group__marker')
         groups_list = []
@@ -109,7 +106,8 @@ def get_user(request):
 
 @swagger_auto_schema(method='GET', operation_summary="Получение пользователей.",
                      manual_parameters=[class_param, is_admin_param],
-                     responses=get_users_responses)
+                     responses=get_users_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_users(request):
@@ -189,9 +187,10 @@ def get_users(request):
 
 @swagger_auto_schema(method='POST', operation_summary="Создание пользователя.",
                      request_body=create_user_request_body,
-                     responses=create_user_responses)
+                     responses=create_user_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["POST"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsTierTwo, IsEnabled])
 def create_user(request):
     try:
         if request.body:
@@ -238,7 +237,8 @@ def create_user(request):
 
 @swagger_auto_schema(method='DELETE', operation_summary="Удаление пользователя.",
                      manual_parameters=[id_param],
-                     responses=delete_user_responses)
+                     responses=delete_user_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["DELETE"])
 @permission_classes([IsTierTwo, IsEnabled])
 def delete_user(request):
@@ -271,7 +271,8 @@ def delete_user(request):
 
 @swagger_auto_schema(method='DELETE', operation_summary="Удаление пользователей.",
                      manual_parameters=[class_param],
-                     responses=delete_users_responses)
+                     responses=delete_users_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["DELETE"])
 @permission_classes([IsTierTwo, IsEnabled])
 def delete_users(request):
@@ -309,7 +310,8 @@ def delete_users(request):
 
 @swagger_auto_schema(method='PATCH', operation_summary="Изменение пароля.",
                      request_body=change_password_request_body,
-                     responses=change_password_responses)
+                     responses=change_password_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated, IsEnabled])
 def change_password(request):
@@ -380,7 +382,8 @@ def change_password(request):
 
 @swagger_auto_schema(method='POST', operation_summary="Вход в аккаунт.",
                      request_body=login_request_body,
-                     responses=login_responses)
+                     responses=login_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['Nothing']}")
 @api_view(["POST"])
 def login(request):
     try:
@@ -432,7 +435,8 @@ def login(request):
 
 
 @swagger_auto_schema(method='GET', operation_summary="Выход из аккаунта.",
-                     responses=logout_responses)
+                     responses=logout_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['Nothing']}")
 @api_view(["GET"])
 def logout(request):
     try:
@@ -450,7 +454,8 @@ def logout(request):
 
 @swagger_auto_schema(method='GET',
                      operation_summary="Список последних входов всех пользователей.",
-                     responses=get_all_logons_responses)
+                     responses=get_all_logons_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_all_logons(request):
@@ -477,7 +482,8 @@ def get_all_logons(request):
 
 @swagger_auto_schema(method='POST', operation_summary="Включить/выключить пользователя пользователя.",
                      manual_parameters=[user_param],
-                     responses=toggle_suspending_user_responses)
+                     responses=toggle_suspending_user_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["POST"])
 @permission_classes([IsTierTwo, IsEnabled])
 def toggle_suspending_user(request):
