@@ -1486,7 +1486,7 @@ def get_all_answers(request):
                     'students': []}
         work_users = WorkUser.objects.filter(work=work).order_by('user_id').select_related('user', 'checker').values(
             'id', 'user_id', 'user__name', 'is_done', 'is_checked', 'comment', 'checker_id', 'checker__name',
-            'checked_at', 'added_at', 'answered_at', 'answers'
+            'checked_at', 'added_at', 'answered_at', 'answers', 'is_closed'
         )
         groups_users = GroupUser.objects.filter(group__school_class=4).select_related('group').values('user_id', 'group_id', 'group__marker', 'group__name')
         user_groups_dict = {}
@@ -1551,6 +1551,7 @@ def get_all_answers(request):
             student_data['checker'] = checker
             student_data['is_done'] = wu['is_done']
             student_data['is_checked'] = wu['is_checked']
+            student_data['is_closed'] = wu['is_closed']
             student_data['green'] = green
             student_data['blue'] = blue
             if wu['checked_at']:
