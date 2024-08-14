@@ -131,45 +131,48 @@ def get_users(request):
                              'instance': request.path},
                             ensure_ascii=False), status=404)
             query = Q(is_admin=0) & Q(school_class=int(class_))
-        students = User.objects.filter(query).order_by('name')
+        students = User.objects.filter(query).order_by('name').values(
+            'id', 'default_password', 'name', 'login', 'experience', 'mana_earned', 'last_homework_id', 'last_classwork_id', 'is_disabled')
         if not students:
             return HttpResponse(
                 json.dumps({'students': []}, ensure_ascii=False), status=200)
-        students_groups = GroupUser.objects.filter(user__in=students).select_related('group')
+        students_groups = GroupUser.objects.filter(user__in=students).select_related('group').values(
+            'user_id', 'group_id', 'group__name', 'group__marker'
+        )
         students_groups_dict = {}
         for student in students_groups:
-            if student.user_id not in students_groups_dict:
-                students_groups_dict[student.user_id] = [{
-                    "group_id": student.group.id,
-                    "group_name": student.group.name,
-                    "color": student.group.marker
+            if student['user_id'] not in students_groups_dict:
+                students_groups_dict[student['user_id']] = [{
+                    "group_id": student['group_id'],
+                    "group_name": student['group__name'],
+                    "color": student['group__marker']
                 }]
             else:
-                students_groups_dict[student.user_id].append({
-                    "group_id": student.group.id,
-                    "group_name": student.group.name,
-                    "color": student.group.marker
+                students_groups_dict[student['user_id']].append({
+                    "group_id": student['group_id'],
+                    "group_name": student['group__name'],
+                    "color": student['group__marker']
                 })
         students_list = []
         for student in students:
-            if not student.default_password:
+            if not student['default_password']:
                 default_password = ""
             else:
-                default_password = student.default_password
-            if student.id in students_groups_dict:
-                groups = students_groups_dict[student.id]
+                default_password = student['default_password']
+            if student['id'] in students_groups_dict:
+                groups = students_groups_dict[student['id']]
             else:
                 groups = []
-            student_info = {"id": student.id,
-                            "name": student.name,
-                            "login": student.login,
+            student_info = {"id": student['id'],
+                            "name": student['name'],
+                            "login": student['login'],
                             "default_password": default_password,
-                            "experience": student.experience,
-                            "mana_earned": student.mana_earned,
-                            "last_homework_id": student.last_homework_id,
-                            "last_classwork_id": student.last_classwork_id,
+                            "experience": student['experience'],
+                            "mana_earned": student['mana_earned'],
+                            "last_homework_id": student['last_homework_id'],
+                            "last_classwork_id": student['last_classwork_id'],
                             "groups": groups,
-                            "is_disabled": student.is_disabled
+                            "is_disabled": student['is_disabled']
                             }
             students_list.append(student_info)
         return HttpResponse(
@@ -460,15 +463,17 @@ def logout(request):
 @permission_classes([IsAdmin, IsEnabled])
 def get_all_logons(request):
     try:
-        logons = History.objects.all().select_related('user').order_by('-datetime')
+        logons = History.objects.all().select_related('user').order_by('-datetime').values(
+            'user_id', 'user__name', 'datetime'
+        )
         logons_list = []
         for logon in logons:
             logons_list.append({
-                'user_id': logon.user.id,
-                'user_name': logon.user.name,
-                'date': str(logon.datetime.date()),
-                'hour': f'{logon.datetime.hour}:00',
-                'datetime': str(logon.datetime)
+                'user_id': logon['user_id'],
+                'user_name': logon['user__name'],
+                'date': str(logon['datetime'].date()),
+                'hour': f'{logon['datetime__hour']}:00',
+                'datetime': str(logon['datetime'])
             })
         return HttpResponse(json.dumps({'logons': logons_list}, ensure_ascii=False), status=200)
     except Exception as e:

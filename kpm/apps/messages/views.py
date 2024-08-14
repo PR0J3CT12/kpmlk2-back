@@ -223,7 +223,10 @@ def get_messages(request):
 def get_sent_messages(request):
     try:
         id_ = request.user.id
-        messages = Message.objects.filter(user_from=id_).order_by('user_to__name', '-group__datetime')
+        messages = Message.objects.filter(user_from=id_).order_by('user_to__name', '-group__datetime').values(
+            'id', 'group_id', 'user_from_id', 'user_from__name', 'title', 'text', 'group__datetime',
+            'user_to_id', 'user_to__name', 'is_viewed', 'viewed_at'
+        )
         if not is_trusted(request, id_):
             return HttpResponse(json.dumps(
                 {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
@@ -233,25 +236,25 @@ def get_sent_messages(request):
         messages_dict = {}
         messages_groups = []
         for message in messages:
-            if message.group_id not in messages_groups:
-                messages_groups.append(message.group_id)
-            if message.group_id not in messages_dict:
-                messages_dict[message.group_id] = {
-                    'id': message.id,
-                    'user_from': message.user_from.id,
-                    'user_from_name': message.user_from.name,
-                    'title': message.title,
-                    'text': message.text,
-                    'datetime': str(message.group.datetime),
+            if message['group_id'] not in messages_groups:
+                messages_groups.append(message['group_id'])
+            if message['group_id'] not in messages_dict:
+                messages_dict[message['group_id']] = {
+                    'id': message['id'],
+                    'user_from': message['user_from_id'],
+                    'user_from_name': message['user_from__name'],
+                    'title': message['title'],
+                    'text': message['text'],
+                    'datetime': str(message['group__datetime']),
                     'recipients': [],
                     'files': []
                 }
-            messages_dict[message.group_id]['recipients'].append(
+            messages_dict[message['group_id']]['recipients'].append(
                 {
-                    'user_to': message.user_to.id,
-                    'user_to_name': message.user_to.name,
-                    'is_viewed': message.is_viewed,
-                    'viewed_at': str(message.viewed_at),
+                    'user_to': message['user_to_id'],
+                    'user_to_name': message['user_to__name'],
+                    'is_viewed': message['is_viewed'],
+                    'viewed_at': str(message['viewed_at']),
                 }
             )
         files = MessageGroupFile.objects.filter(message_group__in=messages_groups).values(

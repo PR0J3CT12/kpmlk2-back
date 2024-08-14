@@ -78,39 +78,45 @@ def get_rating(request):
         rating_students = LeagueUser.objects.filter(league=rating).select_related('user')
         students_list = []
         if rating.rating_type == 0:
-            rating_students = rating_students.order_by('-user__experience')
+            rating_students = rating_students.order_by('-user__experience').values(
+                'user_id', 'user__name', 'user__experience'
+            )
             for student in rating_students:
-                total_exp = student.user.experience
+                total_exp = student['user__experience']
                 lvl, exp, base_exp = count_lvl(total_exp)
                 students_list.append({
-                    'id': student.user.id,
-                    'name': student.user.name,
+                    'id': student['user_id'],
+                    'name': student['user__name'],
                     'lvl': lvl,
                     'exp': exp,
                     'base_exp': base_exp,
                     'total_exp': total_exp
                 })
         elif rating.rating_type == 1:
-            rating_students = rating_students.order_by('-user__exam_experience')
+            rating_students = rating_students.order_by('-user__exam_experience').values(
+                'user_id', 'user__name', 'user__exam_experience'
+            )
             for student in rating_students:
-                total_exp = student.user.exam_experience
+                total_exp = student['user__exam_experience']
                 lvl, exp, base_exp = count_lvl(total_exp)
                 students_list.append({
-                    'id': student.user.id,
-                    'name': student.user.name,
+                    'id': student['userid'],
+                    'name': student['user__name'],
                     'lvl': lvl,
                     'exp': exp,
                     'base_exp': base_exp,
                     'total_exp': total_exp
                 })
         elif rating.rating_type == 2:
-            rating_students = rating_students.order_by('-user__oral_exam_experience')
+            rating_students = rating_students.order_by('-user__oral_exam_experience').values(
+                'user_id', 'user__name', 'user__oral_exam_experience'
+            )
             for student in rating_students:
-                total_exp = student.user.oral_exam_experience
+                total_exp = student['user__oral_exam_experience']
                 lvl, exp, base_exp = count_lvl(total_exp)
                 students_list.append({
-                    'id': student.user.id,
-                    'name': student.user.name,
+                    'id': student['user_id'],
+                    'name': student['user__name'],
                     'lvl': lvl,
                     'exp': exp,
                     'base_exp': base_exp,
@@ -278,11 +284,13 @@ def add_to_rating(request):
                 {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=400)
         id_ = request_body['id']
-        students = request_body['students']
+        students_ids = request_body['students']
+        students = User.objects.filter(id__in=students_ids).values('id', 'school_class')
         league = League.objects.get(id=id_)
         for student in students:
             try:
-                league_user = LeagueUser.objects.create(league=league, user_id=student)
+                if student['school_class'] == league.school_class:
+                    league_user = LeagueUser.objects.create(league=league, user_id=student['id'])
             except IntegrityError:
                 pass
             LOGGER.info(f'Added student {student} to rating {id_} by user {request.user.id}.')
@@ -362,14 +370,16 @@ def get_user_ratings(request):
                 json.dumps(
                     {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=403)
-        leagues = LeagueUser.objects.filter(user_id=student_id).select_related('league')
+        leagues = LeagueUser.objects.filter(user_id=student_id).select_related('league').values(
+            'league_id', 'league__name', 'league__description', 'league__rating_type'
+        )
         ratings = []
         for league in leagues:
             ratings.append({
-                'id': league.league.id,
-                'name': league.league.name,
-                'description': league.league.description,
-                'type': league.league.rating_type
+                'id': league['league_id'],
+                'name': league['league__name'],
+                'description': league['league__description'],
+                'type': league['league__rating_type']
             })
         return HttpResponse(json.dumps({'ratings': ratings}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
@@ -414,25 +424,25 @@ def get_user_rating(request):
         students_in_league = LeagueUser.objects.filter(league__id=id_)
         current_type = league.league.rating_type
         if current_type == 0:
-            students_in_league = students_in_league.order_by('-user__experience')
+            students_in_league = students_in_league.order_by('-user__experience').values('user_id', 'user__name', 'user__experience')
         elif current_type == 1:
-            students_in_league = students_in_league.order_by('-user__exam_experience')
+            students_in_league = students_in_league.order_by('-user__exam_experience').values('user_id', 'user__name', 'user__exam_experience')
         elif current_type == 2:
-            students_in_league = students_in_league.order_by('-user__oral_exam_experience')
+            students_in_league = students_in_league.order_by('-user__oral_exam_experience').values('user_id', 'user__name', 'user__oral_exam_experience')
         rating = []
         for student_ in students_in_league:
             if current_type == 0:
-                total_exp = student_.user.experience
+                total_exp = student_['user__experience']
             elif current_type == 1:
-                total_exp = student_.user.exam_experience
+                total_exp = student_['user__exam_experience']
             elif current_type == 2:
-                total_exp = student_.user.oral_exam_experience
+                total_exp = student_['user__oral_exam_experience']
             else:
                 total_exp = 0
             lvl, exp, base_exp = count_lvl(total_exp)
             rating.append({
-                'id': student_.user.id,
-                'name': student_.user.name,
+                'id': student_['user_id'],
+                'name': student_['user__name'],
                 'lvl': lvl,
                 'exp': exp,
                 'base_exp': base_exp,

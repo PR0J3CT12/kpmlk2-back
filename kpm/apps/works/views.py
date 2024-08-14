@@ -5,13 +5,10 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import ObjectDoesNotExist
 from kpm.apps.works.models import *
-from kpm.apps.users.models import User
 from kpm.apps.themes.models import Theme
 from kpm.apps.grades.models import Grade, Mana
 import json
 from django.db.models import Sum, Q, Count, Prefetch, F, Value, OuterRef, Subquery
-from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models.functions import Coalesce
 from kpm.apps.users.permissions import *
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.works.docs import *
@@ -54,17 +51,18 @@ def get_works(request):
         if type_ in ['0', '1', '2', '3', '4', '5', '6', '9']:
             works = works.filter(type=type_)
         works_list = []
+        works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'theme_id', 'theme__name', 'type', 'is_homework')
         for work in works:
             works_list.append({
-                "id": work.id,
-                "name": work.name,
-                "grades": work.grades,
-                "max_score": work.max_score,
-                "exercises": work.exercises,
-                "theme_id": work.theme_id,
-                "theme_name": work.theme.name,
-                "work_type": work.type,
-                "is_homework": work.is_homework
+                "id": work['id'],
+                "name": work['name'],
+                "grades": work['grades'],
+                "max_score": work['max_score'],
+                "exercises": work['exercises'],
+                "theme_id": work['theme_id'],
+                "theme_name": work['theme__name'],
+                "work_type": work['type'],
+                "is_homework": work['is_homework']
             })
         return HttpResponse(json.dumps({'works': works_list}, ensure_ascii=False), status=200)
     except KeyError as e:
@@ -125,7 +123,7 @@ def get_work(request):
             result['users'] = users_list
         if work.is_homework:
             groups_dict = {}
-            groups = Group.objects.filter(school_class=work.school_class).values("id", "name", "marker").order_by("created_at")
+            groups = Group.objects.filter(school_class=work.school_class).order_by("created_at").values("id", "name", "marker")
             for group in groups:
                 groups_dict[group['id']] = {
                     "id": group['id'],
@@ -1368,11 +1366,12 @@ def get_homeworks(request):
             works_users_dict[wu['work_id']]['amount'] += 1
             if wu['is_done'] and not wu['is_checked']:
                 works_users_dict[wu['work_id']]['not_checked'] += 1
-        works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'theme__id', 'theme__name', 'type', 'is_homework')
         if (theme is not None) and (theme != ''):
             works = works.filter(theme_id=theme)
         if type_ in ['0', '5', '6']:
             works = works.filter(type=type_)
+        works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'theme__id', 'theme__name', 'type',
+                             'is_homework')
         works_list = []
         for work in works:
             if work['id'] in works_users_dict:
@@ -1428,18 +1427,19 @@ def get_classworks(request):
             works = works.filter(theme_id=theme)
         if type_ in ['1', '2', '3', '4']:
             works = works.filter(type=type_)
+        works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'theme_id', 'theme__name', 'type', 'is_homework')
         works_list = []
         for work in works:
             works_list.append({
-                "id": work.id,
-                "name": work.name,
-                "grades": work.grades,
-                "max_score": work.max_score,
-                "exercises": work.exercises,
-                "theme_id": work.theme_id,
-                "theme_name": work.theme.name,
-                "work_type": work.type,
-                "is_homework": work.is_homework
+                "id": work['id'],
+                "name": work['name'],
+                "grades": work['grades'],
+                "max_score": work['max_score'],
+                "exercises": work['exercises'],
+                "theme_id": work['theme_id'],
+                "theme_name": work['theme__name'],
+                "work_type": work['type'],
+                "is_homework": work['is_homework']
             })
         return HttpResponse(json.dumps({'works': works_list}, ensure_ascii=False), status=200)
     except KeyError as e:

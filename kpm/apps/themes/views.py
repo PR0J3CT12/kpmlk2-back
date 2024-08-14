@@ -68,15 +68,15 @@ def get_themes(request):
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
                          'instance': request.path},
                         ensure_ascii=False), status=404)
-        themes_ = Theme.objects.filter(school_class=class_)
+        themes_ = Theme.objects.filter(school_class=class_).values('id', 'name', 'school_class')
         if not themes_:
             return HttpResponse(json.dumps({'themes': []}, ensure_ascii=False), status=200)
         themes_list = []
         for theme in themes_:
             theme_info = {
-                "id": theme.id,
-                "name": theme.name,
-                "school_class": theme.school_class
+                "id": theme['id'],
+                "name": theme['name'],
+                "school_class": theme['school_class']
             }
             themes_list.append(theme_info)
         return HttpResponse(json.dumps({'themes': themes_list}, ensure_ascii=False), status=200)
