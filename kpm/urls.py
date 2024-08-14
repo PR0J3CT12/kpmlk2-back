@@ -21,6 +21,7 @@ urlpatterns = [
     path('api/user/', include('users.urls')),
     path('api/group/', include('groups.urls')),
     path('api/grade/', include('grades.urls')),
+    path('api/mana/', include('grades.urls_mana')),
     path('api/theme/', include('themes.urls')),
     path('api/work/', include('works.urls')),
     path('api/classwork/', include('works.urls_classworks')),

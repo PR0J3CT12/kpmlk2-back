@@ -306,6 +306,8 @@ get_my_homeworks_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                'max_score': openapi.Schema(
                                                                    type=openapi.TYPE_INTEGER,
                                                                    example=100),
+                                                               'blue': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
+                                                               'green': openapi.Schema(type=openapi.TYPE_INTEGER, example=3),
                                                            }))})
 get_my_classworks_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                 properties={

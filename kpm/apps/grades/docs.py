@@ -79,9 +79,27 @@ get_grades_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                          }
                                                      ])),
                                          })
+get_mana_stats_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                             properties={
+                                                 "works": openapi.Schema(
+                                                     type=openapi.TYPE_ARRAY,
+                                                     items=openapi.Schema(
+                                                         type=openapi.TYPE_OBJECT,
+                                                         properties={
+                                                             'id': openapi.Schema(type=openapi.TYPE_INTEGER, example=1),
+                                                             'name': openapi.Schema(type=openapi.TYPE_STRING, example='Домашняя работа 1'),
+                                                             'theme': openapi.Schema(type=openapi.TYPE_STRING, example='Площадь'),
+                                                             'green': openapi.Schema(type=openapi.TYPE_INTEGER, example=1),
+                                                             'blue': openapi.Schema(type=openapi.TYPE_INTEGER, example=1),
+                                                         }
+                                                     )),
+                                                 'green': openapi.Schema(type=openapi.TYPE_INTEGER, example=1),
+                                                 'blue': openapi.Schema(type=openapi.TYPE_INTEGER, example=1),
+                                             })
 insert_grades_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 give_mana_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 insert_grades_responses = {200: insert_grades_response_200}
 get_mana_waiters_responses = {200: get_mana_waiters_response_200}
 give_mana_responses = {200: give_mana_response_200}
 get_grades_responses = {200: get_grades_response_200}
+get_mana_stats_responses = {200: get_mana_stats_response_200}

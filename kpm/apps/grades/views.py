@@ -1,6 +1,7 @@
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
-from kpm.apps.users.permissions import IsAdmin, IsEnabled
+from kpm.apps.users.permissions import *
+from kpm.apps.users.functions import is_trusted
 from .functions import *
 from kpm.apps.users.models import User
 from kpm.apps.works.models import Work, Exam
@@ -13,6 +14,7 @@ from kpm.apps.grades.docs import *
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from kpm.apps.users.docs import permissions_operation_description
+from rest_framework.permissions import IsAuthenticated
 
 
 LOGGER = settings.LOGGER
@@ -465,6 +467,53 @@ def give_mana_all(request):
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='GET', operation_summary="Получить статистику по мане ученика.",
+                     manual_parameters=[id_param],
+                     responses=get_mana_stats_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsEnabled])
+def get_mana_stats(request):
+    try:
+        id_ = get_variable("id", request)
+        if (id_ is None) or (id_ == ''):
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
+                           ensure_ascii=False), status=404)
+        if not is_trusted(request, id_):
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=401)
+        student = User.objects.get(id=int(id_))
+        manas = Mana.objects.filter(user=student, is_given=True).select_related('work', 'work__theme').order_by('work__created_at').values('work_id', 'color', 'work__name', 'work__theme__name')
+        green = 0
+        blue = 0
+        works_dict = {}
+        for mana in manas:
+            if mana['work_id'] not in works_dict:
+                works_dict[mana['work_id']] = {'id': mana['work_id'], 'name': mana['work__name'], 'theme': mana['work__theme__name'], 'blue': 0, 'green': 0}
+            works_dict[mana['work_id']][mana['color']] += 1
+            if mana['color'] == 'green':
+                green += 1
+            if mana['color'] == 'blue':
+                blue += 1
+        result = {
+            'works': works_dict.values(),
+            'green': green,
+            'blue': blue
+        }
+        return HttpResponse(json.dumps(result, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},

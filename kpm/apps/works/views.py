@@ -980,15 +980,21 @@ def get_my_homeworks(request):
                 'name': work['name'],
                 'is_done': work['is_done'],
                 'is_checked': work['is_checked'],
+                'green': 0,
+                'blue': 0
             }
         grades = Grade.objects.filter(work_id__in=list(works_list.keys()), work__is_homework=True).select_related(
             'work').values('max_score', 'work_id', 'work__max_score', 'score')
+        manas = Mana.objects.filter(work_id__in=list(works_list.keys()), user=student).values('work_id', 'color', 'is_given')
         for grade in grades:
             if grade['max_score']:
                 works_list[grade['work_id']]['max_score'] = grade['max_score']
             else:
                 works_list[grade['work_id']]['max_score'] = grade['work__max_score']
             works_list[grade['work_id']]['score'] = grade['score']
+        for mana in manas:
+            if mana['work_id'] in works_list:
+                works_list[mana['work_id']][mana['color']] += 1
         homeworks_list = []
         for homework in works_list:
             result = {
@@ -1000,6 +1006,8 @@ def get_my_homeworks(request):
             if works_list[homework]['is_checked']:
                 result['score'] = works_list[homework]['score']
                 result['max_score'] = works_list[homework]['max_score']
+                result['blue'] = works_list[homework]['blue']
+                result['green'] = works_list[homework]['green']
             homeworks_list.append(result)
         return HttpResponse(json.dumps({'homeworks': homeworks_list}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
