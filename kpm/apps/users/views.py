@@ -124,7 +124,7 @@ def get_users(request):
                          'instance': request.path},
                         ensure_ascii=False), status=404)
             else:
-                if class_ not in ['4', '5', '6', 4, 5, 6]:
+                if class_ not in ['4', '5', '6', '7']:
                     return HttpResponse(
                         json.dumps(
                             {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
@@ -206,7 +206,7 @@ def create_user(request):
         else:
             last_id = 0
         id_, login_, password_ = login_password_creator(request_body["name"], last_id + 1)
-        if request_body["class"] not in ['4', '5', '6', 4, 5, 6]:
+        if request_body["class"] not in [4, 5, 6, 7]:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
@@ -285,7 +285,7 @@ def delete_users(request):
                      'instance': request.path},
                     ensure_ascii=False), status=404)
         else:
-            if class_ not in ['4', '5', '6', 4, 5, 6]:
+            if class_ not in ['4', '5', '6', '7']:
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},

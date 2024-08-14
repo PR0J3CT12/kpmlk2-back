@@ -62,7 +62,7 @@ def get_themes(request):
                     {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         else:
-            if class_ not in ['4', '5', '6', 4, 5, 6]:
+            if class_ not in ['4', '5', '6', '7']:
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
@@ -101,7 +101,7 @@ def create_theme(request):
             return HttpResponse(
                 json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
                            ensure_ascii=False), status=400)
-        if request_body["class"] not in ['4', '5', '6', 4, 5, 6]:
+        if request_body["class"] not in [4, 5, 6, 7]:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
@@ -164,7 +164,7 @@ def delete_themes(request):
                     {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         else:
-            if class_ not in ['4', '5', '6', 4, 5, 6]:
+            if class_ not in ['4', '5', '6', '7']:
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},

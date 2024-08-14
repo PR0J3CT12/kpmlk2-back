@@ -28,7 +28,7 @@ LOGGER = settings.LOGGER
 def get_ratings(request):
     try:
         class_ = get_variable("class", request)
-        if class_ not in ['4', '5', '6', 4, 5, 6]:
+        if class_ not in ['4', '5', '6', '7']:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
@@ -149,13 +149,13 @@ def create_rating(request):
             return HttpResponse(json.dumps(
                 {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=400)
-        if request_body["class"] not in ['4', '5', '6', 4, 5, 6]:
+        if request_body["class"] not in [4, 5, 6, 7]:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        if request_body["type"] not in ['0', '1', '2', 0, 1, 2]:
+        if request_body["type"] not in [0, 1, 2]:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан тип рейтинга.', 'details': {},

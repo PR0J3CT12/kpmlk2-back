@@ -1,18 +1,13 @@
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from kpm.apps.users.models import *
 from kpm.apps.users.permissions import *
 from kpm.apps.users.functions import *
-from kpm.apps.works.models import Work
 from kpm.apps.groups.models import Group, GroupUser
 from django.core.exceptions import ObjectDoesNotExist
 import json
 from django.conf import settings
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.groups.docs import *
-from django.utils import timezone
-from datetime import datetime, timedelta
 from django.db import IntegrityError
 from kpm.apps.users.docs import permissions_operation_description
 
@@ -29,7 +24,7 @@ LOGGER = settings.LOGGER
 def get_groups(request):
     try:
         class_ = get_variable("class", request)
-        if class_ not in ['4', '5', '6', 4, 5, 6]:
+        if class_ not in ['4', '5', '6', '7']:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
@@ -116,7 +111,7 @@ def create_group(request):
             return HttpResponse(json.dumps(
                 {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=400)
-        if request_body["class"] not in ['4', '5', '6', 4, 5, 6]:
+        if request_body["class"] not in [4, 5, 6, 7]:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
@@ -241,9 +236,12 @@ def add_to_group(request):
                 ensure_ascii=False), status=400)
         id_ = request_body['id']
         group = Group.objects.get(id=id_)
-        students = request_body["students"]
+        students_ids = request_body["students"]
+        students = User.objects.filter(id__in=students_ids)
         for student in students:
-            group_user = GroupUser.objects.create(group=group, user_id=student)
+            if group.school_class != student.school_class:
+                continue
+            group_user = GroupUser.objects.create(group=group, user=student)
             LOGGER.info(f'Added student {student.id} to group {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:

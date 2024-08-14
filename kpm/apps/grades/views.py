@@ -1,6 +1,5 @@
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
 from kpm.apps.users.permissions import IsAdmin, IsEnabled
 from .functions import *
 from kpm.apps.users.models import User
@@ -9,7 +8,6 @@ from kpm.apps.groups.models import Group, GroupUser
 from kpm.apps.grades.models import Grade, Mana
 import json
 from django.db.models import Sum, Case, When, IntegerField, Count, Q
-import random
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.grades.docs import *
 from django.core.exceptions import ObjectDoesNotExist
@@ -248,7 +246,7 @@ def get_grades(request):
         theme = get_variable("theme", request)
         type_ = get_variable("type", request)
         group = get_variable("group", request)
-        if class_ not in ['4', '5', '6', 4, 5, 6]:
+        if class_ not in ['4', '5', '6', '7']:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
@@ -410,7 +408,6 @@ def get_grades(request):
 @permission_classes([IsAdmin, IsEnabled])
 def get_mana_waiters(request):
     try:
-        #group = get_variable("group", request)
         class_ = get_variable("class", request)
         if not class_:
             return HttpResponse(
@@ -418,7 +415,7 @@ def get_mana_waiters(request):
                     {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         else:
-            if class_ not in ['4', '5', '6', 4, 5, 6]:
+            if class_ not in ['4', '5', '6', '7']:
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {}, 'instance': request.path},

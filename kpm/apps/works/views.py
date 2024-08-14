@@ -41,7 +41,7 @@ def get_works(request):
         class_ = get_variable("class", request)
         theme = get_variable("theme", request)
         type_ = get_variable("type", request)
-        if class_ not in ['4', '5', '6', 4, 5, 6]:
+        if class_ not in ['4', '5', '6', '7']:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
@@ -179,7 +179,7 @@ def create_work(request):
                     {'state': 'error', 'message': f'Неверно указан тип работы.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        if school_class not in ['4', '5', '6', 4, 5, 6]:
+        if school_class not in ['4', '5', '6', '7']:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
@@ -213,7 +213,7 @@ def create_work(request):
             is_homework = False
         students = User.objects.filter(Q(is_admin=0) & Q(school_class=school_class))
         exercises = len(grades)
-        if type_ not in [3, 5]:
+        if type_ not in ['3', '5']:
             work = Work(name=name, grades=grades, theme=theme, max_score=max_score,
                         exercises=exercises, school_class=school_class, type=type_,
                         is_homework=is_homework, author_id=request.user.id)
@@ -473,7 +473,7 @@ def delete_works(request):
                     {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         else:
-            if class_ not in ['4', '5', '6', 4, 5, 6]:
+            if class_ not in ['4', '5', '6', '7']:
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
@@ -1350,7 +1350,7 @@ def get_homeworks(request):
         class_ = get_variable("class", request)
         theme = get_variable("theme", request)
         type_ = get_variable("type", request)
-        if class_ not in ['4', '5', '6', 4, 5, 6]:
+        if class_ not in ['4', '5', '6', '7']:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
@@ -1417,7 +1417,7 @@ def get_classworks(request):
         class_ = get_variable("class", request)
         theme = get_variable("theme", request)
         type_ = get_variable("type", request)
-        if class_ not in ['4', '5', '6', 4, 5, 6]:
+        if class_ not in ['4', '5', '6', '7']:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
