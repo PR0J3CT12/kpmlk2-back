@@ -472,7 +472,7 @@ def get_all_logons(request):
                 'user_id': logon['user_id'],
                 'user_name': logon['user__name'],
                 'date': str(logon['datetime'].date()),
-                'hour': f'{logon['datetime__hour']}:00',
+                'hour': f'{logon['datetime'].hour}:00',
                 'datetime': str(logon['datetime'])
             })
         return HttpResponse(json.dumps({'logons': logons_list}, ensure_ascii=False), status=200)
