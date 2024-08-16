@@ -192,8 +192,14 @@ def create_rating(request):
                         league_user = LeagueUser.objects.create(league=league, user_id=student)
                     except IntegrityError:
                         pass
+                    except ValidationError:
+                        pass
         LOGGER.info(f'Created rating {league.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ValidationError as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Ошибка валидации данных.', 'details': {'message': str(e)}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
     except KeyError as e:
         return HttpResponse(
             json.dumps(
@@ -231,8 +237,11 @@ def update_rating(request):
             current_students.delete()
             users = User.objects.filter(id__in=request_body["students"])
             for student in users:
-                league_user = LeagueUser.objects.create(league=league, user=student)
-                LOGGER.info(f'Added student {student} to rating {id_} by user {request.user.id}.')
+                try:
+                    league_user = LeagueUser.objects.create(league=league, user=student)
+                    LOGGER.info(f'Added student {student} to rating {id_} by user {request.user.id}.')
+                except ValidationError:
+                    pass
         league.save()
         LOGGER.info(f'Updated rating {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
@@ -301,9 +310,11 @@ def add_to_rating(request):
             try:
                 if student['school_class'] == league.school_class:
                     league_user = LeagueUser.objects.create(league=league, user_id=student['id'])
+                    LOGGER.info(f'Added student {student} to rating {id_} by user {request.user.id}.')
             except IntegrityError:
                 pass
-            LOGGER.info(f'Added student {student} to rating {id_} by user {request.user.id}.')
+            except ValidationError:
+                pass
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(

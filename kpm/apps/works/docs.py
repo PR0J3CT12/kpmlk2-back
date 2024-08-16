@@ -129,8 +129,19 @@ get_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                type=openapi.TYPE_INTEGER, example=0),
                                            "is_homework": openapi.Schema(
                                                type=openapi.TYPE_BOOLEAN,
-                                               example=True)
-
+                                               example=True),
+                                           "groups": openapi.Schema(
+                                               type=openapi.TYPE_ARRAY,
+                                               items=openapi.Schema(
+                                                   type=openapi.TYPE_OBJECT,
+                                                   properties={
+                                                       "id": openapi.Schema(type=openapi.TYPE_INTEGER, example=3),
+                                                       "name": openapi.Schema(type=openapi.TYPE_STRING, example="Название группы"),
+                                                       "color": openapi.Schema(type=openapi.TYPE_STRING, example="#FFFFFF"),
+                                                       "type": openapi.Schema(type=openapi.TYPE_INTEGER, example=3),
+                                                       "date": openapi.Schema(type=openapi.TYPE_STRING, example=None),
+                                                   })
+                                           )
                                        })
 get_homeworks_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                             properties={
@@ -306,8 +317,10 @@ get_my_homeworks_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                'max_score': openapi.Schema(
                                                                    type=openapi.TYPE_INTEGER,
                                                                    example=100),
-                                                               'blue': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
-                                                               'green': openapi.Schema(type=openapi.TYPE_INTEGER, example=3),
+                                                               'blue': openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                                      example=0),
+                                                               'green': openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                                       example=3),
                                                            }))})
 get_my_classworks_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                 properties={
@@ -352,6 +365,9 @@ get_classwork_files_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                   "group_marker": openapi.Schema(
                                                                       type=openapi.TYPE_STRING,
                                                                       example="#FFFFFF"),
+                                                                  "group_type": openapi.Schema(
+                                                                      type=openapi.TYPE_INTEGER,
+                                                                      example=1),
                                                                   'files': openapi.Schema(
                                                                       type=openapi.TYPE_ARRAY,
                                                                       items=openapi.Schema(
@@ -391,7 +407,7 @@ get_all_answers_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                               properties={
                                                   'id': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
                                                   'name': openapi.Schema(type=openapi.TYPE_STRING,
-                                                                          example="Домашняя работа 1"),
+                                                                         example="Домашняя работа 1"),
                                                   "answers": openapi.Schema(
                                                       type=openapi.TYPE_ARRAY,
                                                       items=openapi.Schema(
@@ -425,6 +441,9 @@ get_all_answers_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                           "color": openapi.Schema(
                                                                               type=openapi.TYPE_STRING,
                                                                               example="#FFFFFF"),
+                                                                          "type": openapi.Schema(
+                                                                              type=openapi.TYPE_INTEGER,
+                                                                              example=1),
                                                                       }
                                                                   )
                                                               ),
@@ -455,14 +474,22 @@ get_all_answers_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                               'checker': openapi.Schema(
                                                                   type=openapi.TYPE_STRING,
                                                                   example="Имя Фамилия преподавателя"),
-                                                              'checked_at': openapi.Schema(type=openapi.TYPE_STRING, example=None),
-                                                              'is_done': openapi.Schema(type=openapi.TYPE_BOOLEAN, example=True),
-                                                              'is_checked': openapi.Schema(type=openapi.TYPE_BOOLEAN, example=True),
-                                                              'is_closed': openapi.Schema(type=openapi.TYPE_BOOLEAN, example=True),
-                                                              'green': openapi.Schema(type=openapi.TYPE_INTEGER, example=1),
-                                                              'blue': openapi.Schema(type=openapi.TYPE_INTEGER, example=2),
-                                                              'answered_at': openapi.Schema(type=openapi.TYPE_STRING, example="2023-09-08 17:21:45.279285+03"),
-                                                              'added_at': openapi.Schema(type=openapi.TYPE_STRING, example="2023-09-08 17:21:45.279285+03"),
+                                                              'checked_at': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                           example=None),
+                                                              'is_done': openapi.Schema(type=openapi.TYPE_BOOLEAN,
+                                                                                        example=True),
+                                                              'is_checked': openapi.Schema(type=openapi.TYPE_BOOLEAN,
+                                                                                           example=True),
+                                                              'is_closed': openapi.Schema(type=openapi.TYPE_BOOLEAN,
+                                                                                          example=True),
+                                                              'green': openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                                      example=1),
+                                                              'blue': openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                                     example=2),
+                                                              'answered_at': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                            example="2023-09-08 17:21:45.279285+03"),
+                                                              'added_at': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                         example="2023-09-08 17:21:45.279285+03"),
                                                           }))})
 create_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
@@ -499,4 +526,4 @@ get_homeworks_dates_responses = {200: get_homeworks_dates_response_200}
 get_homeworks_responses = {200: get_homeworks_response_200}
 return_user_homework_responses = {200: return_user_homework_response_200}
 get_all_answers_responses = {200: get_all_answers_response_200}
-operation_description = "Type: 0 - Домашняя работа, 1 - Классная работа, 2 - Блиц, 3 - Письменный экзамен классный, 4 - Устный экзамен классный, 5 - Письменный экзамен домашний, 6 - Устный экзамен домашний, 7 - Письменный экзамен домашний(баллы 2007), 7 - Письменный экзамен классный(баллы 2007), 9 - Вне статистики"
+operation_description = "Type: 0 - Домашняя работа, 1 - Классная работа, 2 - Блиц, 3 - Письменный экзамен классный, 4 - Устный экзамен классный, 5 - Письменный экзамен домашний, 6 - Устный экзамен домашний, 7 - Письменный экзамен домашний(баллы 2007), 7 - Письменный экзамен классный(баллы 2007), 9 - Вне статистики, 10 - Зачет, 11 - Проверка на рептилоида"

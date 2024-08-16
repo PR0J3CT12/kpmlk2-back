@@ -1,5 +1,6 @@
 from django.db import models
 from kpm.apps.users.models import User
+from django.core.exceptions import ValidationError
 
 
 class League(models.Model):
@@ -28,6 +29,15 @@ class LeagueUser(models.Model):
     league = models.ForeignKey(League, on_delete=models.CASCADE)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     is_hidden = models.BooleanField('is hidden for student', default=False)
+
+    def clean(self):
+        if self.user.school_class != self.league.school_class:
+            raise ValidationError(f"Ученик {self.user.id} не соответствует классу рейтинга '{self.league.id}'.")
+        super().clean()
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{self.id}'

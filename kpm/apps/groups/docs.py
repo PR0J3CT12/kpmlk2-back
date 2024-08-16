@@ -11,6 +11,7 @@ create_group_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                'name': openapi.Schema(type=openapi.TYPE_STRING, example="Группа1"),
                                                'class': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
                                                'marker': openapi.Schema(type=openapi.TYPE_STRING, example="#FFFFFF"),
+                                               'type': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
                                                'students': openapi.Schema(
                                                    type=openapi.TYPE_ARRAY,
                                                    items=openapi.Schema(
@@ -62,7 +63,9 @@ get_groups_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                      "name": openapi.Schema(
                                                          type=openapi.TYPE_STRING,
                                                          example="Группа 1"),
-                                                     'marker': openapi.Schema(type=openapi.TYPE_STRING, example="#FFFFFF"),
+                                                     'marker': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                              example="#FFFFFF"),
+                                                     'type': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
                                                      "students": openapi.Schema(
                                                          type=openapi.TYPE_ARRAY,
                                                          items=openapi.Schema(
@@ -86,6 +89,7 @@ get_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                 type=openapi.TYPE_STRING,
                                                 example="Группа 1"),
                                             'marker': openapi.Schema(type=openapi.TYPE_STRING, example="#FFFFFF"),
+                                            'type': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
                                             "students": openapi.Schema(
                                                 type=openapi.TYPE_ARRAY,
                                                 items=openapi.Schema(
@@ -99,6 +103,21 @@ get_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                             example="Левин Михаил"),
                                                     })),
                                         })
+get_groups_types_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                               properties={
+                                                   "types": openapi.Schema(
+                                                       type=openapi.TYPE_ARRAY,
+                                                       items=openapi.Schema(
+                                                           type=openapi.TYPE_OBJECT,
+                                                           properties={
+                                                               "id": openapi.Schema(
+                                                                   type=openapi.TYPE_INTEGER,
+                                                                   example=1),
+                                                               "name": openapi.Schema(
+                                                                   type=openapi.TYPE_STRING,
+                                                                   example="Продвинутые"),
+                                                           })),
+                                               })
 
 create_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_group_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
@@ -112,3 +131,6 @@ add_to_group_responses = {200: add_to_group_response_200}
 delete_from_group_responses = {200: delete_from_group_response_200}
 get_groups_responses = {200: get_groups_response_200}
 get_group_responses = {200: get_group_response_200}
+get_groups_types_responses = {200: get_groups_types_response_200}
+
+operation_description = "Type: 0 - продвинутые, 1 - углубленные, 2 - углубленные геометрия, 3 - углубленные алгебра"

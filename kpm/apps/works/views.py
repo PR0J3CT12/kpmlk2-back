@@ -21,6 +21,7 @@ from kpm.apps.groups.models import GroupUser, GroupWorkFile, Group, GroupWorkDat
 from datetime import datetime
 from kpm.apps.grades.functions import is_number_float, mana_generation
 from kpm.apps.users.docs import permissions_operation_description
+from kpm.apps.works.validators import *
 
 
 MEDIA_ROOT = settings.MEDIA_ROOT
@@ -123,12 +124,13 @@ def get_work(request):
             result['users'] = users_list
         if work.is_homework:
             groups_dict = {}
-            groups = Group.objects.filter(school_class=work.school_class).order_by("created_at").values("id", "name", "marker")
+            groups = Group.objects.filter(school_class=work.school_class).order_by("created_at").values("id", "name", "marker", "type")
             for group in groups:
                 groups_dict[group['id']] = {
                     "id": group['id'],
                     "name": group['name'],
                     "color": group['marker'],
+                    "type": group['type'],
                     "date": None
                 }
             groups_in_work = GroupWorkDate.objects.filter(work=work).values("group_id", "date")
@@ -170,8 +172,14 @@ def create_work(request):
                            ensure_ascii=False), status=400)
         type_ = data["type"]
         school_class = data["class"]
+        if not validate_work_type_for_class(type_, school_class):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Несоответствие типа работы и класса.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=404)
         name = data["name"]
-        if type_ not in ['0', '1', '2', '3', '4', '5', '6', '9']:
+        if type_ not in ['0', '1', '2', '3', '4', '5', '6', '9', '10', '11']:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан тип работы.', 'details': {},
@@ -185,26 +193,31 @@ def create_work(request):
                     ensure_ascii=False), status=404)
         if type_ == 2:
             grades = ["1", "1", "1"]
+            max_score = 3
+        elif type_ in [10, 11]:
+            grades = ["1"] * data["exercises"]
+            max_score = data["exercises"]
         else:
             grades = data.getlist("grades")
-        max_score = 0
-        for grade in grades:
-            if not is_number(grade):
-                return HttpResponse(
-                    json.dumps(
-                        {'state': 'error', 'message': f'Введены некорректные оценки.', 'details': {},
-                         'instance': request.path},
-                        ensure_ascii=False), status=404)
-            if float(grade) < 0:
-                return HttpResponse(
-                    json.dumps(
-                        {'state': 'error', 'message': f'Введены некорректные оценки.', 'details': {},
-                         'instance': request.path},
-                        ensure_ascii=False), status=404)
-            cast = float(grade)
-            max_score += cast
+            max_score = 0
+            for grade in grades:
+                if not is_number(grade):
+                    return HttpResponse(
+                        json.dumps(
+                            {'state': 'error', 'message': f'Введены некорректные оценки.', 'details': {},
+                             'instance': request.path},
+                            ensure_ascii=False), status=404)
+                if float(grade) < 0:
+                    return HttpResponse(
+                        json.dumps(
+                            {'state': 'error', 'message': f'Введены некорректные оценки.', 'details': {},
+                             'instance': request.path},
+                            ensure_ascii=False), status=404)
+                cast = float(grade)
+                max_score += cast
 
-        theme = Theme.objects.get(id=data["theme_id"])
+        theme_id = data["theme_id"]
+        theme = Theme.objects.get(id=theme_id)
         if type_ in ['0', '5', '6', '7']:
             is_homework = True
         else:
@@ -308,6 +321,10 @@ def create_work(request):
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except ValidationError as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Ошибка валидации данных.', 'details': {'message': str(e)}, 'instance': request.path},
                        ensure_ascii=False), status=404)
     except ObjectDoesNotExist as e:
         return HttpResponse(
@@ -1085,6 +1102,11 @@ def apply_files_to_classwork(request):
                            ensure_ascii=False), status=400)
         group = Group.objects.get(id=data['group'])
         work = Work.objects.get(id=data['work'])
+        if not validate_work_type_for_group_type(work.type, group.type):
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Тип работы не подходит для этого типа группы.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=400)
         files = files.getlist('files')
         for file in files:
             if 'image' in str(file.content_type):
@@ -1174,7 +1196,7 @@ def get_classwork_files(request):
                 'ext': ext
             })
 
-        groups = Group.objects.filter(school_class=school_class).values('id', 'name', 'marker')
+        groups = Group.objects.filter(school_class=school_class).values('id', 'name', 'marker', 'type')
         groups_list = []
         for group in groups:
             group_files = files_dict[group['id']] if group['id'] in files_dict else []
@@ -1182,6 +1204,7 @@ def get_classwork_files(request):
                 'group_id': group['id'],
                 'group_name': group['name'],
                 'group_marker': group['marker'],
+                'group_type': group['type'],
                 'files': group_files
             })
         return HttpResponse(json.dumps({'groups': groups_list}, ensure_ascii=False), status=200)
@@ -1218,6 +1241,11 @@ def set_homework_date(request):
             date = datetime.strptime(date, '%d.%m.%Y')
         group = Group.objects.get(id=group_id)
         work = Work.objects.get(id=work_id)
+        if not validate_work_type_for_group_type(work.type, group.type):
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Тип работы не подходит для этого типа группы.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=400)
         row = GroupWorkDate.objects.filter(work=work, group=group)
         if row:
             row = row[0]
@@ -1496,7 +1524,7 @@ def get_all_answers(request):
             'id', 'user_id', 'user__name', 'is_done', 'is_checked', 'comment', 'checker_id', 'checker__name',
             'checked_at', 'added_at', 'answered_at', 'answers', 'is_closed'
         )
-        groups_users = GroupUser.objects.filter(group__school_class=4).select_related('group').values('user_id', 'group_id', 'group__marker', 'group__name')
+        groups_users = GroupUser.objects.filter(group__school_class=4).select_related('group').values('user_id', 'group_id', 'group__marker', 'group__name', 'group__type')
         user_groups_dict = {}
         for gu in groups_users:
             if gu['user_id'] not in user_groups_dict:
@@ -1504,7 +1532,8 @@ def get_all_answers(request):
             user_groups_dict[gu['user_id']].append({
                 'id': gu['group_id'],
                 'color': gu['group__marker'],
-                'name': gu['group__name']
+                'name': gu['group__name'],
+                'type': gu['group__type']
             })
         work_user_files = WorkUserFile.objects.filter(link__work=work).values('link', 'file', 'ext')
         files_dict = {}

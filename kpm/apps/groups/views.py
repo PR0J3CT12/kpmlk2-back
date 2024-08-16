@@ -10,6 +10,8 @@ from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.groups.docs import *
 from django.db import IntegrityError
 from kpm.apps.users.docs import permissions_operation_description
+from kpm.apps.groups.validators import validate_group_type_for_class
+from django.core.exceptions import ValidationError
 
 
 LOGGER = settings.LOGGER
@@ -18,7 +20,7 @@ LOGGER = settings.LOGGER
 @swagger_auto_schema(method='GET', operation_summary="Получение групп.",
                      manual_parameters=[class_param],
                      responses=get_groups_responses,
-                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']} | {operation_description}")
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
 def get_groups(request):
@@ -31,7 +33,7 @@ def get_groups(request):
                      'instance': request.path},
                     ensure_ascii=False), status=404)
         groups_dict = {}
-        groups = Group.objects.filter(school_class=class_).values('id', 'name', 'marker')
+        groups = Group.objects.filter(school_class=class_).values('id', 'name', 'marker', 'type')
         groups_ids = []
         for row in groups:
             if row['id'] not in groups_dict:
@@ -40,6 +42,7 @@ def get_groups(request):
                     'id': row['id'],
                     'name': row['name'],
                     'color': row['marker'],
+                    'type': row['type'],
                     'students': [],
                 }
         groups_users = GroupUser.objects.filter(group_id__in=groups_ids).select_related('user').values('group_id', 'user__id', 'user__name')
@@ -77,6 +80,7 @@ def get_group(request):
             'id': group.id,
             'name': group.name,
             'marker': group.marker,
+            'type': group.type,
             'students': [],
         }
         for user in groups_users:
@@ -117,7 +121,13 @@ def create_group(request):
                     {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        group = Group(name=request_body['name'], school_class=int(request_body['class']), marker=request_body['marker'])
+        if not validate_group_type_for_class(request_body["type"], request_body["class"]):
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Неверно указан тип группы.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=404)
+        group = Group(name=request_body['name'], school_class=request_body['class'], marker=request_body['marker'], type=request_body['type'])
         group.save()
         if "students" in request_body:
             for student in request_body["students"]:
@@ -127,8 +137,14 @@ def create_group(request):
                     group_user = GroupUser.objects.filter(user_id=student)
                     group_user.group = group
                     group_user.save()
+                except Exception:
+                    pass
         LOGGER.info(f'Created group {group.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ValidationError as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Ошибка валидации данных.', 'details': {'message': str(e)}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
     except KeyError as e:
         return HttpResponse(
             json.dumps(
@@ -174,6 +190,10 @@ def update_group(request):
         group.save()
         LOGGER.info(f'Updated group {group.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ValidationError as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Ошибка валидации данных.', 'details': {'message': str(e)}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
     except KeyError as e:
         return HttpResponse(
             json.dumps(
@@ -287,6 +307,42 @@ def delete_from_group(request):
             json.dumps(
                 {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='GET', operation_summary="Получение типов групп.",
+                     manual_parameters=[class_param],
+                     responses=get_groups_types_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
+@api_view(["GET"])
+@permission_classes([IsAdmin, IsEnabled])
+def get_groups_types(request):
+    try:
+        class_ = get_variable("class", request)
+        if class_ == '4':
+            result = []
+        elif class_ in ['5', '6']:
+            result = [
+                {'id': 0, 'name': 'Продвинутые'},
+                {'id': 1, 'name': 'Углубленные'},
+            ]
+        elif class_ == '7':
+            result = [
+                {'id': 0, 'name': 'Продвинутые'},
+                {'id': 2, 'name': 'Углубленные алгебра'},
+                {'id': 3, 'name': 'Углубленные геометрия'},
+            ]
+        else:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=404)
+        return HttpResponse(json.dumps({'types': result}, ensure_ascii=False), status=200)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},

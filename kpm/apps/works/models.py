@@ -3,6 +3,7 @@ from kpm.apps.themes.models import Theme
 from django.utils.deconstruct import deconstructible
 import os
 from kpm.apps.users.models import User
+from django.core.exceptions import ValidationError
 
 
 @deconstructible
@@ -30,6 +31,8 @@ class Work(models.Model):
         (7, 'Письменный экзамен домашний(баллы 2007)'),
         (8, 'Письменный экзамен классный(баллы 2007)'),
         (9, 'Вне статистики'),
+        (10, 'Зачет'),
+        (11, 'Проверка на рептилоида'),
     )
     id = models.AutoField('work id', primary_key=True, editable=False)
     name = models.CharField('work name', max_length=100)
@@ -53,6 +56,15 @@ class Work(models.Model):
     # Date fields
     created_at = models.DateTimeField('Дата создания работы', auto_now_add=True)
     updated_at = models.DateTimeField('Дата обновления работы', auto_now_add=True)
+
+    def clean(self):
+        if self.work.school_class != self.theme.school_class:
+            raise ValidationError(f"Работа {self.work.id} не соответствует классу темы '{self.theme.id}'.")
+        super().clean()
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{self.id}'
@@ -100,6 +112,15 @@ class WorkUser(models.Model):
     answered_at = models.DateTimeField('Дата ответа', default=None, null=True)
     checked_at = models.DateTimeField('Дата проверки', default=None, null=True)
     added_at = models.DateTimeField('Дата выдачи работы', null=True, auto_now_add=True)
+
+    def clean(self):
+        if self.user.school_class != self.work.school_class:
+            raise ValidationError(f"Ученик {self.user.id} не соответствует классу работы '{self.work.id}'.")
+        super().clean()
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{str(self.id)}'
