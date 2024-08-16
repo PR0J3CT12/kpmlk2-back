@@ -105,37 +105,6 @@ get_rating_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                              example=164),
                                                      }))
                                          })
-get_user_rating_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
-                                              properties={
-                                                  'id': openapi.Schema(type=openapi.TYPE_INTEGER,
-                                                                       example=1),
-                                                  'name': openapi.Schema(type=openapi.TYPE_STRING,
-                                                                         example="Лига сентябрь"),
-                                                  'description': openapi.Schema(type=openapi.TYPE_STRING,
-                                                                                example="Описание рейтинга"),
-                                                  'type': openapi.Schema(type=openapi.TYPE_INTEGER,
-                                                                         example=0),
-                                                  'students': openapi.Schema(
-                                                      type=openapi.TYPE_ARRAY,
-                                                      items=openapi.Schema(
-                                                          type=openapi.TYPE_OBJECT,
-                                                          properties={
-                                                              'id': openapi.Schema(type=openapi.TYPE_INTEGER,
-                                                                                   example=1),
-                                                              'name': openapi.Schema(type=openapi.TYPE_STRING,
-                                                                                     example="Левин Михаил"),
-                                                              'lvl': openapi.Schema(type=openapi.TYPE_INTEGER,
-                                                                                    example=3),
-                                                              'exp': openapi.Schema(type=openapi.TYPE_INTEGER,
-                                                                                    example=59),
-                                                              'base_exp': openapi.Schema(
-                                                                  type=openapi.TYPE_INTEGER,
-                                                                  example=60),
-                                                              'total_exp': openapi.Schema(
-                                                                  type=openapi.TYPE_INTEGER,
-                                                                  example=164),
-                                                          }))
-                                              })
 get_user_ratings_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                properties={
                                                    'ratings': openapi.Schema(
@@ -165,5 +134,4 @@ add_to_rating_responses = {200: add_to_rating_response_200}
 get_ratings_responses = {200: get_ratings_response_200}
 get_rating_responses = {200: get_rating_response_200}
 get_user_ratings_responses = {200: get_user_ratings_response_200}
-get_user_rating_responses = {200: get_user_rating_response_200}
 update_rating_responses = {200: update_rating_response_200}

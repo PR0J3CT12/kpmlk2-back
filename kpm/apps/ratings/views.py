@@ -63,9 +63,9 @@ def get_ratings(request):
 @swagger_auto_schema(method='GET', operation_summary="Получение рейтинга.",
                      manual_parameters=[id_param],
                      responses=get_rating_responses,
-                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsAuthenticated, IsEnabled])
 def get_rating(request):
     try:
         id_ = get_variable("id", request)
@@ -74,8 +74,18 @@ def get_rating(request):
                 json.dumps(
                     {'state': 'error', 'message': f'Не указан id рейтинга.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
+        user = User.objects.get(id=request.user.id)
         rating = League.objects.get(id=id_)
-        rating_students = LeagueUser.objects.filter(league=rating).select_related('user')
+        if user.is_admin:
+            rating_students = LeagueUser.objects.filter(league=rating).select_related('user')
+        else:
+            rating_students = LeagueUser.objects.filter(league=rating, user=user).select_related('user')
+            if not rating_students:
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Отказано в доступе.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=403)
         students_list = []
         if rating.rating_type == 0:
             rating_students = rating_students.order_by('-user__experience').values(
@@ -387,79 +397,6 @@ def get_user_ratings(request):
             json.dumps(
                 {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=404)
-    except Exception as e:
-        return HttpResponse(json.dumps(
-            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
-             'instance': request.path},
-            ensure_ascii=False), status=404)
-
-
-@swagger_auto_schema(method='GET', operation_summary="Получение рейтинга ученика.",
-                     manual_parameters=[user_param, id_param],
-                     responses=get_user_rating_responses,
-                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
-@api_view(["GET"])
-@permission_classes([IsAuthenticated, IsEnabled])
-def get_user_rating(request):
-    try:
-        student_id = get_variable("student", request)
-        if (student_id is None) or (student_id == ''):
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=404)
-        id_ = get_variable("id", request)
-        if (id_ is None) or (id_ == ''):
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Не указан id рейтинга.', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=404)
-        if not is_trusted(request, student_id):
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=403)
-        student = User.objects.get(id=student_id)
-        league = LeagueUser.objects.get(league__id=id_, user=student)
-        students_in_league = LeagueUser.objects.filter(league__id=id_)
-        current_type = league.league.rating_type
-        if current_type == 0:
-            students_in_league = students_in_league.order_by('-user__experience').values('user_id', 'user__name', 'user__experience')
-        elif current_type == 1:
-            students_in_league = students_in_league.order_by('-user__exam_experience').values('user_id', 'user__name', 'user__exam_experience')
-        elif current_type == 2:
-            students_in_league = students_in_league.order_by('-user__oral_exam_experience').values('user_id', 'user__name', 'user__oral_exam_experience')
-        rating = []
-        for student_ in students_in_league:
-            if current_type == 0:
-                total_exp = student_['user__experience']
-            elif current_type == 1:
-                total_exp = student_['user__exam_experience']
-            elif current_type == 2:
-                total_exp = student_['user__oral_exam_experience']
-            else:
-                total_exp = 0
-            lvl, exp, base_exp = count_lvl(total_exp)
-            rating.append({
-                'id': student_['user_id'],
-                'name': student_['user__name'],
-                'lvl': lvl,
-                'exp': exp,
-                'base_exp': base_exp,
-                'total_exp': total_exp
-            })
-        return HttpResponse(json.dumps({
-            'id': id_,
-            'name': league.league.name,
-            'description': league.league.description,
-            'rating_type': current_type,
-            'students': rating
-        }, ensure_ascii=False), status=200)
-    except ObjectDoesNotExist as e:
-        return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Пользователь или рейтинг не существует.', 'details': {},
-                        'instance': request.path},
-                       ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},

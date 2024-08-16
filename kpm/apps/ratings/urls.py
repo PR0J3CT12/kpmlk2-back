@@ -9,6 +9,5 @@ urlpatterns = [
     path('delete-rating', views.delete_rating, name='delete rating'),
     path('delete-from-rating', views.delete_from_rating, name='delete from rating'),
     path('add-to-rating', views.add_to_rating, name='add to rating'),
-    path('get-user-rating', views.get_user_rating, name='get user rating'),
     path('get-user-ratings', views.get_user_ratings, name='get user ratings'),
 ]
