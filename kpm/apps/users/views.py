@@ -438,10 +438,10 @@ def login(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='GET', operation_summary="Выход из аккаунта.",
+@swagger_auto_schema(method='POST', operation_summary="Выход из аккаунта.",
                      responses=logout_responses,
                      operation_description=f"Уровни доступа: {permissions_operation_description['Nothing']}")
-@api_view(["GET"])
+@api_view(["POST"])
 def logout(request):
     try:
         refresh = request.data.get('refresh', None)
