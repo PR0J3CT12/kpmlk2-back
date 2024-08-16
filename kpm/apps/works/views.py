@@ -973,11 +973,11 @@ def return_user_homework(request):
 def get_my_homeworks(request):
     try:
         student = User.objects.get(id=request.user.id)
-        work_user = WorkUser.objects.filter(user=student, is_closed=False).select_related('work').order_by('work__created_at').values('name', 'is_done', 'is_checked')
+        work_user = WorkUser.objects.filter(user=student, is_closed=False).select_related('work').order_by('work__created_at').values('work_id', 'work__name', 'is_done', 'is_checked')
         works_list = {}
         for work in work_user:
-            works_list[work['id']] = {
-                'name': work['name'],
+            works_list[work['work_id']] = {
+                'name': work['work__name'],
                 'is_done': work['is_done'],
                 'is_checked': work['is_checked'],
                 'green': 0,
@@ -999,7 +999,7 @@ def get_my_homeworks(request):
         for homework in works_list:
             result = {
                 'id': homework,
-                'name': works_list[homework]['title'],
+                'name': works_list[homework]['name'],
                 'is_done': works_list[homework]['is_done'],
                 'is_checked': works_list[homework]['is_checked']
             }
@@ -1030,9 +1030,9 @@ def get_my_homeworks(request):
 def get_my_classworks(request):
     try:
         student = User.objects.get(id=request.user.id)
-        groups = GroupUser.objects.filter(user=student).select_related('group')
-        files = GroupWorkFile.objects.filter(group__in=groups).select_related('work').order_by('added_at').values(
-            'file', 'ext', 'work__id', 'work__name')
+        groups = GroupUser.objects.filter(user=student).select_related('group').values_list('group_id', flat=True)
+        files = GroupWorkFile.objects.filter(group_id__in=groups).select_related('work').order_by('added_at').values(
+            'file', 'ext', 'work_id', 'work__name')
         classworks_list = {}
         host = settings.MEDIA_HOST_PATH
         for file in files:
@@ -1040,7 +1040,7 @@ def get_my_classworks(request):
             name = link.split('/')[1]
             ext = file['ext']
             if file['work_id'] not in classworks_list:
-                classworks_list[file['work__id']] = {
+                classworks_list[file['work_id']] = {
                     'name': file['work__name'],
                     'files': [{
                         'link': f'{host}/{link}',
