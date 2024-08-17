@@ -673,8 +673,8 @@ def get_user_work(request):
             'fields': work.exercises,
             'files': files_list,
             'class': work.school_class,
-            'is_done': work.is_done,
-            'is_checked': work.is_checked,
+            'is_done': work_user.is_done,
+            'is_checked': work_user.is_checked,
             'created_at': str(work.created_at)
         }
         grade = Grade.objects.get(work=work, user=student)
