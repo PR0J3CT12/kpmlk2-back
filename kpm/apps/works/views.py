@@ -687,7 +687,7 @@ def get_user_work(request):
             for file in user_files:
                 link = file.file.name
                 name = link.split('/')[1]
-                user_files_list.append({'link': link, 'name': name, 'ext': file.ext})
+                user_files_list.append({'link': f'{host}/{link}', 'name': name, 'ext': file.ext})
             response['user_files'] = user_files_list
             response['answered_at'] = str(work_user.answered_at)
         if work_user.is_checked:
