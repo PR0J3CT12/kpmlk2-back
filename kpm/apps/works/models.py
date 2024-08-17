@@ -40,7 +40,7 @@ class Work(models.Model):
     school_class = models.IntegerField('student class', default=4)
     is_homework = models.BooleanField('is homework')
     type = models.IntegerField('theme type', choices=TYPE_CHOICES, default=0)
-    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='author', default=None)
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='author', default=None, blank=True, null=True)
 
     # Grades fields
     grades = models.JSONField('work grades')

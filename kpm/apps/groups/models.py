@@ -28,8 +28,8 @@ class Group(models.Model):
     )
     id = models.AutoField('id группы', primary_key=True, editable=False)
     name = models.CharField('Название группы', max_length=100)
-    marker = models.CharField('Цвет группы', default=None, null=True, max_length=7)
-    type = models.IntegerField('Тип группы', default=None, null=True)
+    marker = models.CharField('Цвет группы', default=None, blank=True, null=True, max_length=7)
+    type = models.IntegerField('Тип группы', default=None, blank=True, null=True)
     school_class = models.IntegerField('student class', default=None, null=True, blank=True)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
 

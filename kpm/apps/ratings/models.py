@@ -13,7 +13,7 @@ class League(models.Model):
     )
     id = models.AutoField('league id', primary_key=True, editable=False)
     name = models.CharField('league name', max_length=100)
-    description = models.CharField('league description', max_length=1000, null=True, default=None)
+    description = models.CharField('league description', max_length=1000, default=None, blank=True, null=True)
     school_class = models.IntegerField('student class', default=4)
     rating_type = models.IntegerField('rating type', choices=TYPE_CHOICES, default=0)
 
