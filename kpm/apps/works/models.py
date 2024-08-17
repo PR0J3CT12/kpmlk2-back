@@ -105,7 +105,7 @@ class WorkUser(models.Model):
     is_done = models.BooleanField('Сдал ли работу ученик', default=False)
     comment = models.TextField('Комментарий преподавателя', default="")
     is_checked = models.BooleanField('Проверена ли работа', default=False)
-    checker = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='checker', null=True)
+    checker = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='checker', null=True, default=None)
     answers = models.JSONField('Форма с ответами')
     is_closed = models.BooleanField('Закрыта ли работа', default=False)
 
