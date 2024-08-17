@@ -103,7 +103,7 @@ class WorkUser(models.Model):
     work = models.ForeignKey(Work, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     is_done = models.BooleanField('Сдал ли работу ученик', default=False)
-    comment = models.TextField('Комментарий преподавателя', default="")
+    comment = models.TextField('Комментарий преподавателя', default="", blank=True)
     is_checked = models.BooleanField('Проверена ли работа', default=False)
     checker = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='checker', null=True, default=None)
     answers = models.JSONField('Форма с ответами')
