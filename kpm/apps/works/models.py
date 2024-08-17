@@ -109,8 +109,8 @@ class WorkUser(models.Model):
     answers = models.JSONField('Форма с ответами')
     is_closed = models.BooleanField('Закрыта ли работа', default=False)
 
-    answered_at = models.DateTimeField('Дата ответа', default=None, null=True)
-    checked_at = models.DateTimeField('Дата проверки', default=None, null=True)
+    answered_at = models.DateTimeField('Дата ответа', default=None, null=True, blank=True)
+    checked_at = models.DateTimeField('Дата проверки', default=None, null=True, blank=True)
     added_at = models.DateTimeField('Дата выдачи работы', null=True, auto_now_add=True)
 
     def clean(self):
