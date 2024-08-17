@@ -695,6 +695,16 @@ def get_user_work(request):
             response['score'] = score
             response['max_score'] = max_score
         response['comment'] = work_user.comment
+        manas = Mana.objects.filter(work=work, user=student).values('color')
+        green = 0
+        blue = 0
+        for mana in manas:
+            if mana['color'] == 'green':
+                green += 1
+            if mana['color'] == 'blue':
+                blue += 1
+        response['green'] = green
+        response['blue'] = blue
         return HttpResponse(json.dumps(response, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(

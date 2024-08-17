@@ -290,6 +290,8 @@ get_user_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                                   example="2023-08-21 16:40:19.337147+03"),
                                                     'score': openapi.Schema(type=openapi.TYPE_INTEGER, example=85),
                                                     'max_score': openapi.Schema(type=openapi.TYPE_INTEGER, example=125),
+                                                    'green': openapi.Schema(type=openapi.TYPE_INTEGER, example=1),
+                                                    'blue': openapi.Schema(type=openapi.TYPE_INTEGER, example=2),
                                                 },
                                                 operation_description='Получение домашней работы(пользователь).')
 
