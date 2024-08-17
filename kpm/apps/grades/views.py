@@ -44,15 +44,11 @@ def insert_grades(request):
                 {'state': 'error', 'message': 'Не указан ID работы.', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=400)
         work = Work.objects.get(id=work_id)
-        if work.type == 5:
+        if work.type in [5, 6]:
             return HttpResponse(json.dumps(
                 {'state': 'error', 'message': 'Закрытая таблица.', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=400)
         user_id = request_body["user_id"]
-        if not user_id:
-            return HttpResponse(json.dumps(
-                {'state': 'error', 'message': 'Не указан ID пользователя.', 'details': {}, 'instance': request.path},
-                ensure_ascii=False), status=400)
         student = User.objects.get(id=user_id)
         work_tech = None
         if work.type in [7, 8]:
@@ -74,7 +70,8 @@ def insert_grades(request):
         work_is_empty = True
         for i in range(len(new_grades)):
             if ',' in new_grades[i]:
-                new_grades[i] = new_grades[i].replace(',', '.')
+                item_ = new_grades[i]
+                new_grades[i] = item_.replace(',', '.')
             if new_grades[i] == '-':
                 new_exercises -= 1
                 new_max_score -= work_grades[i]
@@ -140,17 +137,15 @@ def insert_grades(request):
         if grade.score != new_score:
             manas_delete = Mana.objects.filter(Q(user=student) & Q(work=work))
             manas_delete.delete()
-        if work.type == 6:
+        if work.type in [6, 10, 11]:
             count = 0
             for grade_ in new_grades:
                 if is_number_float(grade_):
                     if float(grade_) > 0:
                         count += 1
-            green, blue = mana_generation(int(work.type), work.is_homework, count, 0)
-        elif work.type == 2:
-            green, blue = mana_generation(int(work.type), True, new_score, new_max_score)
+            green, blue = mana_generation(work.type, count, None)
         else:
-            green, blue = mana_generation(int(work.type), work.is_homework, new_score, new_max_score)
+            green, blue = mana_generation(work.type, new_score, new_max_score)
         if grade.score != new_score:
             for i in range(0, green):
                 mana = Mana(user=student, work=work, color='green')
@@ -166,7 +161,7 @@ def insert_grades(request):
         grade.score = new_score
         grade.exercises = new_exercises
         grade.save()
-        if work.type in [0, 1, 4, 6, 7, 8]:
+        if work.type in [0, 1, 4, 6, 7, 8, 10, 11]:
             if work.is_homework:
                 if student.last_homework_id is None:
                     student.last_homework_id = work.id

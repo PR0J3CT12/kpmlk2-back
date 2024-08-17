@@ -21,9 +21,7 @@ def get_variable(variable_name, source_request):
         return None
 
 
-def mana_generation(type_, is_homework, score, max_score):
-    if not is_homework:
-        return 0, 0
+def mana_generation(type_, score, max_score):
     if type_ == 0:
         percentage = float(score) / float(max_score) * 100
         if 0 < percentage <= 25:
@@ -46,6 +44,8 @@ def mana_generation(type_, is_homework, score, max_score):
             mana = 2
         else:
             mana = 0
+    elif type_ in [10, 11]:
+        mana = score
     elif type_ == 7:
         mana = math.ceil(float(score) / float(max_score) * 4)
     elif type_ == 6:
@@ -55,35 +55,42 @@ def mana_generation(type_, is_homework, score, max_score):
             mana = score
     else:
         mana = 0
-    if mana == 4:
-        seed = random.randint(0, 1)
-        if seed:
-            green = 4
-            blue = 0
-        else:
-            green = 0
-            blue = 4
-    elif mana == 3:
-        green = random.randint(1, 2)
-        blue = mana - green
+
+    green = 0
+    blue = 0
+    if mana >= 4:
+        packs = mana // 4
+        mana = mana % 4
+        for pack in range(packs):
+            seed = random.randint(0, 1)
+            if seed:
+                green += 4
+            else:
+                blue += 4
+    if mana == 3:
+        green_tmp = random.randint(1, 2)
+        blue_tmp = mana - green_tmp
+        green += green_tmp
+        blue += blue_tmp
     elif mana == 2:
         if type_ == 2:
             seed = random.randint(0, 1)
             if seed:
-                green = 2
-                blue = 0
+                green += 2
             else:
-                green = 0
-                blue = 2
+                blue += 2
         else:
-            green = random.randint(0, 2)
-            blue = mana - green
+            green_tmp = random.randint(0, 2)
+            blue_tmp = mana - green_tmp
+            green += green_tmp
+            blue += blue_tmp
     elif mana == 1:
-        green = random.randint(0, 1)
-        blue = mana - green
+        green_tmp = random.randint(0, 1)
+        blue_tmp = mana - green_tmp
+        green += green_tmp
+        blue += blue_tmp
     else:
-        green = 0
-        blue = 0
+        pass
     return green, blue
 
 

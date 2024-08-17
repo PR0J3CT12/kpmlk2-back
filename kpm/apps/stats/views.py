@@ -1,32 +1,28 @@
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from kpm.apps.users.models import User
 from kpm.apps.users.permissions import *
 from kpm.apps.users.functions import is_trusted
 from kpm.apps.stats.functions import *
+from kpm.apps.stats.docs import *
 from kpm.apps.ratings.functions import count_lvl
 from kpm.apps.works.models import Work
 from kpm.apps.grades.models import Grade, Mana
-from kpm.apps.themes.models import Theme
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 import json
 from django.db.models import Sum, Q, Count, F, Avg, ExpressionWrapper, FloatField
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.users.docs import *
-from django.utils import timezone
-from datetime import datetime, timedelta
 from django.conf import settings
 from kpm.apps.users.docs import permissions_operation_description
-
 
 LOGGER = settings.LOGGER
 
 
-#@swagger_auto_schema(method='GET', operation_summary="Получить персональную статистику ученика.",
-#                     manual_parameters=[id_param],
-#                     responses=get_stats_responses,
-#                      operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
+@swagger_auto_schema(method='GET', operation_summary="Получить персональную статистику ученика.",
+                     manual_parameters=[id_param],
+                     responses=get_stats_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsEnabled])
 def get_stats(request):
@@ -91,16 +87,16 @@ def get_stats(request):
             else:
                 last_classwork_perc = 0
 
-        homeworks = Grade.objects.filter(user=student, work__type__in=[0, 5, 6])
+        homeworks = Grade.objects.filter(user=student, work__type__in=[0, 5, 6]).values('score', 'max_score')
         if not homeworks:
             homeworks_perc = None
         else:
             total = 0
             total_perc = 0
             for homework in homeworks:
-                if homework.max_score <= 0:
+                if homework['max_score'] <= 0:
                     continue
-                homework_perc = round(homework.score / homework.max_score * 100)
+                homework_perc = round(homework['score'] / homework['max_score'] * 100)
                 total_perc += homework_perc
                 total += 1
             if total > 0:
@@ -108,16 +104,16 @@ def get_stats(request):
             else:
                 homeworks_perc = None
 
-        classworks = Grade.objects.filter(work__is_homework=False, user=student)
+        classworks = Grade.objects.filter(work__is_homework=False, user=student).values('score', 'max_score')
         if not classworks:
             classworks_perc = None
         else:
             total = 0
             total_perc = 0
             for classwork in classworks:
-                if classwork.max_score <= 0:
+                if classwork['max_score'] <= 0:
                     continue
-                classwork_perc = round(classwork.score / classwork.max_score * 100)
+                classwork_perc = round(classwork['score'] / classwork['max_score'] * 100)
                 total_perc += classwork_perc
                 total += 1
             if total > 0:
@@ -147,8 +143,9 @@ def get_stats(request):
         }, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
+            json.dumps(
+                {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
@@ -156,10 +153,10 @@ def get_stats(request):
             ensure_ascii=False), status=404)
 
 
-#@swagger_auto_schema(method='GET', operation_summary="Получить персональную статистику ученика.",
-#                     manual_parameters=[id_param],
-#                     responses=get_stats_responses,
-#                      operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
+@swagger_auto_schema(method='GET', operation_summary="Получить персональную статистику ученика.",
+                     manual_parameters=[id_param, theme_param, type_param],
+                     responses=get_graph_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsEnabled])
 def get_graph(request):
@@ -170,101 +167,151 @@ def get_graph(request):
                 json.dumps(
                     {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=403)
+        student = User.objects.get(id=id_, is_admin=False)
+        school_class = student.school_class
         theme_id = get_variable('theme', request)
-        if theme_id in [None, '']:
+        filter_ = None
+        if theme_id not in [None, '', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
             return HttpResponse(
                 json.dumps(
-                    {'state': 'error', 'message': f'Не указана тема.', 'details': {}, 'instance': request.path},
-                    ensure_ascii=False), status=403)
-        student = User.objects.get(id=id_, is_admin=False)
-        if theme_id == '1':
-            grades = Grade.objects.filter(work__theme__id=theme_id, max_score__gt=0)
-        elif theme_id == '8':
-            grades = Grade.objects.filter(work__theme__id=theme_id, max_score__gt=0, work__type=7)
-        elif theme_id == '9':
-            grades = Grade.objects.filter(work__theme__id=theme_id, max_score__gt=0, work__type=6)
+                    {'state': 'error', 'message': f'Неправильно указана тема.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=400)
+        if theme_id not in [None, '']:
+            filter_ = 'theme'
+        type_id = get_variable('type', request)
+        if type_id not in [None, '', '0', '1', '2', '3', '4', '5', '6', '7', '8', '10', '11']:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Неправильно указан тип работы.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=400)
+        if type_id not in [None, '']:
+            filter_ = 'type'
+        if filter_ is None:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Необходимо указать хотя бы один фильтр.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=400)
+        if filter_ == 'theme':
+            if school_class != 4:
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Фильтрация по теме закрыта для пользователя.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=400)
+            if theme_id == '1':
+                grades = Grade.objects.filter(work__theme__id=theme_id, max_score__gt=0, work__school_class=school_class)
+            elif theme_id == '8':
+                grades = Grade.objects.filter(work__theme__id=theme_id, max_score__gt=0, work__type=7, work__school_class=school_class)
+            elif theme_id == '9':
+                grades = Grade.objects.filter(work__theme__id=theme_id, max_score__gt=0, work__type=6, work__school_class=school_class)
+            else:
+                grades = Grade.objects.filter(work__is_homework=True, work__theme__id=theme_id, max_score__gt=0, work__school_class=school_class)
+            if theme_id in ['1', '8']:
+                current = grades.filter(user=student).values('work_id').annotate(avg=Avg('score'))
+                others = grades.exclude(user=student).values('work_id').annotate(avg=Avg('score'))
+            elif theme_id == '9':
+                current = grades.filter(user=student).values('grades', 'work_id')
+                current_list = []
+                for current_grade in current:
+                    grades_ = current_grade['grades']
+                    count = 0
+                    for grade in grades_:
+                        if is_number_float(grade):
+                            if float(grade) > 0:
+                                count += 1
+                    current_list.append({
+                        'work_id': current_grade['work_id'],
+                        'avg': count
+                    })
+                current = current_list
+                others = grades.exclude(user=student).values('grades', 'work_id')
+                others_list = []
+                others_dict = {}
+                for others_grades in others:
+                    if others_grades['work_id'] not in others_dict.keys():
+                        others_dict[others_grades['work_id']] = []
+                    grades_ = others_grades['grades']
+                    count = 0
+                    for grade in grades_:
+                        if is_number_float(grade):
+                            if float(grade) > 0:
+                                count += 1
+                    others_dict[others_grades['work_id']].append(count)
+                for work_ in others_dict:
+                    others_list.append({
+                        'work_id': work_,
+                        'avg': sum(others_dict[work_]) / len(others_dict[work_])
+                    })
+                others = others_list
+            else:
+                current = grades.filter(user=student).annotate(
+                    percentage=ExpressionWrapper(F('score') * 100 / F('max_score'), output_field=FloatField())).values(
+                    'work_id').annotate(avg=Avg('percentage'))
+                others = grades.exclude(user=student).annotate(
+                    percentage=ExpressionWrapper(F('score') * 100 / F('max_score'), output_field=FloatField())).values(
+                    'work_id').annotate(avg=Avg('percentage'))
+            current_grades = {}
+            for work in current:
+                current_grades[work['work_id']] = {'current': round(work['avg'], 1), 'others': 0}
+            for work in others:
+                if work['work_id'] in current_grades:
+                    current_grades[work['work_id']]['others'] = round(work['avg'], 1)
+            graph_list = []
+            for work in current_grades:
+                graph_list.append(current_grades[work])
+            if theme_id not in GRAPH_CONFIG_THEMES:
+                config = GRAPH_CONFIG_THEMES['default']
+            else:
+                config = GRAPH_CONFIG_THEMES[theme_id]
+            return HttpResponse(json.dumps({
+                'works': graph_list,
+                'config': config
+            }, ensure_ascii=False), status=200)
         else:
-            grades = Grade.objects.filter(work__is_homework=True, work__theme__id=theme_id, max_score__gt=0)
-        if theme_id in ['1', '8']:
-            current = grades.filter(user=student).values('work_id').annotate(avg=Avg('score'))
-            others = grades.exclude(user=student).values('work_id').annotate(avg=Avg('score'))
-        elif theme_id == '9':
-            current = grades.filter(user=student)
-            current_list = []
-            for current_grade in current:
-                grades_ = current_grade.grades.split('_._')
-                count = 0
-                for grade in grades_:
-                    if is_number_float(grade):
-                        if float(grade) > 0:
-                            count += 1
-                current_list.append({
-                    'work_id': current_grade.work_id,
-                    'avg': count
-                })
-            current = current_list
-            others = grades.exclude(user=student)
-            others_list = []
-            others_dict = {}
-            for others_grades in others:
-                if others_grades.work_id not in others_dict.keys():
-                    others_dict[others_grades.work_id] = []
-                grades_ = others_grades.grades.split('_._')
-                count = 0
-                for grade in grades_:
-                    if is_number_float(grade):
-                        if float(grade) > 0:
-                            count += 1
-                others_dict[others_grades.work_id].append(count)
-            for work_ in others_dict:
-                others_list.append({
-                    'work_id': work_,
-                    'avg': sum(others_dict[work_])/len(others_dict[work_])
-                })
-            others = others_list
-        else:
-            current = grades.filter(user=student).annotate(percentage=ExpressionWrapper(F('score') * 100 / F('max_score'), output_field=FloatField())).values('work_id').annotate(avg=Avg('percentage'))
-            others = grades.exclude(user=student).annotate(percentage=ExpressionWrapper(F('score') * 100 / F('max_score'), output_field=FloatField())).values('work_id').annotate(avg=Avg('percentage'))
-        current_grades = {}
-        for work in current:
-            current_grades[work['work_id']] = {'current': round(work['avg'], 1), 'others': 0}
-        for work in others:
-            if work['work_id'] in current_grades:
-                current_grades[work['work_id']]['others'] = round(work['avg'], 1)
-        graph_list = []
-        for work in current_grades:
-            graph_list.append(current_grades[work])
-        config = {'min': 0, 'max': 100}
-        if theme_id == '1':
-            config = {
-                'bad': 0.9,
-                'normal': 2.4,
-                'good': 3,
-                'min': 0,
-                'max': 3
-            }
-        if theme_id == '8':
-            config = {
-                'border': 9,
-                'min': 0,
-                'max': 18
-            }
-        if theme_id == '9':
-            config = {
-                'bad': 2.5,
-                'normal': 3.5,
-                'good': 6,
-                'min': 0,
-                'max': 6
-            }
-        return HttpResponse(json.dumps({
-            'works': graph_list,
-            'config': config
-        }, ensure_ascii=False), status=200)
+            if school_class == 4:
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Фильтрация по типу закрыта для пользователя.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=400)
+            if type_id in ['0', '1', '10', '11']:
+                grades = Grade.objects.filter(work__type=type_id, max_score__gt=0, work__school_class=school_class)
+                current = grades.filter(user=student).annotate(
+                    percentage=ExpressionWrapper(F('score') * 100 / F('max_score'), output_field=FloatField())).values(
+                    'work_id').annotate(avg=Avg('percentage'))
+                others = grades.exclude(user=student).annotate(
+                    percentage=ExpressionWrapper(F('score') * 100 / F('max_score'), output_field=FloatField())).values(
+                    'work_id').annotate(avg=Avg('percentage'))
+                current_grades = {}
+                for work in current:
+                    current_grades[work['work_id']] = {'current': round(work['avg'], 1), 'others': 0}
+                for work in others:
+                    if work['work_id'] in current_grades:
+                        current_grades[work['work_id']]['others'] = round(work['avg'], 1)
+                graph_list = []
+                for work in current_grades:
+                    graph_list.append(current_grades[work])
+                if type_id not in GRAPH_CONFIG_TYPES:
+                    config = GRAPH_CONFIG_TYPES['default']
+                else:
+                    config = GRAPH_CONFIG_TYPES[type_id]
+                return HttpResponse(json.dumps({
+                    'works': graph_list,
+                    'config': config
+                }, ensure_ascii=False), status=200)
+            else:
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Для данного типа нет графиков.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=400)
     except ObjectDoesNotExist as e:
         return HttpResponse(
-            json.dumps({'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
-                       ensure_ascii=False), status=404)
+            json.dumps(
+                {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},

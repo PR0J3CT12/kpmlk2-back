@@ -23,3 +23,37 @@ def is_number_float(value):
         return True
     except ValueError:
         return False
+
+
+GRAPH_CONFIG_THEMES = {
+    'default': {
+        'min': 0,
+        'max': 100
+    },
+    '1': {
+        'bad': 0.9,
+        'normal': 2.4,
+        'good': 3,
+        'min': 0,
+        'max': 3
+    },
+    '8': {
+        'border': 9,
+        'min': 0,
+        'max': 18
+    },
+    '9': {
+        'bad': 2.5,
+        'normal': 3.5,
+        'good': 6,
+        'min': 0,
+        'max': 6
+    }
+}
+
+GRAPH_CONFIG_TYPES = {
+    'default': {
+        'min': 0,
+        'max': 100
+    }
+}
