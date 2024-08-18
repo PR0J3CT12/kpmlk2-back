@@ -130,18 +130,38 @@ def get_users(request):
                             {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
                              'instance': request.path},
                             ensure_ascii=False), status=404)
+            type_ = get_variable("type", request)
+            if type_ not in [None, '', '0', '1', '2', '3']:
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Неверно указан тип группы ученика.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=404)
+            type_ = type_ if class_ != '4' else '-1'
             query = Q(is_admin=0) & Q(school_class=int(class_))
         students = User.objects.filter(query).order_by('name')
         if not students:
             return HttpResponse(
                 json.dumps({'students': []}, ensure_ascii=False), status=200)
         students_groups = GroupUser.objects.filter(user__in=students).select_related('group').values(
-            'user_id', 'group_id', 'group__name', 'group__marker'
+            'user_id', 'group_id', 'group__name', 'group__marker', 'group__type'
         )
         students = students.values(
-            'id', 'default_password', 'name', 'login', 'experience', 'mana_earned', 'last_homework_id', 'last_classwork_id', 'is_disabled')
+            'id', 'default_password', 'name', 'login', 'experience', 'mana_earned', 'last_homework_id', 'last_classwork_id', 'is_disabled', 'school_class')
         students_groups_dict = {}
+        students_types = {
+            '-1': [],
+            '0': [],
+            '1': [],
+            '2': [],
+            '3': [],
+        }
         for student in students_groups:
+            group__type = '-1' if student['group__type'] is None else str(student['group__type'])
+            if student['user_id'] not in students_types[group__type]:
+                students_types[group__type].append(student['user_id'])
+            if student['group__type'] not in students_types:
+                students_types[student['group__type']] = []
             if student['user_id'] not in students_groups_dict:
                 students_groups_dict[student['user_id']] = [{
                     "group_id": student['group_id'],
@@ -156,6 +176,9 @@ def get_users(request):
                 })
         students_list = []
         for student in students:
+            if student['school_class'] not in [4, None]:
+                if student['id'] not in students_types[type_]:
+                    continue
             if not student['default_password']:
                 default_password = ""
             else:
