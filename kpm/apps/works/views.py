@@ -567,6 +567,22 @@ def add_to_work(request):
                     ensure_ascii=False), status=404)
         work = Work.objects.get(id=id_)
         student = User.objects.get(id=student_id)
+        student_types = GroupUser.objects.filter(user=student).values_list('group__type', flat=True)
+        student_types = set(student_types)
+        if work.type == 10:
+            if 0 not in student_types:
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Несоответствие типа группы ученика и типа работы.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=400)
+        if work.type == 11:
+            if (1 not in student_types) or (2 not in student_types) or (3 not in student_types):
+                return HttpResponse(
+                    json.dumps(
+                        {'state': 'error', 'message': f'Несоответствие типа группы ученика и типа работы.', 'details': {},
+                         'instance': request.path},
+                        ensure_ascii=False), status=400)
         if student.school_class != work.school_class:
             return HttpResponse(
                 json.dumps(
