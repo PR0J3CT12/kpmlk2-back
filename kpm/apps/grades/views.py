@@ -504,7 +504,7 @@ def get_mana_stats(request):
             if mana['color'] == 'blue':
                 blue += 1
         result = {
-            'works': works_dict.values(),
+            'works': list(works_dict.values()),
             'green': green,
             'blue': blue
         }

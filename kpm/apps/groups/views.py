@@ -127,7 +127,8 @@ def create_group(request):
                     {'state': 'error', 'message': f'Неверно указан тип группы.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        group = Group(name=request_body['name'], school_class=request_body['class'], marker=request_body['marker'], type=request_body['type'])
+        type_ = None if request_body["class"] == 4 else request_body["type"]
+        group = Group(name=request_body['name'], school_class=request_body['class'], marker=request_body['marker'], type=type_)
         group.save()
         if "students" in request_body:
             for student in request_body["students"]:
