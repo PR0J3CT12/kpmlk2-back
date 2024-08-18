@@ -105,7 +105,7 @@ def get_user(request):
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение пользователей.",
-                     manual_parameters=[class_param, is_admin_param],
+                     manual_parameters=[class_param, is_admin_param, type_param],
                      responses=get_users_responses,
                      operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
 @api_view(["GET"])

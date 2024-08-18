@@ -8,6 +8,8 @@ user_param = openapi.Parameter("student", in_=openapi.IN_QUERY, type=openapi.TYP
                                operation_description='ID ученика.', example=1)
 class_param = openapi.Parameter("class", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
                                 operation_description='Класс учеников.', example=4)
+type_param = openapi.Parameter("type", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
+                               operation_description='Тип группы учеников.', example=1)
 login_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                     required=['login', 'password'],
                                     properties={
