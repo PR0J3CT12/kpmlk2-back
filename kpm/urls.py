@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/work/', include('works.urls')),
     path('api/classwork/', include('works.urls_classworks')),
     path('api/homework/', include('works.urls_homeworks')),
+    path('api/individual-work/', include('works.urls_individual_works')),
     path('api/message/', include('messages.urls')),
     path('api/stat/', include('stats.urls')),
     path('api/rating/', include('ratings.urls')),
