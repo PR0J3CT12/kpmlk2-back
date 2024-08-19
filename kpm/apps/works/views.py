@@ -172,6 +172,18 @@ def create_work(request):
                            ensure_ascii=False), status=400)
         type_ = data["type"]
         school_class = data["class"]
+        if school_class not in ['4', '5', '6', '7']:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=404)
+        if type_ not in ['0', '1', '2', '3', '4', '5', '6', '9', '10', '11']:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Неверно указан тип работы.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=404)
         if not validate_work_type_for_class(type_, school_class):
             return HttpResponse(
                 json.dumps(
@@ -179,24 +191,12 @@ def create_work(request):
                      'instance': request.path},
                     ensure_ascii=False), status=404)
         name = data["name"]
-        if type_ not in ['0', '1', '2', '3', '4', '5', '6', '9', '10', '11']:
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Неверно указан тип работы.', 'details': {},
-                     'instance': request.path},
-                    ensure_ascii=False), status=404)
-        if school_class not in ['4', '5', '6', '7']:
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
-                     'instance': request.path},
-                    ensure_ascii=False), status=404)
-        if type_ == 2:
+        if type_ == '2':
             grades = ["1", "1", "1"]
             max_score = 3
-        elif type_ in [10, 11]:
-            grades = ["1"] * data["exercises"]
-            max_score = data["exercises"]
+        elif type_ in ['10', '11']:
+            grades = ["1"] * int(data["exercises"])
+            max_score = int(data["exercises"])
         else:
             grades = data.getlist("grades")
             max_score = 0
@@ -216,7 +216,14 @@ def create_work(request):
                 cast = float(grade)
                 max_score += cast
 
-        theme_id = data["theme_id"]
+        if school_class == '4':
+            theme_id = '1' if type_ == '2' else data["theme_id"]
+        elif school_class == '5':
+            theme_id = "10"
+        elif school_class == '6':
+            theme_id = "11"
+        elif school_class == '7':
+            theme_id = "12"
         theme = Theme.objects.get(id=theme_id)
         if type_ in ['0', '5', '6', '7']:
             is_homework = True
@@ -232,7 +239,7 @@ def create_work(request):
             work_2007 = None
             link = None
         else:
-            if type_ == 5:
+            if type_ == '5':
                 type_2007 = 7
             else:
                 type_2007 = 8

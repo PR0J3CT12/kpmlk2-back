@@ -385,6 +385,7 @@ def get_grades(request):
                         'percentage_full_score': 0,
                         'groups': groups_dict[student['id']]
                     }
+            students_data = list(students_data.values())
         return HttpResponse(json.dumps({"works": works_data, "students": students_data}, ensure_ascii=False), status=200)
     except KeyError as e:
         return HttpResponse(
