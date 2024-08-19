@@ -58,7 +58,7 @@ class Work(models.Model):
     updated_at = models.DateTimeField('Дата обновления работы', auto_now_add=True)
 
     def clean(self):
-        if self.work.school_class != self.theme.school_class:
+        if self.school_class != self.theme.school_class:
             raise ValidationError(f"Работа {self.work.id} не соответствует классу темы '{self.theme.id}'.")
         super().clean()
 
