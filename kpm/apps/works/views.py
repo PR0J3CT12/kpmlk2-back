@@ -337,7 +337,7 @@ def create_work(request):
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Тема не существует.', 'details': {}, 'instance': request.path},
                        ensure_ascii=False), status=404)
-    except ZeroDivisionError as e:
+    except Exception as e:
         return HttpResponse(json.dumps(
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
              'instance': request.path},
