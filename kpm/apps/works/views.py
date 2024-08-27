@@ -415,7 +415,7 @@ def update_work(request):
                                 {'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
                                  'instance': request.path},
                                 ensure_ascii=False), status=404)
-                    ext = file.name.split('.')[1]
+                    ext = file.name.split('.')[-1]
                     work_file = WorkFile(work=work, file=file, ext=ext)
                     work_file.save()
             work.save()
