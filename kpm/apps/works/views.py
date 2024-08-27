@@ -930,9 +930,9 @@ def check_user_homework(request):
                 if is_number_float(grade_):
                     if float(grade_) > 0:
                         count += 1
-            green, blue = mana_generation(int(work.type), work.is_homework, count, 0)
+            green, blue = mana_generation(int(work.type), count, 0)
         else:
-            green, blue = mana_generation(int(work.type), work.is_homework, score, max_score)
+            green, blue = mana_generation(int(work.type), score, max_score)
         if score != old_score:
             for i in range(0, green):
                 mana = Mana(user=student, work=work, color='green')
