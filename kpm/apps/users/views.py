@@ -177,8 +177,9 @@ def get_users(request):
         students_list = []
         for student in students:
             if student['school_class'] not in [4, None]:
-                if student['id'] not in students_types[type_]:
-                    continue
+                if type_ not in ['-1', None, '']:
+                    if student['id'] not in students_types[type_]:
+                        continue
             if not student['default_password']:
                 default_password = ""
             else:
