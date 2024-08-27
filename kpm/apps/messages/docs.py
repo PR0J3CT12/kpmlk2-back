@@ -13,6 +13,17 @@ send_message_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                "text": openapi.Schema(type=openapi.TYPE_STRING,
                                                                       example='Текст сообщения'),
                                            })
+support_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                      required=['text'],
+                                      properties={
+                                          "text": openapi.Schema(type=openapi.TYPE_STRING,
+                                                                 example='Текст сообщения'),
+                                          'files': openapi.Schema(
+                                              type=openapi.TYPE_ARRAY,
+                                              items=openapi.Schema(
+                                                  type=openapi.TYPE_STRING)
+                                          ),
+                                      })
 get_message_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                           properties={
                                               "id": openapi.Schema(type=openapi.TYPE_INTEGER, example=1),
@@ -129,11 +140,13 @@ get_sent_messages_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                 })
 
 read_message_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
-read_message_responses = {200: read_message_response_200}
 send_message_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
+support_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
+delete_message_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
+read_message_responses = {200: read_message_response_200}
 send_message_responses = {200: send_message_response_200}
 get_message_responses = {200: get_message_response_200}
 get_messages_responses = {200: get_messages_response_200}
 get_sent_messages_responses = {200: get_sent_messages_response_200}
-delete_message_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_message_responses = {200: delete_message_response_200}
+support_responses = {200: support_response_200}

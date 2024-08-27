@@ -262,3 +262,6 @@ file_handler = logging.FileHandler(LOGFILE)
 formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
 file_handler.setFormatter(formatter)
 LOGGER.addHandler(file_handler)
+
+TG_SUPPORT_CHAT = os.environ.get("TG_SUPPORT_CHAT")
+TG_BOT_TOKEN = os.environ.get("TG_BOT_TOKEN")

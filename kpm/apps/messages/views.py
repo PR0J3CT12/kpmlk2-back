@@ -1,3 +1,5 @@
+import datetime
+
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -15,9 +17,12 @@ from django.utils import timezone
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import F
 from kpm.apps.users.docs import permissions_operation_description
+import requests
 
 
 LOGGER = settings.LOGGER
+CHAT_ID = settings.TG_SUPPORT_CHAT
+BOT_TOKEN = settings.TG_BOT_TOKEN
 
 
 @swagger_auto_schema(method='POST', operation_summary="Отправить сообщение.",
@@ -304,6 +309,78 @@ def delete_message(request):
         return HttpResponse(
             json.dumps(
                 {'state': 'error', 'message': f'Сообщение не существует.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='POST', operation_summary="Отправить сообщение в поддержку.",
+                     request_body=support_request_body,
+                     responses=support_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, IsEnabled])
+def support(request):
+    try:
+        if request.POST or request.FILES:
+            data = request.POST
+            files = request.FILES
+        else:
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=400)
+        sender = User.objects.get(id=request.user.id)
+        text = data['text']
+        files = files.getlist('files')
+        for file in files:
+            if 'image' in str(file.content_type):
+                pass
+            elif file.content_type in ['application/pdf']:
+                pass
+            else:
+                return HttpResponse(
+                    json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
+                                'instance': request.path},
+                               ensure_ascii=False), status=400)
+        msg = f'*Имя пользователя*: {sender.name}\n' \
+              f'*Логин пользователя*: {sender.login}\n' \
+              f'*Сообщение*: {text}\n' \
+              f'*Дата и время*: {datetime.datetime.now().strftime("%H:%M %d.%m.%Y")}\n'
+        res = requests.post(
+            url=f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage?parse_mode=Markdown&disable_web_page_preview=True',
+            data={'chat_id': CHAT_ID, 'text': msg}
+        ).json()
+        if res['ok']:
+            for file in files:
+                if 'image' in str(file.content_type):
+                    res_f = requests.post(
+                        url=f'https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto?chat_id={CHAT_ID}&parse_mode=Markdown&disable_web_page_preview=True',
+                        files={'photo': file}
+                    )
+                elif file.content_type in ['application/pdf']:
+                    res_f = requests.post(
+                        url=f'https://api.telegram.org/bot{BOT_TOKEN}/sendDocument?chat_id={CHAT_ID}&parse_mode=Markdown&disable_web_page_preview=True',
+                        files={'document': file}
+                    )
+            return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+        else:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Не удалось отправить сообщение.',
+                     'details': {},
+                     'instance': request.path}, ensure_ascii=False), status=400)
+    except KeyError as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps(
+                {'state': 'error', 'message': f'Пользователь не существует.', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(
