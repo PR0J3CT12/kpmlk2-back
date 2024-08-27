@@ -134,7 +134,7 @@ def get_message(request):
         files_list = []
         for file in files:
             link = f"{host}/{file['file']}"
-            name = file['file'].split('/')[1]
+            name = file['file'].split('/')[-1]
             ext = file['ext']
             files_list.append({'link': link, 'name': name, 'ext': ext})
         return HttpResponse(json.dumps({
@@ -204,7 +204,7 @@ def get_messages(request):
         for file in msg_files:
             messages_dict[file['message_group_id']]['files'].append({
                 'link': f'{host}/{file["file"]}',
-                'name': file['file'].split('/')[1],
+                'name': file['file'].split('/')[-1],
                 'ext': file['ext'],
             })
         return HttpResponse(json.dumps({'messages': list(messages_dict.values())}, ensure_ascii=False), status=200)
@@ -265,7 +265,7 @@ def get_sent_messages(request):
         files_dict = {}
         for file in files:
             link = f"{host}/{file['file']}"
-            name = file['file'].split('/')[1]
+            name = file['file'].split('/')[-1]
             ext = file['ext']
             if file['message_group_id'] not in files_dict:
                 files_dict[file['message_group_id']] = []

@@ -111,7 +111,7 @@ def get_work(request):
             files_list = []
             for file in files:
                 link = file.file.name
-                name = link.split('/')[1]
+                name = link.split('/')[-1]
                 ext = name.split('.')[-1]
                 files_list.append({'id': file.id, 'link': f'{host}/{link}', 'name': name, 'ext': ext})
             work_users = WorkUser.objects.filter(work=work).select_related('user').values('user__id', 'user__name')
@@ -686,7 +686,7 @@ def get_user_work(request):
         host = settings.MEDIA_HOST_PATH
         for file in files:
             link = file.file.name
-            name = link.split('/')[1]
+            name = link.split('/')[-1]
             ext = name.split('.')[-1]
             files_list.append({'link': f'{host}/{link}', 'name': name, 'ext': ext})
         response = {
@@ -709,7 +709,7 @@ def get_user_work(request):
             user_files_list = []
             for file in user_files:
                 link = file.file.name
-                name = link.split('/')[1]
+                name = link.split('/')[-1]
                 user_files_list.append({'link': f'{host}/{link}', 'name': name, 'ext': file.ext})
             response['user_files'] = user_files_list
             response['answered_at'] = str(work_user.answered_at)
@@ -1087,7 +1087,7 @@ def get_my_classworks(request):
         host = settings.MEDIA_HOST_PATH
         for file in files:
             link = file['file']
-            name = link.split('/')[1]
+            name = link.split('/')[-1]
             ext = file['ext']
             if file['work_id'] not in classworks_list:
                 classworks_list[file['work_id']] = {
@@ -1219,7 +1219,7 @@ def get_classwork_files(request):
         group_files = GroupWorkFile.objects.filter(work=work).values('id', 'file', 'ext', 'group_id')
         files_dict = defaultdict(list)
         for file in group_files:
-            name = file['file'].split('/')[1]
+            name = file['file'].split('/')[-1]
             link = f"{host}/{file['file']}"
             ext = file['ext']
             files_dict[file['group_id']].append({
@@ -1588,7 +1588,7 @@ def get_all_answers(request):
                 if wu['id'] in files_dict:
                     files = files_dict[wu['id']]
                     for file in files:
-                        name = file['file'].split('/')[1]
+                        name = file['file'].split('/')[-1]
                         link = f"{host}/{file['file']}"
                         ext = file['ext']
                         student_data['files'].append({'link': link, 'name': name, 'ext': ext})
