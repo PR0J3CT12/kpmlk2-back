@@ -1270,6 +1270,8 @@ def set_homework_date(request):
         group_id = request_body['group']
         work_id = request_body['work']
         date = request_body['date']
+        if date is None:
+            date = str(datetime.today())
         if date:
             date = datetime.strptime(date, '%d.%m.%Y')
         group = Group.objects.get(id=group_id)
