@@ -306,7 +306,7 @@ def create_work(request):
             work.full_clean()
             work.save()
             for file in files:
-                ext = file.name.split('.')[1]
+                ext = file.name.split('.')[-1]
                 work_file = WorkFile(work=work, file=file, ext=ext)
                 work_file.save()
             if work_2007 and link:
@@ -799,7 +799,7 @@ def create_response(request):
         work_user.answers = answers
         work_user.answered_at = timezone.now()
         for file in files:
-            ext = file.name.split('.')[1]
+            ext = file.name.split('.')[-1]
             to_jpeg = False
             if ext == 'heic':
                 ext = 'jpeg'
@@ -1151,7 +1151,7 @@ def apply_files_to_classwork(request):
                     json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
                                 'instance': request.path},
                                ensure_ascii=False), status=404)
-            ext = file.name.split('.')[1]
+            ext = file.name.split('.')[-1]
             GroupWorkFile.objects.create(group=group, work=work, file=file, ext=ext)
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
