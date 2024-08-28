@@ -58,7 +58,7 @@ class GroupUser(models.Model):
 class GroupWorkDate(models.Model):
     id = models.AutoField('id тройки группа - дата - работа', primary_key=True, editable=False)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
-    work = models.OneToOneField(Work, on_delete=models.CASCADE)
+    work = models.ForeignKey(Work, on_delete=models.CASCADE)
     date = models.DateField('Дата выполнения работы', null=True, blank=True, default=None)
     is_given = models.BooleanField('Отработала ли таска', default=False)
 
@@ -72,7 +72,7 @@ class GroupWorkDate(models.Model):
         super().save(*args, **kwargs)
 
     class Meta:
-        unique_together = ('group', 'work')
+        unique_together = ('group', 'work',)
         db_table = 'groups_works_dates'
 
 
