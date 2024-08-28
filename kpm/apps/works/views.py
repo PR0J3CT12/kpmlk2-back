@@ -8,7 +8,7 @@ from kpm.apps.works.models import *
 from kpm.apps.themes.models import Theme
 from kpm.apps.grades.models import Grade, Mana
 import json
-from django.db.models import Sum, Q, Count, Prefetch, F, Value, OuterRef, Subquery
+from django.db.models import Sum, Case, When, IntegerField, Count, Q
 from kpm.apps.users.permissions import *
 from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.works.docs import *
@@ -776,6 +776,11 @@ def create_response(request):
                 json.dumps(
                     {'state': 'error', 'message': f'Работа закрыта.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=403)
+        if work_user.status not in [0, 3, 4]:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Работа не нуждается в сдачи.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=403)
         answers = data.getlist("answers")
         fields = len(answers)
         if fields != work.exercises:
@@ -814,6 +819,10 @@ def create_response(request):
                     homework_file.file = new_name
                     homework_file.save()
                     os.remove(path)
+        if work_user.status in [0, 3]:
+            work_user.status = 1
+        else:
+            work_user.status = 5
         work_user.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
@@ -863,6 +872,11 @@ def check_user_homework(request):
                     {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=403)
         work_user = work_user[0]
+        if work_user.status not in [1, 5]:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Работа не нуждается в проверке.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=403)
         grade_row = Grade.objects.get(user=student, work=work)
         work_grades = list(map(float, work.grades))
         new_grades = grade_row.grades
@@ -920,26 +934,58 @@ def check_user_homework(request):
         if 'comment' in request_body.keys():
             comment = request_body['comment']
             work_user.comment = comment
-        work_user.save()
-        if score != old_score:
-            manas_delete = Mana.objects.filter(Q(user=student) & Q(work=work))
-            manas_delete.delete()
-        if work.type == 6:
-            count = 0
-            for grade_ in new_grades:
-                if is_number_float(grade_):
-                    if float(grade_) > 0:
-                        count += 1
-            green, blue = mana_generation(int(work.type), count, 0)
+        if work_user.status == 1:
+            work_user.status = 2
         else:
-            green, blue = mana_generation(int(work.type), score, max_score)
-        if score != old_score:
-            for i in range(0, green):
-                mana = Mana(user=student, work=work, color='green')
-                mana.save()
-            for i in range(0, blue):
-                mana = Mana(user=student, work=work, color='blue')
-                mana.save()
+            work_user.status = 6
+        work_user.save()
+        if work_user.status == 2:
+            if score != old_score:
+                manas_delete = Mana.objects.filter(Q(user=student) & Q(work=work))
+                manas_delete.delete()
+            if work.type == 6:
+                count = 0
+                for grade_ in new_grades:
+                    if is_number_float(grade_):
+                        if float(grade_) > 0:
+                            count += 1
+                green, blue = mana_generation(int(work.type), count, 0)
+            else:
+                green, blue = mana_generation(int(work.type), score, max_score)
+            if score != old_score:
+                for i in range(0, green):
+                    mana = Mana(user=student, work=work, color='green')
+                    mana.save()
+                for i in range(0, blue):
+                    mana = Mana(user=student, work=work, color='blue')
+                    mana.save()
+            aggregated_data = Grade.objects.filter(
+                user=student,
+                work__type__in=[0, 5, 6]
+            ).aggregate(
+                total_experience=Sum('score'),
+                exam_experience=Sum(
+                    Case(
+                        When(work__type=5, then='score'),
+                        default=0,
+                        output_field=IntegerField(),
+                    )
+                ),
+                oral_exam_experience=Sum(
+                    Case(
+                        When(work__type=6, then='score'),
+                        default=0,
+                        output_field=IntegerField(),
+                    )
+                )
+            )
+            experience = aggregated_data['total_experience'] if aggregated_data else 0
+            exam_experience = aggregated_data['exam_experience'] if aggregated_data else 0
+            oral_exam_experience = aggregated_data['oral_exam_experience'] if aggregated_data else 0
+            student.experience = experience
+            student.exam_experience = exam_experience
+            student.oral_exam_experience = oral_exam_experience
+            student.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
@@ -993,9 +1039,15 @@ def return_user_homework(request):
                     {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=403)
         work_user = work_user[0]
+        if work_user.status != 1:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Работа не ожидает проверки.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=403)
         comment = request_body["comment"]
         work_user.checker = admin
         work_user.is_done = False
+        work_user.status = 3
         work_user.comment = comment
         work_user.save()
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
@@ -1023,12 +1075,13 @@ def return_user_homework(request):
 def get_my_homeworks(request):
     try:
         student = User.objects.get(id=request.user.id)
-        work_user = WorkUser.objects.filter(user=student, is_closed=False).select_related('work').order_by('work__created_at').values('work_id', 'work__name', 'is_done', 'is_checked', 'work__exercises')
+        work_user = WorkUser.objects.filter(user=student, is_closed=False).select_related('work').order_by('work__created_at').values('work_id', 'work__name', 'is_done', 'is_checked', 'work__exercises', 'status')
         works_list = {}
         for work in work_user:
             works_list[work['work_id']] = {
                 'name': work['work__name'],
                 'fields': work['work__exercises'],
+                'status': work['status'],
                 'is_done': work['is_done'],
                 'is_checked': work['is_checked'],
                 'green': 0,
@@ -1051,6 +1104,7 @@ def get_my_homeworks(request):
             result = {
                 'id': homework,
                 'name': works_list[homework]['name'],
+                'fields': works_list[homework]['fields'],
                 'is_done': works_list[homework]['is_done'],
                 'is_checked': works_list[homework]['is_checked']
             }

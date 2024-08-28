@@ -100,6 +100,15 @@ class WorkFile(models.Model):
 
 
 class WorkUser(models.Model):
+    STATUS_CHOICES = (
+        (0, 'Ожидает сдачи'),
+        (1, 'Ожидает проверки'),
+        (2, 'Проверена'),
+        (3, 'Возвращена с комментарием'),
+        (4, 'Просрочена'),
+        (5, 'Просрочена и ожидает проверки'),
+        (6, 'Просрочена и проверена'),
+    )
     id = models.AutoField('id связи', primary_key=True, editable=False)
     work = models.ForeignKey(Work, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -108,6 +117,7 @@ class WorkUser(models.Model):
     is_checked = models.BooleanField('Проверена ли работа', default=False)
     checker = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='checker', null=True, blank=True, default=None)
     answers = models.JSONField('Форма с ответами')
+    status = models.IntegerField('Статус работы', choices=STATUS_CHOICES, default=0)
     is_closed = models.BooleanField('Закрыта ли работа', default=False)
 
     answered_at = models.DateTimeField('Дата ответа', default=None, null=True, blank=True)
