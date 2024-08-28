@@ -311,6 +311,8 @@ get_my_homeworks_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                "name": openapi.Schema(
                                                                    type=openapi.TYPE_STRING,
                                                                    example="Домашняя работа 1"),
+                                                               "fields": openapi.Schema(
+                                                                   type=openapi.TYPE_INTEGER, example=3),
                                                                "is_done": openapi.Schema(
                                                                    type=openapi.TYPE_BOOLEAN,
                                                                    example=True),

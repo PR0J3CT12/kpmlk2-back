@@ -1023,11 +1023,12 @@ def return_user_homework(request):
 def get_my_homeworks(request):
     try:
         student = User.objects.get(id=request.user.id)
-        work_user = WorkUser.objects.filter(user=student, is_closed=False).select_related('work').order_by('work__created_at').values('work_id', 'work__name', 'is_done', 'is_checked')
+        work_user = WorkUser.objects.filter(user=student, is_closed=False).select_related('work').order_by('work__created_at').values('work_id', 'work__name', 'is_done', 'is_checked', 'work__exercises')
         works_list = {}
         for work in work_user:
             works_list[work['work_id']] = {
                 'name': work['work__name'],
+                'fields': work['work__exercises'],
                 'is_done': work['is_done'],
                 'is_checked': work['is_checked'],
                 'green': 0,
