@@ -30,7 +30,7 @@ def get_my_classworks(request):
         student = User.objects.get(id=request.user.id)
         groups = GroupUser.objects.filter(user=student).select_related('group').values_list('group_id', flat=True)
         files = GroupWorkFile.objects.filter(group_id__in=groups).select_related('work').order_by('added_at').values(
-            'file', 'ext', 'work_id', 'work__name')
+            'file', 'ext', 'work_id', 'work__name', 'work__course')
         classworks_list = {}
         host = HOST
         for file in files:
@@ -40,6 +40,7 @@ def get_my_classworks(request):
             if file['work_id'] not in classworks_list:
                 classworks_list[file['work_id']] = {
                     'name': file['work__name'],
+                    'course': file['work__course'],
                     'files': [{
                         'link': f'{host}/{link}',
                         'name': name,
@@ -86,6 +87,11 @@ def apply_files_to_classwork(request):
         if not validate_work_type_for_group_type(work.type, group.type):
             return HttpResponse(
                 json.dumps({'state': 'error', 'message': 'Тип работы не подходит для этого типа группы.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=400)
+        if not validate_work_course_for_group_type(work.course, group.type):
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Курс работы не подходит для этого типа группы.', 'details': {},
                             'instance': request.path},
                            ensure_ascii=False), status=400)
         files = files.getlist('files')
@@ -202,7 +208,7 @@ def get_classwork_files(request):
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение списка классных работ.",
-                     manual_parameters=[class_param, theme_param, type_param],
+                     manual_parameters=[class_param, theme_param, type_param, course_param],
                      responses=get_works_responses,
                      operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']} | {operation_description}")
 @api_view(["GET"])
@@ -212,23 +218,33 @@ def get_classworks(request):
         class_ = get_variable("class", request)
         theme = get_variable("theme", request)
         type_ = get_variable("type", request)
+        course = get_variable("course", request)
         if class_ not in ['4', '5', '6', '7']:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
-                    ensure_ascii=False), status=404)
+                    ensure_ascii=False), status=400)
+        if course not in [None, '', '0', '1', '2', '3', '4']:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Неверно указан курс работы.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=400)
         works = Work.objects.filter(is_homework=False, school_class=int(class_)).exclude(type__in=[0, 5, 6, 7, 8, 9]).select_related("theme").order_by('-id')
         if (theme is not None) and (theme != ''):
             works = works.filter(theme_id=theme)
         if type_ in ['1', '2', '3', '4']:
             works = works.filter(type=type_)
-        works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'theme_id', 'theme__name', 'type', 'is_homework')
+        if course in ['0', '1', '2', '3', '4']:
+            works = works.filter(course=course)
+        works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'theme_id', 'theme__name', 'type', 'is_homework', 'course')
         works_list = []
         for work in works:
             works_list.append({
                 "id": work['id'],
                 "name": work['name'],
+                "course": work['course'],
                 "grades": work['grades'],
                 "max_score": work['max_score'],
                 "exercises": work['exercises'],

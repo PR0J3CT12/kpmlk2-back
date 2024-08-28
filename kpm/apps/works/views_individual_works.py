@@ -19,7 +19,7 @@ LOGGER = settings.LOGGER
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение списка самостоятельных работ.",
-                     manual_parameters=[class_param, type_param],
+                     manual_parameters=[class_param, type_param, course_param],
                      responses=get_all_individual_works_responses,
                      operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']} | {operation_description}")
 @api_view(["GET"])
@@ -28,6 +28,7 @@ def get_all_individual_works(request):
     try:
         class_ = get_variable("class", request)
         type_ = get_variable("type", request)
+        course = get_variable("course", request)
         if class_ not in ['4', '5', '6', '7']:
             return HttpResponse(
                 json.dumps(
@@ -38,6 +39,12 @@ def get_all_individual_works(request):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан тип учеников.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=400)
+        if course not in [None, '', '0', '1', '2', '3', '4']:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Неверно указан курс работы.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=400)
         query = Q(school_class=int(class_))
@@ -52,13 +59,16 @@ def get_all_individual_works(request):
                         ensure_ascii=False), status=400)
         if type_ not in [None, '']:
             query &= Q(type=int(type_))
+        if course not in [None, '']:
+            query &= Q(course=int(course))
         works = Work.objects.filter(query).order_by('-id')
         works_list = []
-        works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'type', 'is_homework')
+        works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'type', 'is_homework', 'course')
         for work in works:
             works_list.append({
                 "id": work['id'],
                 "name": work['name'],
+                "course": work['course'],
                 "grades": work['grades'],
                 "max_score": work['max_score'],
                 "exercises": work['exercises'],

@@ -190,6 +190,10 @@ def create_work(request):
                     {'state': 'error', 'message': f'Несоответствие типа работы и класса.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
+        if school_class != '4':
+            course = data['course']
+        else:
+            course = '0'
         name = data["name"]
         if type_ == '2':
             grades = ["1", "1", "1"]
@@ -234,7 +238,7 @@ def create_work(request):
         if type_ not in ['3', '5']:
             work = Work(name=name, grades=grades, theme=theme, max_score=max_score,
                         exercises=exercises, school_class=school_class, type=type_,
-                        is_homework=is_homework, author_id=request.user.id)
+                        is_homework=is_homework, author_id=request.user.id, course=course)
             work.full_clean()
             work_2007 = None
             link = None
@@ -270,10 +274,10 @@ def create_work(request):
 
             work = Work(name=name, grades=grades, theme=theme, max_score=max_score,
                         exercises=exercises, school_class=school_class, type=type_,
-                        is_homework=is_homework, author_id=request.user.id)
+                        is_homework=is_homework, author_id=request.user.id, course=course)
             work_2007 = Work(name=name, grades=grades_2007, theme=theme, max_score=max_score_2007,
                              exercises=exercises, school_class=school_class, type=type_2007,
-                             is_homework=is_homework, author_id=request.user.id)
+                             is_homework=is_homework, author_id=request.user.id, course=course)
             work.full_clean()
             work_2007.full_clean()
             link = Exam(work=work, work_2007=work_2007)

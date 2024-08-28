@@ -4,6 +4,7 @@ from django.utils.deconstruct import deconstructible
 import os
 from kpm.apps.users.models import User
 from django.core.exceptions import ValidationError
+from .validators import validate_work_class_for_work_course
 
 
 @deconstructible
@@ -35,12 +36,20 @@ class Work(models.Model):
         (10, 'Зачет'),
         (11, 'Проверка на рептилоида'),
     )
+    COURSE_CHOICES = (
+        (0, '4 класс'),
+        (1, 'Продвинутый'),
+        (2, 'Углубленный'),
+        (3, 'Углубленный алгебра'),
+        (4, 'Углубленный геометрия'),
+    )
     id = models.AutoField('work id', primary_key=True, editable=False)
     name = models.CharField('work name', max_length=100)
     theme = models.ForeignKey(Theme, on_delete=models.CASCADE)
     school_class = models.IntegerField('student class', default=4)
     is_homework = models.BooleanField('is homework')
-    type = models.IntegerField('theme type', choices=TYPE_CHOICES, default=0)
+    type = models.IntegerField('work type', choices=TYPE_CHOICES, default=0)
+    course = models.IntegerField('course', choices=COURSE_CHOICES)
     author = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='author', default=None, blank=True, null=True)
 
     # Grades fields
@@ -61,6 +70,8 @@ class Work(models.Model):
     def clean(self):
         if self.school_class != self.theme.school_class:
             raise ValidationError(f"Работа {self.work.id} не соответствует классу темы '{self.theme.id}'.")
+        if not validate_work_class_for_work_course(self.school_class, self.course):
+            raise ValidationError(f"Курс работы не соответствует классу работы.")
         super().clean()
 
     def save(self, *args, **kwargs):

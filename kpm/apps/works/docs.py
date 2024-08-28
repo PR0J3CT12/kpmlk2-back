@@ -16,6 +16,8 @@ file_param = openapi.Parameter("file", in_=openapi.IN_QUERY, type=openapi.TYPE_I
                                operation_description='ID файла.', example=1)
 student_param = openapi.Parameter("student", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
                                   operation_description='ID ученика.', example=1)
+course_param = openapi.Parameter("course", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
+                                 operation_description='ID курса.', example=1)
 
 create_response_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                               required=['id', 'answers'],
@@ -83,6 +85,8 @@ get_works_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                         "name": openapi.Schema(
                                                             type=openapi.TYPE_STRING,
                                                             example="Классная работа 1"),
+                                                        "course": openapi.Schema(
+                                                            type=openapi.TYPE_INTEGER, example=3),
                                                         "grades": openapi.Schema(
                                                             type=openapi.TYPE_ARRAY,
                                                             items=openapi.Schema(
@@ -152,6 +156,8 @@ get_homeworks_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                 "name": openapi.Schema(
                                                     type=openapi.TYPE_STRING,
                                                     example="Классная работа 1"),
+                                                "course": openapi.Schema(
+                                                    type=openapi.TYPE_INTEGER, example=3),
                                                 "grades": openapi.Schema(
                                                     type=openapi.TYPE_ARRAY,
                                                     items=openapi.Schema(
@@ -185,6 +191,7 @@ create_work_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                               'name': openapi.Schema(type=openapi.TYPE_STRING,
                                                                      example="Домашняя работа 1"),
                                               'type': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
+                                              'course': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
                                               "grades": openapi.Schema(type=openapi.TYPE_ARRAY,
                                                                        items=openapi.TYPE_STRING,
                                                                        example=["5", "5", "5", "10", "15"]),
@@ -241,6 +248,7 @@ get_user_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                     'id': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
                                                     'name': openapi.Schema(type=openapi.TYPE_STRING,
                                                                            example="Домашняя работа 1"),
+                                                    'course': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
                                                     'text': openapi.Schema(type=openapi.TYPE_STRING,
                                                                            example="Условие домашней работы"),
                                                     'fields': openapi.Schema(type=openapi.TYPE_INTEGER, example=6),
@@ -316,6 +324,8 @@ get_my_homeworks_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                    type=openapi.TYPE_INTEGER, example=3),
                                                                "status": openapi.Schema(
                                                                    type=openapi.TYPE_INTEGER, example=0),
+                                                               "course": openapi.Schema(
+                                                                   type=openapi.TYPE_INTEGER, example=0),
                                                                "is_done": openapi.Schema(
                                                                    type=openapi.TYPE_BOOLEAN,
                                                                    example=True),
@@ -343,6 +353,9 @@ get_my_classworks_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                 "name": openapi.Schema(
                                                                     type=openapi.TYPE_STRING,
                                                                     example="Классная работа 1"),
+                                                                "course": openapi.Schema(
+                                                                    type=openapi.TYPE_INTEGER,
+                                                                    example=0),
                                                                 'files': openapi.Schema(
                                                                     type=openapi.TYPE_ARRAY,
                                                                     items=openapi.Schema(
@@ -514,6 +527,8 @@ get_all_individual_works_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                        "name": openapi.Schema(
                                                                            type=openapi.TYPE_STRING,
                                                                            example="Зачет 1"),
+                                                                       "course": openapi.Schema(
+                                                                           type=openapi.TYPE_INTEGER, example=3),
                                                                        "grades": openapi.Schema(
                                                                            type=openapi.TYPE_ARRAY,
                                                                            items=openapi.Schema(

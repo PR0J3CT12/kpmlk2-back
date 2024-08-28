@@ -37,11 +37,12 @@ LOGGER = settings.LOGGER
 def get_my_homeworks(request):
     try:
         student = User.objects.get(id=request.user.id)
-        work_user = WorkUser.objects.filter(user=student, is_closed=False).select_related('work').order_by('work__created_at').values('work_id', 'work__name', 'is_done', 'is_checked', 'work__exercises', 'status')
+        work_user = WorkUser.objects.filter(user=student, is_closed=False).select_related('work').order_by('work__created_at').values('work_id', 'work__name', 'is_done', 'is_checked', 'work__exercises', 'status', 'work__course')
         works_list = {}
         for work in work_user:
             works_list[work['work_id']] = {
                 'name': work['work__name'],
+                'course': work['work__course'],
                 'fields': work['work__exercises'],
                 'status': work['status'],
                 'is_done': work['is_done'],
@@ -67,6 +68,8 @@ def get_my_homeworks(request):
                 'id': homework,
                 'name': works_list[homework]['name'],
                 'fields': works_list[homework]['fields'],
+                'status': works_list[homework]['status'],
+                'course': works_list[homework]['course'],
                 'is_done': works_list[homework]['is_done'],
                 'is_checked': works_list[homework]['is_checked']
             }
@@ -90,7 +93,7 @@ def get_my_homeworks(request):
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение списка домашних работ.",
-                     manual_parameters=[class_param, theme_param, type_param],
+                     manual_parameters=[class_param, theme_param, type_param, course_param],
                      responses=get_homeworks_responses,
                      operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']} | {operation_description}")
 @api_view(["GET"])
@@ -100,12 +103,19 @@ def get_homeworks(request):
         class_ = get_variable("class", request)
         theme = get_variable("theme", request)
         type_ = get_variable("type", request)
+        course = get_variable("course", request)
         if class_ not in ['4', '5', '6', '7']:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
-                    ensure_ascii=False), status=404)
+                    ensure_ascii=False), status=400)
+        if course not in [None, '', '0', '1', '2', '3', '4']:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Неверно указан курс работы.', 'details': {},
+                     'instance': request.path},
+                    ensure_ascii=False), status=400)
         works = Work.objects.filter(is_homework=True, school_class=int(class_)).exclude(type__in=[1, 2, 3, 4, 7, 8, 9]).select_related("theme").order_by('-created_at')
         works_users = WorkUser.objects.filter(work__in=works).select_related('user').values('work_id', 'user_id', 'is_checked', 'is_done')
         works_users_dict = {}
@@ -122,8 +132,10 @@ def get_homeworks(request):
             works = works.filter(theme_id=theme)
         if type_ in ['0', '5', '6']:
             works = works.filter(type=type_)
+        if course in ['0', '1', '2', '3', '4']:
+            works = works.filter(course=course)
         works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'theme__id', 'theme__name', 'type',
-                             'is_homework')
+                             'is_homework', 'course')
         works_list = []
         for work in works:
             if work['id'] in works_users_dict:
@@ -135,6 +147,7 @@ def get_homeworks(request):
             works_list.append({
                 "id": work['id'],
                 "name": work['name'],
+                "course": work['course'],
                 "grades": work['grades'],
                 "max_score": work['max_score'],
                 "exercises": work['exercises'],
@@ -455,7 +468,7 @@ def get_user_work(request):
         work_user = work_user[0]
         files = WorkFile.objects.filter(work=work)
         files_list = []
-        host = settings.MEDIA_HOST_PATH
+        host = HOST
         for file in files:
             link = file.file.name
             name = link.split('/')[-1]
@@ -464,6 +477,7 @@ def get_user_work(request):
         response = {
             'id': work.id,
             'name': work.name,
+            'course': work.course,
             'text': work.text,
             'fields': work.exercises,
             'files': files_list,
@@ -894,7 +908,7 @@ def get_all_answers(request):
                 'ext': user_file['ext']
             })
         students_list = []
-        host = settings.MEDIA_HOST_PATH
+        host = HOST
         for wu in work_users:
             student_data = {'id': wu['user_id'], 'name': wu['user__name'], 'answers': [], 'files': [], 'groups': []}
             if wu['user_id'] in user_groups_dict:
