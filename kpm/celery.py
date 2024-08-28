@@ -13,5 +13,9 @@ app.conf.beat_schedule = {
     'open_homeworks': {
         'task': 'kpm.apps.works.tasks.open_homeworks',
         'schedule': crontab(minute=0, hour=21),
+    },
+    'works_deadlines': {
+        'task': 'kpm.apps.works.tasks.works_deadlines',
+        'schedule': crontab(minute=0),
     }
 }

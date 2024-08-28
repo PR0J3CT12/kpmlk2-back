@@ -244,6 +244,7 @@ get_user_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                     'text': openapi.Schema(type=openapi.TYPE_STRING,
                                                                            example="Условие домашней работы"),
                                                     'fields': openapi.Schema(type=openapi.TYPE_INTEGER, example=6),
+                                                    'status': openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
                                                     'files': openapi.Schema(
                                                         type=openapi.TYPE_ARRAY,
                                                         items=openapi.Schema(

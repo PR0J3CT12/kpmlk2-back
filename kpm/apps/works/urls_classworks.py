@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from kpm.apps.works import views_classworks as views
 
 urlpatterns = [
     path('get-my-classworks', views.get_my_classworks, name='get user classworks'),

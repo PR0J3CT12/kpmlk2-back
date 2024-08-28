@@ -24,9 +24,9 @@ LOGGER = settings.LOGGER
 @swagger_auto_schema(method='POST', operation_summary="Проставить оценки.",
                      request_body=insert_grades_request_body,
                      responses=insert_grades_responses,
-                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["POST"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsTierTwo, IsEnabled])
 def insert_grades(request):
     global_change = {
         "work_id": None,
@@ -183,32 +183,42 @@ def insert_grades(request):
                     except ObjectDoesNotExist:
                         student.last_classwork_id = work.id
             student.save()
-        aggregated_data = Grade.objects.filter(
-            user=student,
-            work__type__in=[0, 5, 6]
-        ).aggregate(
-            total_experience=Sum('score'),
-            exam_experience=Sum(
-                Case(
-                    When(work__type=5, then='score'),
-                    default=0,
-                    output_field=IntegerField(),
-                )
-            ),
-            oral_exam_experience=Sum(
-                Case(
-                    When(work__type=6, then='score'),
-                    default=0,
-                    output_field=IntegerField(),
+        if student.school_class == 4:
+            aggregated_data = Grade.objects.filter(
+                user=student,
+                work__type__in=[0, 5, 6]
+            ).aggregate(
+                total_experience=Sum('score'),
+                exam_experience=Sum(
+                    Case(
+                        When(work__type=5, then='score'),
+                        default=0,
+                        output_field=IntegerField(),
+                    )
+                ),
+                oral_exam_experience=Sum(
+                    Case(
+                        When(work__type=6, then='score'),
+                        default=0,
+                        output_field=IntegerField(),
+                    )
                 )
             )
-        )
-        experience = aggregated_data['total_experience'] if aggregated_data else 0
-        exam_experience = aggregated_data['exam_experience'] if aggregated_data else 0
-        oral_exam_experience = aggregated_data['oral_exam_experience'] if aggregated_data else 0
-        student.experience = experience
-        student.exam_experience = exam_experience
-        student.oral_exam_experience = oral_exam_experience
+            experience = aggregated_data['total_experience'] if aggregated_data else 0
+            exam_experience = aggregated_data['exam_experience'] if aggregated_data else 0
+            oral_exam_experience = aggregated_data['oral_exam_experience'] if aggregated_data else 0
+            student.experience = experience
+            student.exam_experience = exam_experience
+            student.oral_exam_experience = oral_exam_experience
+        else:
+            aggregated_data = Grade.objects.filter(
+                user=student,
+                work__type__in=[0, 10, 11]
+            ).aggregate(
+                total_experience=Sum('score'),
+            )
+            experience = aggregated_data['total_experience'] if aggregated_data else 0
+            student.experience = experience
         student.save()
         LOGGER.info(f'Inserted grades for student {student.id} in work {work_id} in cell {cell} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
