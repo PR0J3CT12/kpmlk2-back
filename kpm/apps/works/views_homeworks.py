@@ -617,6 +617,7 @@ def delete_from_homework(request):
         student = User.objects.get(id=student_id)
         work_user = WorkUser.objects.filter(work=work, user=student)
         if work_user:
+            work_user = work_user[0]
             work_user.is_closed = True
             work_user.save()
             LOGGER.info(f'Deleted student {student_id} from work {id_} by user {request.user.id}.')
