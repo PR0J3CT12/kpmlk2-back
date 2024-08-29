@@ -37,7 +37,7 @@ LOGGER = settings.LOGGER
 def get_my_homeworks(request):
     try:
         student = User.objects.get(id=request.user.id)
-        work_user = WorkUser.objects.filter(user=student, is_closed=False).select_related('work').order_by('work__created_at').values('work_id', 'work__name', 'is_done', 'is_checked', 'work__exercises', 'status', 'work__course')
+        work_user = WorkUser.objects.filter(Q(user=student) & Q(is_closed=False) & ~Q(work__type__in=[2, 10, 11])).select_related('work').order_by('work__created_at').values('work_id', 'work__name', 'is_done', 'is_checked', 'work__exercises', 'status', 'work__course')
         works_list = {}
         for work in work_user:
             works_list[work['work_id']] = {
@@ -98,7 +98,7 @@ def get_my_homeworks(request):
                      operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']} | {operation_description}")
 @api_view(["GET"])
 @permission_classes([IsAdmin, IsEnabled])
-def get_homeworks(request):
+def get_all_homeworks(request):
     try:
         class_ = get_variable("class", request)
         theme = get_variable("theme", request)
@@ -196,7 +196,7 @@ def check_user_homework(request):
                 json.dumps(
                     {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
-        work = Work.objects.get(id=id_)
+        work = Work.objects.get(Q(id=id_) & ~Q(type__in=[2, 10, 11]))
         student = User.objects.get(id=student_id)
         admin = User.objects.get(id=request.user.id)
         work_user = WorkUser.objects.filter(user=student, work=work)
@@ -369,7 +369,7 @@ def create_response(request):
                 json.dumps(
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
-        work = Work.objects.get(id=id_)
+        work = Work.objects.get(Q(id=id_) & ~Q(type__in=[2, 10, 11]))
         student = User.objects.get(id=request.user.id)
         work_user = WorkUser.objects.filter(user=student, work=work)
         if not work_user:
@@ -443,13 +443,13 @@ def create_response(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='GET', operation_summary="Получение работы(пользователь).",
+@swagger_auto_schema(method='GET', operation_summary="Получение домашней работы(пользователь).",
                      manual_parameters=[id_param],
                      responses=get_user_homework_responses,
                      operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsEnabled])
-def get_user_work(request):
+def get_user_homework(request):
     try:
         id_ = get_variable("id", request)
         if (id_ is None) or (id_ == ''):
@@ -457,7 +457,7 @@ def get_user_work(request):
                 json.dumps(
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
-        work = Work.objects.get(id=id_)
+        work = Work.objects.get(Q(id=id_) & ~Q(type__in=[2, 10, 11]))
         student = User.objects.get(id=request.user.id)
         work_user = WorkUser.objects.filter(user=student, work=work)
         if not work_user:
@@ -527,13 +527,13 @@ def get_user_work(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='PATCH', operation_summary="Открыть доступ к работе ученику.",
+@swagger_auto_schema(method='PATCH', operation_summary="Открыть доступ к домашней работе ученику.",
                      manual_parameters=[id_param, student_param],
                      responses=add_to_homework_responses,
                      operation_description=f"Уровни доступа: {permissions_operation_description['IsTierOne']}")
 @api_view(["PATCH"])
 @permission_classes([IsTierOne, IsEnabled])
-def add_to_work(request):
+def add_to_homework(request):
     try:
         id_ = get_variable("id", request)
         if (id_ is None) or (id_ == ''):
@@ -547,7 +547,7 @@ def add_to_work(request):
                 json.dumps(
                     {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
-        work = Work.objects.get(id=id_)
+        work = Work.objects.get(Q(id=id_) & ~Q(type__in=[2, 10, 11]))
         student = User.objects.get(id=student_id)
         student_types = GroupUser.objects.filter(user=student).values_list('group__type', flat=True)
         student_types = set(student_types)
@@ -593,13 +593,13 @@ def add_to_work(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='PATCH', operation_summary="Закрыть доступ к работе ученику.",
+@swagger_auto_schema(method='PATCH', operation_summary="Закрыть доступ к домашней работе ученику.",
                      manual_parameters=[id_param, student_param],
                      responses=delete_from_homework_responses,
                      operation_description=f"Уровни доступа: {permissions_operation_description['IsTierOne']}")
 @api_view(["PATCH"])
 @permission_classes([IsTierOne, IsEnabled])
-def delete_from_work(request):
+def delete_from_homework(request):
     try:
         id_ = get_variable("id", request)
         if (id_ is None) or (id_ == ''):
@@ -613,7 +613,7 @@ def delete_from_work(request):
                 json.dumps(
                     {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
-        work = Work.objects.get(id=id_)
+        work = Work.objects.get(Q(id=id_) & ~Q(type__in=[2, 10, 11]))
         student = User.objects.get(id=student_id)
         work_user = WorkUser.objects.get(work=work, user=student)
         work_user.is_closed = True
@@ -659,7 +659,7 @@ def return_user_homework(request):
                 json.dumps(
                     {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
-        work = Work.objects.get(id=id_)
+        work = Work.objects.get(Q(id=id_) & ~Q(type__in=[2, 10, 11]))
         student = User.objects.get(id=student_id)
         admin = User.objects.get(id=request.user.id)
         work_user = WorkUser.objects.filter(user=student, work=work)
@@ -719,7 +719,7 @@ def set_homework_date(request):
         if date:
             date = datetime.strptime(date, '%d.%m.%Y')
         group = Group.objects.get(id=group_id)
-        work = Work.objects.get(id=work_id)
+        work = Work.objects.get(Q(id=work_id) & ~Q(type__in=[2, 10, 11]))
         if not validate_work_type_for_group_type(work.type, group.type):
             return HttpResponse(
                 json.dumps({'state': 'error', 'message': 'Тип работы не подходит для этого типа группы.', 'details': {},
@@ -766,7 +766,7 @@ def set_homework_date(request):
                      operation_description=f"Уровни доступа: {permissions_operation_description['IsTierOne']}")
 @api_view(["DELETE"])
 @permission_classes([IsTierOne, IsEnabled])
-def delete_homework_date(request):
+def delete_homework_dates(request):
     try:
         group_id = get_variable("group", request)
         if not group_id:
@@ -781,7 +781,7 @@ def delete_homework_date(request):
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=400)
         group = Group.objects.get(id=group_id)
-        work = Work.objects.get(id=work_id)
+        work = Work.objects.get(Q(id=work_id) & ~Q(type__in=[2, 10, 11]))
         row = GroupWorkDate.objects.filter(work=work, group=group)
         if row:
             row = row[0]
@@ -819,7 +819,7 @@ def get_homeworks_dates(request):
         result = []
         if group_filter:
             group = Group.objects.get(id=group_id)
-            rows = GroupWorkDate.objects.filter(group=group).values('work_id', 'date')
+            rows = GroupWorkDate.objects.filter(Q(group=group) & ~Q(work__type__in=[2, 10, 11])).values('work_id', 'date')
             for row in rows:
                 result.append({
                     'work_id': row['work_id'],
@@ -852,7 +852,7 @@ def get_homeworks_dates(request):
             ensure_ascii=False), status=404)
 
 
-@swagger_auto_schema(method='GET', operation_summary="Получение ответов на работу(для таблицы).",
+@swagger_auto_schema(method='GET', operation_summary="Получение ответов на домашнюю работу(для таблицы).",
                      manual_parameters=[id_param],
                      responses=get_all_answers_responses,
                      operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
@@ -867,7 +867,7 @@ def get_all_answers(request):
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         admin = Admin.objects.get(user_id=request.user.id)
-        work = Work.objects.get(id=id_)
+        work = Work.objects.get(Q(id=id_) & ~Q(type__in=[2, 10, 11]))
         grades = Grade.objects.filter(work=work).values('user_id', 'score', 'max_score')
         grades_dict = {}
         for grade in grades:
