@@ -432,7 +432,7 @@ def get_user_individual_work(request):
         }
         grade = Grade.objects.get(work=work, user=student)
         max_score = grade.max_score
-        score = grade.max_score
+        score = grade.score
         if work_user.is_done:
             response['user_answers'] = work_user.answers
             response['answers'] = work.answers
