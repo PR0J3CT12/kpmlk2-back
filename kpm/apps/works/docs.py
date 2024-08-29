@@ -278,6 +278,18 @@ set_individual_work_date_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                                   example='01.01.2024'),
                                                        },
                                                        operation_description='Установка даты проведения самостоятельной работы для группы.')
+insert_classwork_grade_request_body = openapi.Schema(type=openapi.TYPE_OBJECT,
+                                                     required=['work', 'user', 'cell', 'value'],
+                                                     properties={
+                                                         'work': openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                                example=1),
+                                                         'user': openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                                example=1),
+                                                         'cell': openapi.Schema(type=openapi.TYPE_INTEGER, example=2),
+                                                         'value': openapi.Schema(type=openapi.TYPE_BOOLEAN,
+                                                                                 example=True),
+                                                     },
+                                                     operation_description='Установка оценки за номер в классной работе.')
 get_user_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                 properties={
                                                     'id': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
@@ -807,26 +819,27 @@ get_all_individual_works_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
 
                                                        })
 get_classwork_grades_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
-                                                properties={
-                                                    "fields": openapi.Schema(type=openapi.TYPE_INTEGER, example=6),
-                                                    "students": openapi.Schema(
-                                                        type=openapi.TYPE_ARRAY,
-                                                        items=openapi.Schema(
-                                                            type=openapi.TYPE_OBJECT,
-                                                            properties={
-                                                                "id": openapi.Schema(
-                                                                           type=openapi.TYPE_INTEGER, example=3),
-                                                                "name": openapi.Schema(
-                                                                           type=openapi.TYPE_STRING,
-                                                                           example="Иван Иванов"),
-                                                                "grades": openapi.Schema(
-                                                                    type=openapi.TYPE_ARRAY,
-                                                                    items=openapi.Schema(
-                                                                        type=openapi.TYPE_BOOLEAN,
-                                                                        example=[True, True, True, True, True, False]))
-                                                            }))
+                                                   properties={
+                                                       "fields": openapi.Schema(type=openapi.TYPE_INTEGER, example=6),
+                                                       "students": openapi.Schema(
+                                                           type=openapi.TYPE_ARRAY,
+                                                           items=openapi.Schema(
+                                                               type=openapi.TYPE_OBJECT,
+                                                               properties={
+                                                                   "id": openapi.Schema(
+                                                                       type=openapi.TYPE_INTEGER, example=3),
+                                                                   "name": openapi.Schema(
+                                                                       type=openapi.TYPE_STRING,
+                                                                       example="Иван Иванов"),
+                                                                   "grades": openapi.Schema(
+                                                                       type=openapi.TYPE_ARRAY,
+                                                                       items=openapi.Schema(
+                                                                           type=openapi.TYPE_BOOLEAN,
+                                                                           example=[True, True, True, True, True,
+                                                                                    False]))
+                                                               }))
 
-                                                })
+                                                   })
 create_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 update_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
@@ -846,6 +859,7 @@ delete_homework_date_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 delete_individual_work_date_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 return_user_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 return_user_individual_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
+insert_classwork_grade_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT)
 get_works_responses = {200: get_works_response_200}
 get_work_responses = {200: get_work_response_200}
 create_work_responses = {200: create_work_response_200}
@@ -880,4 +894,5 @@ get_all_answers_responses = {200: get_all_answers_response_200}
 get_all_answers_individuals_responses = {200: get_all_answers_individuals_response_200}
 get_all_individual_works_responses = {200: get_all_individual_works_response_200}
 get_classwork_grades_responses = {200: get_classwork_grades_response_200}
+insert_classwork_grade_responses = {200: insert_classwork_grade_response_200}
 operation_description = "Type: 0 - Домашняя работа, 1 - Классная работа, 2 - Блиц, 3 - Письменный экзамен классный, 4 - Устный экзамен классный, 5 - Письменный экзамен домашний, 6 - Устный экзамен домашний, 7 - Письменный экзамен домашний(баллы 2007), 7 - Письменный экзамен классный(баллы 2007), 9 - Вне статистики, 10 - Зачет, 11 - Проверка на рептилоида"

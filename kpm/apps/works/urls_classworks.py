@@ -8,4 +8,5 @@ urlpatterns = [
     path('get-classwork-files', views.get_classwork_files, name='get classwork files'),
     path('get-all-classworks', views.get_classworks, name='get all classworks'),
     path('get-classwork-grades', views.get_classwork_grades, name='get classwork grades'),
+    path('insert-classwork-grade', views.insert_classwork_grade, name='insert classwork grade'),
 ]

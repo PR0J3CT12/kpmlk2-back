@@ -320,3 +320,145 @@ def get_classwork_grades(request):
             {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
              'instance': request.path},
             ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='PUT', operation_summary="Выставление оценки за классную работу(админка).",
+                     request_body=insert_classwork_grade_request_body,
+                     responses=insert_classwork_grade_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
+@api_view(["PUT"])
+@permission_classes([IsAdmin, IsEnabled])
+def insert_classwork_grade(request):
+    try:
+        if request.body:
+            request_body = json.loads(request.body)
+        else:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
+        id_ = request_body['work']
+        student_id = request_body['user']
+        work = Work.objects.get(id=id_)
+        work_tech = None
+        if work.type == 8:
+            link = Exam.objects.get(work_2007=work)
+            work_tech = link.work
+        work_grades = list(map(int, work.grades))
+        fields = len(work_grades)
+        student = User.objects.get(id=student_id)
+        cell = request_body['cell']
+        if cell < 0 or cell >= fields:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Некорректный номер ячейки.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
+        value = request_body['value']
+        if value not in [True, False]:
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': 'Некорректное значение value.', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=400)
+        grade_row = Grade.objects.get(work=work, user=student)
+        new_grades = grade_row.grades
+        log_grades = "_._".join(new_grades)
+        if value:
+            new_grades[cell] = str(work_grades[cell])
+        else:
+            new_grades[cell] = '#'
+        new_score = 0
+        new_max_score = sum(work_grades)
+        new_exercises = work.exercises
+        work_is_empty = True
+        coefficient_2007 = []
+        for i in range(len(new_grades)):
+            if ',' in new_grades[i]:
+                item_ = new_grades[i]
+                new_grades[i] = item_.replace(',', '.')
+            if new_grades[i] == '-':
+                new_exercises -= 1
+                new_max_score -= work_grades[i]
+                if work.type == 8:
+                    coefficient_2007.append('-')
+                work_is_empty = False
+                continue
+            elif new_grades[i] == '#':
+                cast = 0
+                if work.type == 8:
+                    coefficient_2007.append('#')
+            else:
+                cast = float(new_grades[i])
+                if cast < 0:
+                    return HttpResponse(
+                        json.dumps({'state': 'error', 'message': f'Указано недопустимое значение.',
+                                    'details': {},
+                                    'instance': request.path},
+                                   ensure_ascii=False), status=400)
+                if cast > float(work_grades[i]):
+                    return HttpResponse(
+                        json.dumps({'state': 'error', 'message': f'Указанная оценка больше максимальной.',
+                                    'details': {},
+                                    'instance': request.path},
+                                   ensure_ascii=False), status=400)
+                if work.type == 8:
+                    coefficient_2007.append(cast / work_grades[i])
+                work_is_empty = False
+            new_score += cast
+        new_grades_check = '_._'.join(new_grades)
+        if log_grades == new_grades_check:
+            return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+        if work_tech:
+            grade_tech = Grade.objects.get(user=student, work=work_tech)
+            work_tech_grades = list(map(float, work_tech.grades))
+            max_score_tech = 0
+            score_tech = 0
+            exercises_tech = 0
+            new_grades_list_tech = []
+            for i in range(len(work_tech_grades)):
+                if coefficient_2007[i] == '-':
+                    new_grades_list_tech.append('-')
+                elif coefficient_2007[i] == '#':
+                    exercises_tech += 1
+                    max_score_tech += work_tech_grades[i]
+                    new_grades_list_tech.append('#')
+                else:
+                    exercises_tech += 1
+                    current_grade_tech = round(coefficient_2007[i] * work_tech_grades[i])
+                    max_score_tech += work_tech_grades[i]
+                    score_tech += current_grade_tech
+                    new_grades_list_tech.append(str(current_grade_tech))
+            if work_is_empty:
+                max_score_tech = 0
+                exercises_tech = 0
+            grade_tech.exercises = exercises_tech
+            grade_tech.max_score = max_score_tech
+            grade_tech.grades = new_grades_list_tech
+            grade_tech.score = score_tech
+            grade_tech.save()
+        if work_is_empty:
+            new_max_score = 0
+            new_exercises = 0
+        grade_row.grades = new_grades
+        grade_row.max_score = new_max_score
+        grade_row.score = new_score
+        grade_row.exercises = new_exercises
+        grade_row.save()
+        if work.type in [1, 4, 8]:
+            if student.last_classwork_id is None:
+                student.last_classwork_id = work.id
+            else:
+                try:
+                    last_classwork = Work.objects.get(id=student.last_classwork_id)
+                    if work.created_at > last_classwork.created_at:
+                        student.last_classwork_id = work.id
+                except ObjectDoesNotExist:
+                    student.last_classwork_id = work.id
+            student.save()
+        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа или пользователь не существует.', 'details': {},
+                        'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
