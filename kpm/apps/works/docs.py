@@ -806,7 +806,7 @@ get_all_individual_works_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                    }))
 
                                                        })
-get_classwork_grades_responses = openapi.Schema(type=openapi.TYPE_OBJECT,
+get_classwork_grades_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                 properties={
                                                     "fields": openapi.Schema(type=openapi.TYPE_INTEGER, example=6),
                                                     "students": openapi.Schema(
