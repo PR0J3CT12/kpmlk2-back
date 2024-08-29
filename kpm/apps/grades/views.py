@@ -335,7 +335,7 @@ def get_grades(request):
                         'group_id': gu['group_id'],
                         'color': gu['group__marker']
                     })
-        students = User.objects.filter(id__in=list(groups_dict.keys())).order_by('user_id').values('id', 'name', 'experience')
+        students = User.objects.filter(id__in=list(groups_dict.keys())).order_by('id').values('id', 'name', 'experience')
         if works:
             works_dict = {}
             for work in works:
