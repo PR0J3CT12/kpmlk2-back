@@ -472,7 +472,7 @@ def get_user_homework(request):
         for file in files:
             link = file.file.name
             name = link.split('/')[-1]
-            ext = file.file.name
+            ext = name.split('.')[-1]
             files_list.append({'link': f'{host}/{link}', 'name': name, 'ext': ext})
         response = {
             'id': work.id,
