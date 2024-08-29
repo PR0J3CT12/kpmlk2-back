@@ -13,6 +13,7 @@ from django.conf import settings
 from kpm.apps.groups.models import GroupUser, GroupWorkFile, Group
 from kpm.apps.users.docs import permissions_operation_description
 from kpm.apps.works.validators import *
+from kpm.apps.grades.models import Grade
 
 
 HOST = settings.MEDIA_HOST_PATH
@@ -257,6 +258,62 @@ def get_classworks(request):
     except KeyError as e:
         return HttpResponse(
             json.dumps({'state': 'error', 'message': f'Не указано поле {e}.', 'details': {}, 'instance': request.path},
+                       ensure_ascii=False), status=404)
+    except Exception as e:
+        return HttpResponse(json.dumps(
+            {'state': 'error', 'message': f'Произошла странная ошибка.', 'details': {'error': str(e)},
+             'instance': request.path},
+            ensure_ascii=False), status=404)
+
+
+@swagger_auto_schema(method='GET', operation_summary="Получение оценок классной работы(админка).",
+                     manual_parameters=[id_param, group_param],
+                     responses=get_classwork_grades_responses,
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
+@api_view(["GET"])
+@permission_classes([IsAdmin, IsEnabled])
+def get_classwork_grades(request):
+    try:
+        id_ = get_variable('id', request)
+        if id_ in ['', None]:
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': f'Не указан id работы.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=400)
+        group = get_variable('group', request)
+        if group in ['', None]:
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': f'Не указан id группы.', 'details': {},
+                            'instance': request.path},
+                           ensure_ascii=False), status=400)
+        work = Work.objects.get(id=id_)
+        work_grades = work.grades
+        fields = len(work_grades)
+        group = Group.objects.get(id=group)
+        students = GroupUser.objects.filter(group=group).select_related('user').order_by('user__name')
+        students_dict = {}
+        for student in students:
+            students_dict[student.user_id] = {
+                'id': student.user_id,
+                'name': student.user.name,
+                'grades': []
+            }
+        grades_rows = Grade.objects.filter(work=work, user_id__in=list(students_dict.keys())).values('user_id', 'grades')
+        for row in grades_rows:
+            grades = row['grades']
+            for i, grade in enumerate(grades):
+                if grade == work_grades[i]:
+                    students_dict[row['user_id']]['grades'].append(True)
+                else:
+                    students_dict[row['user_id']]['grades'].append(False)
+        return HttpResponse(json.dumps({
+            'fields': fields,
+            'students': list(students_dict.values())
+        }, ensure_ascii=False), status=200)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': f'Работа или группа не существует.', 'details': {},
+                        'instance': request.path},
                        ensure_ascii=False), status=404)
     except Exception as e:
         return HttpResponse(json.dumps(

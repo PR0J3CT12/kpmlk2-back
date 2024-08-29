@@ -615,10 +615,11 @@ def delete_from_homework(request):
                     ensure_ascii=False), status=404)
         work = Work.objects.get(Q(id=id_) & ~Q(type__in=[2, 10, 11]))
         student = User.objects.get(id=student_id)
-        work_user = WorkUser.objects.get(work=work, user=student)
-        work_user.is_closed = True
-        work_user.save()
-        LOGGER.info(f'Deleted student {student_id} from work {id_} by user {request.user.id}.')
+        work_user = WorkUser.objects.filter(work=work, user=student)
+        if work_user:
+            work_user.is_closed = True
+            work_user.save()
+            LOGGER.info(f'Deleted student {student_id} from work {id_} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(

@@ -4,6 +4,7 @@ from kpm.apps.users.models import User
 
 
 class Grade(models.Model):
+    id = models.AutoField('grade id', primary_key=True, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     work = models.ForeignKey(Work, on_delete=models.CASCADE)
     score = models.FloatField('score', default=0)
@@ -16,6 +17,7 @@ class Grade(models.Model):
 
 
 class Mana(models.Model):
+    id = models.AutoField('mana id', primary_key=True, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     work = models.ForeignKey(Work, on_delete=models.CASCADE)
     color = models.CharField('mana color(green or blue)', max_length=5)
