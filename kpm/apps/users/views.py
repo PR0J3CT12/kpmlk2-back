@@ -246,8 +246,8 @@ def create_user(request):
         student.save()
         works = Work.objects.all()
         for work in works:
-            grades = work.grades.split('_._')
-            empty_grades = '_._'.join(list('#' * len(grades)))
+            exercises = len(work.grades)
+            empty_grades = ['#'] * exercises
             grade = Grade(user=student, work=work, grades=empty_grades, max_score=0, score=0, exercises=0)
             grade.save()
         LOGGER.info(f'Created student {student.id} by user {request.user.id}.')
