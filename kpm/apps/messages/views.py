@@ -28,9 +28,9 @@ BOT_TOKEN = settings.TG_BOT_TOKEN
 @swagger_auto_schema(method='POST', operation_summary="Отправить сообщение.",
                      request_body=send_message_request_body,
                      responses=send_message_responses,
-                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierOne']}")
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["POST"])
-@permission_classes([IsTierOne, IsEnabled])
+@permission_classes([IsAuthenticated, IsEnabled])
 def send_message(request):
     try:
         if request.POST or request.FILES:
