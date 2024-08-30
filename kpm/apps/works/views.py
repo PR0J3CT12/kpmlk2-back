@@ -199,8 +199,8 @@ def create_work(request):
             grades = ["1", "1", "1"]
             max_score = 3
         elif type_ in ['10', '11']:
-            grades = ["1"] * int(data["exercises"])
-            max_score = int(data["exercises"])
+            grades = data.getlist("grades")
+            max_score = len(grades)
         else:
             grades = data.getlist("grades")
             max_score = 0
