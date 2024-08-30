@@ -122,7 +122,7 @@ def get_work(request):
             result['answers'] = work.answers
             result['files'] = files_list
             result['users'] = users_list
-        if work.is_homework:
+        if work.is_homework or (work.type in [2, 10, 11]):
             groups_dict = {}
             groups = Group.objects.filter(school_class=work.school_class).order_by("created_at").values("id", "name", "marker", "type")
             for group in groups:
