@@ -107,9 +107,9 @@ def get_user(request):
 @swagger_auto_schema(method='GET', operation_summary="Получение пользователей.",
                      manual_parameters=[class_param, is_admin_param, type_param],
                      responses=get_users_responses,
-                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsAuthenticated, IsEnabled])
 def get_users(request):
     try:
         is_admin = get_variable("is_admin", request)
