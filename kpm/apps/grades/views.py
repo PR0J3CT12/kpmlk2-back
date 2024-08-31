@@ -296,7 +296,7 @@ def get_grades(request):
                 }
                 grades_dict[grade['user_id']]['total_score'] += grade['score']
                 grades_dict[grade['user_id']]['total_max_score'] += grade['max_score']
-        works = Work.objects.filter(id__in=works_list).order_by('created_at').values('id', 'name', 'max_score', 'grades')
+        works = Work.objects.filter(id__in=works_list, school_class=int(class_)).order_by('created_at').values('id', 'name', 'max_score', 'grades')
         works_data = []
         links_dict = {}
         if ((type_ == '7') or (type_ == '8')) or (theme == '8'):
