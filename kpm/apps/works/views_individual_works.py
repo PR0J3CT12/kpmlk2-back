@@ -133,8 +133,8 @@ def get_all_individual_works(request):
             query &= Q(course=int(course))
         works = Work.objects.filter(query).order_by('-id')
         works_list = []
-        works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'type', 'is_homework', 'course')
         works_users = WorkUser.objects.filter(work__in=works).select_related('user').values('work_id', 'user_id', 'is_checked', 'is_done')
+        works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'type', 'is_homework', 'course')
         works_users_dict = {}
         for wu in works_users:
             if wu['work_id'] not in works_users_dict:
