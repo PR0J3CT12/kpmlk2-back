@@ -352,22 +352,19 @@ def change_password(request):
                     {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=400)
         is_default = False
-        if 'id' not in request_body.keys():
-            id_ = request.user.id
-            password_ = str(request_body["password"])
+        id_ = request_body["id"]
+        if 'password' not in request_body:
+            password_ = password_creator()
         else:
-            id_ = request_body["id"]
-            if 'password' not in request_body:
-                password_ = password_creator()
-            else:
-                password_ = request_body['password']
-            is_default = True
+            password_ = request_body['password']
         if not is_trusted(request, id_):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=403)
         user = User.objects.get(id=id_)
+        if not user.is_admin:
+            is_default = True
         if not is_default:
             encrypted_password = make_password(password_, SECRET_KEY)
             user.password = encrypted_password

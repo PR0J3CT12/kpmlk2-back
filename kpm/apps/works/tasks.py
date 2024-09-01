@@ -46,7 +46,7 @@ def open_homeworks():
 def works_deadlines():
     try:
         deadline = datetime.today() - timedelta(days=8)
-        works_users = WorkUser.objects.filter(added_at__lte=deadline, status=0).select_related('work')
+        works_users = WorkUser.objects.filter(added_at__lte=deadline, status=0, is_done=False).select_related('work')
         for work_user in works_users:
             grade = Grade.objects.get(user=work_user.user, work=work_user.work)
             grade.max_score = work_user.work.max_score
