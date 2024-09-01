@@ -121,13 +121,13 @@ def create_group(request):
                     {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
+        type_ = None if request_body["class"] == 4 else request_body["type"]
         if not validate_group_type_for_class(request_body["type"], request_body["class"]):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан тип группы.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        type_ = None if request_body["class"] == 4 else request_body["type"]
         group = Group(name=request_body['name'], school_class=request_body['class'], marker=request_body['marker'], type=type_)
         group.save()
         if "students" in request_body:

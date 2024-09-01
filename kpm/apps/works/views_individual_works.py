@@ -134,7 +134,24 @@ def get_all_individual_works(request):
         works = Work.objects.filter(query).order_by('-id')
         works_list = []
         works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'type', 'is_homework', 'course')
+        works_users = WorkUser.objects.filter(work__in=works).select_related('user').values('work_id', 'user_id', 'is_checked', 'is_done')
+        works_users_dict = {}
+        for wu in works_users:
+            if wu['work_id'] not in works_users_dict:
+                works_users_dict[wu['work_id']] = {
+                    'amount': 0,
+                    'not_checked': 0
+                }
+            works_users_dict[wu['work_id']]['amount'] += 1
+            if wu['is_done'] and not wu['is_checked']:
+                works_users_dict[wu['work_id']]['not_checked'] += 1
         for work in works:
+            if work['id'] in works_users_dict:
+                amount = works_users_dict[work['id']]['amount']
+                not_checked = works_users_dict[work['id']]['not_checked']
+            else:
+                amount = 0
+                not_checked = 0
             works_list.append({
                 "id": work['id'],
                 "name": work['name'],
@@ -143,7 +160,9 @@ def get_all_individual_works(request):
                 "max_score": work['max_score'],
                 "exercises": work['exercises'],
                 "work_type": work['type'],
-                "is_homework": work['is_homework']
+                "is_homework": work['is_homework'],
+                "amount": amount,
+                "not_checked": not_checked,
             })
         return HttpResponse(json.dumps({'works': works_list}, ensure_ascii=False), status=200)
     except KeyError as e:
