@@ -4,6 +4,8 @@ id_param = openapi.Parameter("id", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEG
                              operation_description='ID темы.', example=1)
 class_param = openapi.Parameter("class", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
                                 operation_description='Класс учеников.', example=4)
+type_param = openapi.Parameter("type", in_=openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
+                               operation_description='Тип работы.', example=1)
 get_themes_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                          properties={
                                              "themes": openapi.Schema(type=openapi.TYPE_OBJECT,

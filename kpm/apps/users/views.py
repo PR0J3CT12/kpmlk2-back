@@ -31,7 +31,7 @@ LOGGER = settings.LOGGER
                      responses=get_user_responses,
                      operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
-@permission_classes([IsAuthenticated, IsEnabled])
+@permission_classes([IsAuthenticated])
 def get_user(request):
     try:
         id_ = get_variable("id", request)
@@ -46,6 +46,11 @@ def get_user(request):
                     {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=403)
         student = User.objects.get(id=id_)
+        if student.is_disabled:
+            return HttpResponse(
+                json.dumps(
+                    {'state': 'error', 'message': f'Аккаунт заблокирован.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=403)
         student.last_login = timezone.now()
         student.save()
         logons = History.objects.filter(user=student).order_by('-datetime')

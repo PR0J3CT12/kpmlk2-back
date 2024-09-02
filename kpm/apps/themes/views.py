@@ -48,7 +48,7 @@ def get_theme(request):
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение тем.",
-                     manual_parameters=[class_param],
+                     manual_parameters=[class_param, type_param],
                      responses=get_themes_responses,
                      operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
@@ -67,12 +67,30 @@ def get_themes(request):
                     json.dumps(
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
                          'instance': request.path},
-                        ensure_ascii=False), status=404)
-        themes_ = Theme.objects.filter(school_class=class_).values('id', 'name', 'school_class')
-        if not themes_:
+                        ensure_ascii=False), status=400)
+        themes = Theme.objects.filter(school_class=class_)
+        type_ = get_variable("type", request)
+        if type_ in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']:
+            TYPES_CLASSIFICATOR = {
+                '0': [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                '1': [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                '2': [1],
+                '3': [8],
+                '4': [9],
+                '5': [8],
+                '6': [9],
+                '7': [],
+                '8': [],
+                '9': [],
+                '10': [10, 11, 12],
+                '11': [10, 11, 12],
+            }
+            themes = themes.filter(id__in=TYPES_CLASSIFICATOR[type_])
+        themes = themes.values('id', 'name', 'school_class')
+        if not themes:
             return HttpResponse(json.dumps({'themes': []}, ensure_ascii=False), status=200)
         themes_list = []
-        for theme in themes_:
+        for theme in themes:
             theme_info = {
                 "id": theme['id'],
                 "name": theme['name'],
