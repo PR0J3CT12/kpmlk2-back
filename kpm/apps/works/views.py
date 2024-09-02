@@ -422,7 +422,7 @@ def update_work(request):
                     ext = file.name.split('.')[-1]
                     work_file = WorkFile(work=work, file=file, ext=ext)
                     work_file.save()
-            work.save()
+        work.save()
         LOGGER.info(f'Updated work {work.id} by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
