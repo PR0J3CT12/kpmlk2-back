@@ -25,7 +25,9 @@ from kpm.apps.works.validators import *
 
 
 HOST = settings.MEDIA_HOST_PATH
+MEDIA_ROOT_PATH = settings.MEDIA_ROOT_PATH
 LOGGER = settings.LOGGER
+from django.core.files import File
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение списка домашних(пользователь).",
@@ -410,32 +412,41 @@ def create_response(request):
         work_user.answers = answers
         work_user.answered_at = timezone.now()
         for file in files:
+            temp_path = f'/tmp/{file.name}'
             ext = file.name.split('.')[-1]
-            if 'image' in str(file.content_type):
-                pass
-            elif file.content_type in ['application/pdf']:
-                pass
-            elif ext in ['heic', 'heif']:
-                pass
+            new_path = None
+            with open(temp_path, 'wb+') as temp_file:
+                for chunk in file.chunks():
+                    temp_file.write(chunk)
+            if file.name.lower().endswith('.heif') or file.name.lower().endswith('.heic'):
+                new_path = heif_to_jpeg(temp_path)
+                if new_path:
+                    # Открываем новый JPEG файл и передаем его в объект File
+                    with open(new_path, 'rb') as jpeg_file:
+                        django_file = File(jpeg_file, name=os.path.basename(new_path))
+                        homework_file = WorkUserFile(link=work_user, file=django_file, ext='jpeg')
+                        homework_file.save()
+                else:
+                    continue  # Пропускаем этот файл и переходим к следующему
             else:
-                return HttpResponse(
-                    json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
-                                'instance': request.path},
-                               ensure_ascii=False), status=404)
-            to_jpeg = False
-            if ext == 'heic':
-                ext = 'jpeg'
-                to_jpeg = True
-            homework_file = WorkUserFile(link=work_user, file=file, ext=ext)
-            homework_file.save()
-            if to_jpeg:
-                path = os.path.join(HOST, f'{homework_file.file}')
-                new_path = heif_to_jpeg(path)
-                new_name = f'{str(homework_file.file).rsplit(".", 1)[0]}.jpeg'
-                if new_path is not None:
-                    homework_file.file = new_name
-                    homework_file.save()
-                    os.remove(path)
+                # Если файл не HEIF, сохраняем как есть
+                homework_file = WorkUserFile(link=work_user, file=file, ext=ext)
+                homework_file.save()
+            os.remove(temp_path)
+            if new_path:
+                os.remove(new_path)
+            #if to_jpeg:
+            #    path_after_media = str(homework_file.file).split('/media')[0]
+            #    path = f'{MEDIA_ROOT_PATH}/{path_after_media}'
+            #    print(f'path: {path}')
+            #    new_path = heif_to_jpeg(path)
+            #    print(f'new_path: {new_path}')
+            #    new_name = f'{str(homework_file.file).rsplit(".", 1)[0]}.jpeg'
+            #    print(f'new_name: {new_name}')
+            #    if new_path is not None:
+            #        homework_file.file = new_name
+            #        homework_file.save()
+            #        os.remove(path)
         if work_user.status in [0, 3]:
             work_user.status = 1
         else:
