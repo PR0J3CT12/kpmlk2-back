@@ -373,27 +373,26 @@ def create_response(request):
         work_user.answers = answers
         work_user.answered_at = timezone.now()
         for file in files:
-            temp_path = f'/tmp/{file.name}'
             ext = file.name.split('.')[-1]
-            new_path = None
-            with open(temp_path, 'wb+') as temp_file:
-                for chunk in file.chunks():
-                    temp_file.write(chunk)
             if file.name.lower().endswith('.heif') or file.name.lower().endswith('.heic'):
+                temp_path = f'/tmp/{file.name}'
+                with open(temp_path, 'wb+') as temp_file:
+                    for chunk in file.chunks():
+                        temp_file.write(chunk)
                 new_path = heif_to_jpeg(temp_path)
                 if new_path:
                     with open(new_path, 'rb') as jpeg_file:
                         django_file = File(jpeg_file, name=os.path.basename(new_path))
                         homework_file = WorkUserFile(link=work_user, file=django_file, ext='jpeg')
                         homework_file.save()
+                    os.remove(temp_path)
+                    if new_path:
+                        os.remove(new_path)
                 else:
                     continue
             else:
                 homework_file = WorkUserFile(link=work_user, file=file, ext=ext)
                 homework_file.save()
-            os.remove(temp_path)
-            if new_path:
-                os.remove(new_path)
         if work_user.status in [0, 3]:
             work_user.status = 1
         else:

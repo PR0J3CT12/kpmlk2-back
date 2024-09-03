@@ -22,9 +22,6 @@ class PathRename(object):
             unique_id = str(uuid.uuid4())[:8]
             filename = f'{name}_{unique_id}{ext}'
             full_path = os.path.join(self.path, filename)
-        #print(full_path)
-        #print(os.path.join(STORAGE_PATH, full_path))
-        #print(os.path.exists(os.path.join(STORAGE_PATH, full_path)))
         return full_path
 
 
