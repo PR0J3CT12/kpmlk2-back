@@ -22,12 +22,11 @@ from datetime import datetime
 from kpm.apps.grades.functions import is_number_float, mana_generation
 from kpm.apps.users.docs import permissions_operation_description
 from kpm.apps.works.validators import *
+from django.core.files import File
 
 
 HOST = settings.MEDIA_HOST_PATH
-MEDIA_ROOT_PATH = settings.MEDIA_ROOT_PATH
 LOGGER = settings.LOGGER
-from django.core.files import File
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение списка домашних(пользователь).",
@@ -421,32 +420,18 @@ def create_response(request):
             if file.name.lower().endswith('.heif') or file.name.lower().endswith('.heic'):
                 new_path = heif_to_jpeg(temp_path)
                 if new_path:
-                    # Открываем новый JPEG файл и передаем его в объект File
                     with open(new_path, 'rb') as jpeg_file:
                         django_file = File(jpeg_file, name=os.path.basename(new_path))
                         homework_file = WorkUserFile(link=work_user, file=django_file, ext='jpeg')
                         homework_file.save()
                 else:
-                    continue  # Пропускаем этот файл и переходим к следующему
+                    continue
             else:
-                # Если файл не HEIF, сохраняем как есть
                 homework_file = WorkUserFile(link=work_user, file=file, ext=ext)
                 homework_file.save()
             os.remove(temp_path)
             if new_path:
                 os.remove(new_path)
-            #if to_jpeg:
-            #    path_after_media = str(homework_file.file).split('/media')[0]
-            #    path = f'{MEDIA_ROOT_PATH}/{path_after_media}'
-            #    print(f'path: {path}')
-            #    new_path = heif_to_jpeg(path)
-            #    print(f'new_path: {new_path}')
-            #    new_name = f'{str(homework_file.file).rsplit(".", 1)[0]}.jpeg'
-            #    print(f'new_name: {new_name}')
-            #    if new_path is not None:
-            #        homework_file.file = new_name
-            #        homework_file.save()
-            #        os.remove(path)
         if work_user.status in [0, 3]:
             work_user.status = 1
         else:

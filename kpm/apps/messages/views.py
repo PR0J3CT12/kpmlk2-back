@@ -1,5 +1,4 @@
 import datetime
-
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -14,10 +13,11 @@ from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.messages.docs import *
 from django.conf import settings
 from django.utils import timezone
-from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models import F
+from django.core.files import File
 from kpm.apps.users.docs import permissions_operation_description
 import requests
+import os
+from kpm.apps.works.functions import heif_to_jpeg
 
 
 LOGGER = settings.LOGGER
@@ -62,6 +62,28 @@ def send_message(request):
         for receiver in receivers:
             message = Message(user_to=receiver, user_from=sender, text=text, group=messages_group, title=title)
             message.save()
+        for file in files:
+            temp_path = f'/tmp/{file.name}'
+            ext = file.name.split('.')[-1]
+            new_path = None
+            with open(temp_path, 'wb+') as temp_file:
+                for chunk in file.chunks():
+                    temp_file.write(chunk)
+            if file.name.lower().endswith('.heif') or file.name.lower().endswith('.heic'):
+                new_path = heif_to_jpeg(temp_path)
+                if new_path:
+                    with open(new_path, 'rb') as jpeg_file:
+                        django_file = File(jpeg_file, name=os.path.basename(new_path))
+                        message_file = MessageGroupFile(message_group=messages_group, file=file, ext=ext)
+                        message_file.save()
+                else:
+                    continue
+            else:
+                message_file = MessageGroupFile(message_group=messages_group, file=file, ext=ext)
+                message_file.save()
+            os.remove(temp_path)
+            if new_path:
+                os.remove(new_path)
         for file in files:
             ext = file.name.split('.')[1]
             message_file = MessageGroupFile(message_group=messages_group, file=file, ext=ext)
