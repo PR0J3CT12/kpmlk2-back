@@ -50,7 +50,7 @@ def send_message(request):
         for file in files:
             if 'image' in str(file.content_type):
                 pass
-            elif file.content_type in ['application/pdf']:
+            elif file.content_type in ['application/pdf', 'application/octet-stream']:
                 pass
             else:
                 return HttpResponse(
