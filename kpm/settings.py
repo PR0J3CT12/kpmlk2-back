@@ -224,7 +224,7 @@ STORAGES = {
     }
 }
 
-STORAGE_PATH = f'{os.environ.get("MINIO_PATH")}/{STORAGES['default']['OPTIONS']['bucket_name']}/{STORAGES['default']['OPTIONS']['location']}'
+STORAGE_PATH = f'{os.environ.get("MINIO_PATH")}/{STORAGES["default"]["OPTIONS"]["bucket_name"]}/{STORAGES["default"]["OPTIONS"]["location"]}'
 
 STATIC_URL = 'static/'
 
