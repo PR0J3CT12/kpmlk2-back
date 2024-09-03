@@ -5,6 +5,7 @@ import os
 from kpm.apps.users.models import User
 from django.core.exceptions import ValidationError
 from .validators import validate_work_class_for_work_course
+import uuid
 
 
 @deconstructible
@@ -14,7 +15,14 @@ class PathRename(object):
         self.path = sub_path
 
     def __call__(self, instance, filename):
-        return os.path.join(self.path, filename)
+        name, ext = os.path.splitext(filename)
+        full_path = os.path.join(self.path, filename)
+        if os.path.exists(os.path.join(instance.file.storage.location, full_path)):
+            unique_id = str(uuid.uuid4())[:8]
+            filename = f'{name}_{unique_id}{ext}'
+            full_path = os.path.join(self.path, filename)
+
+        return full_path
 
 
 path_and_rename = PathRename("homeworks/service/")

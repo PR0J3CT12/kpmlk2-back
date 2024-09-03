@@ -189,7 +189,6 @@ SWAGGER_SETTINGS = {
 }
 
 MEDIA_HOST_PATH = f'{os.environ.get("S3_DOMAIN")}/{os.environ.get("AWS_STORAGE_BUCKET_NAME")}/media'
-MEDIA_ROOT_PATH = f'/home/kpm/data/minio/development/media'
 
 STORAGES = {
     "default": {
