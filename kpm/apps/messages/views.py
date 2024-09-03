@@ -74,7 +74,7 @@ def send_message(request):
                 if new_path:
                     with open(new_path, 'rb') as jpeg_file:
                         django_file = File(jpeg_file, name=os.path.basename(new_path))
-                        message_file = MessageGroupFile(message_group=messages_group, file=file, ext=ext)
+                        message_file = MessageGroupFile(message_group=messages_group, file=django_file, ext=ext)
                         message_file.save()
                 else:
                     continue
