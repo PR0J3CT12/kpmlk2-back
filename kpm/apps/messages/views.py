@@ -84,10 +84,6 @@ def send_message(request):
             os.remove(temp_path)
             if new_path:
                 os.remove(new_path)
-        for file in files:
-            ext = file.name.split('.')[1]
-            message_file = MessageGroupFile(message_group=messages_group, file=file, ext=ext)
-            message_file.save()
         LOGGER.info(f'Send message {messages_group.id} (msg_group) by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
