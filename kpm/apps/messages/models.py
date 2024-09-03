@@ -3,6 +3,10 @@ from kpm.apps.users.models import User
 from django.utils.deconstruct import deconstructible
 import os
 import uuid
+from django.conf import settings
+
+
+STORAGE_PATH = settings.STORAGE_PATH
 
 
 @deconstructible
@@ -14,11 +18,13 @@ class PathRename(object):
     def __call__(self, instance, filename):
         name, ext = os.path.splitext(filename)
         full_path = os.path.join(self.path, filename)
-        if os.path.exists(os.path.join(instance.file.storage.location, full_path)):
+        if os.path.exists(os.path.join(STORAGE_PATH, full_path)):
             unique_id = str(uuid.uuid4())[:8]
             filename = f'{name}_{unique_id}{ext}'
             full_path = os.path.join(self.path, filename)
-
+        #print(full_path)
+        #print(os.path.join(STORAGE_PATH, full_path))
+        #print(os.path.exists(os.path.join(STORAGE_PATH, full_path)))
         return full_path
 
 

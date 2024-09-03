@@ -63,27 +63,26 @@ def send_message(request):
             message = Message(user_to=receiver, user_from=sender, text=text, group=messages_group, title=title)
             message.save()
         for file in files:
-            temp_path = f'/tmp/{file.name}'
             ext = file.name.split('.')[-1]
-            new_path = None
-            with open(temp_path, 'wb+') as temp_file:
-                for chunk in file.chunks():
-                    temp_file.write(chunk)
             if file.name.lower().endswith('.heif') or file.name.lower().endswith('.heic'):
+                temp_path = f'/tmp/{file.name}'
+                with open(temp_path, 'wb+') as temp_file:
+                    for chunk in file.chunks():
+                        temp_file.write(chunk)
                 new_path = heif_to_jpeg(temp_path)
                 if new_path:
                     with open(new_path, 'rb') as jpeg_file:
                         django_file = File(jpeg_file, name=os.path.basename(new_path))
                         message_file = MessageGroupFile(message_group=messages_group, file=django_file, ext='.jpeg')
                         message_file.save()
+                    os.remove(temp_path)
+                    if new_path:
+                        os.remove(new_path)
                 else:
                     continue
             else:
                 message_file = MessageGroupFile(message_group=messages_group, file=file, ext=ext)
                 message_file.save()
-            os.remove(temp_path)
-            if new_path:
-                os.remove(new_path)
         LOGGER.info(f'Send message {messages_group.id} (msg_group) by user {request.user.id}.')
         return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
     except KeyError as e:
