@@ -227,6 +227,8 @@ STATIC_URL = 'static/'
 
 MEDIA_URL = '/media/'
 
+MEDIA_TMP = os.path.join(PROJECT_ROOT, '../media')
+
 AUTH_USER_MODEL = 'users.User'
 
 DEFAULT_CHARSET = 'utf-8'

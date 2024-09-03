@@ -25,7 +25,6 @@ from kpm.apps.works.validators import *
 
 
 HOST = settings.MEDIA_HOST_PATH
-MEDIA_ROOT = settings.MEDIA_ROOT
 LOGGER = settings.LOGGER
 
 
@@ -412,6 +411,17 @@ def create_response(request):
         work_user.answered_at = timezone.now()
         for file in files:
             ext = file.name.split('.')[-1]
+            if 'image' in str(file.content_type):
+                pass
+            elif file.content_type in ['application/pdf']:
+                pass
+            elif ext in ['heic', 'heif']:
+                pass
+            else:
+                return HttpResponse(
+                    json.dumps({'state': 'error', 'message': 'Недопустимый файл.', 'details': {},
+                                'instance': request.path},
+                               ensure_ascii=False), status=404)
             to_jpeg = False
             if ext == 'heic':
                 ext = 'jpeg'
@@ -419,9 +429,9 @@ def create_response(request):
             homework_file = WorkUserFile(link=work_user, file=file, ext=ext)
             homework_file.save()
             if to_jpeg:
-                path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
+                path = os.path.join(HOST, f'{homework_file.file}')
                 new_path = heif_to_jpeg(path)
-                new_name = f'{str(homework_file.file).split(".")[0]}.jpeg'
+                new_name = f'{str(homework_file.file).rsplit(".", 1)[0]}.jpeg'
                 if new_path is not None:
                     homework_file.file = new_name
                     homework_file.save()

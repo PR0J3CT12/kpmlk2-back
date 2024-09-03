@@ -152,7 +152,7 @@ def get_users(request):
             'user_id', 'group_id', 'group__name', 'group__marker', 'group__type'
         )
         students = students.values(
-            'id', 'default_password', 'name', 'login', 'experience', 'mana_earned', 'last_homework_id', 'last_classwork_id', 'is_disabled', 'school_class')
+            'id', 'default_password', 'name', 'login', 'experience', 'mana_earned', 'last_homework_id', 'last_classwork_id', 'is_disabled', 'school_class', 'is_admin')
         students_groups_dict = {}
         students_types = {
             '-1': [],
@@ -202,7 +202,8 @@ def get_users(request):
                             "last_homework_id": student['last_homework_id'],
                             "last_classwork_id": student['last_classwork_id'],
                             "groups": groups,
-                            "is_disabled": student['is_disabled']
+                            "is_disabled": student['is_disabled'],
+                            "is_admin": student['is_admin'],
                             }
             students_list.append(student_info)
         return HttpResponse(
