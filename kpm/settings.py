@@ -143,8 +143,9 @@ REST_FRAMEWORK = {
     ],
 }
 
+ACCESS_TOKEN_LIFETIME = timedelta(minutes=10) if DEBUG else timedelta(minutes=1)
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1),
+    'ACCESS_TOKEN_LIFETIME': ACCESS_TOKEN_LIFETIME,
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
@@ -222,6 +223,8 @@ STORAGES = {
         }
     }
 }
+
+STORAGE_PATH = f'{os.environ.get("MINIO_PATH")}/{STORAGES["default"]["OPTIONS"]["bucket_name"]}/{STORAGES["default"]["OPTIONS"]["location"]}'
 
 STATIC_URL = 'static/'
 

@@ -184,7 +184,7 @@ def get_classwork_files(request):
                 'ext': ext
             })
 
-        groups = Group.objects.filter(school_class=school_class).values('id', 'name', 'marker', 'type')
+        groups = Group.objects.filter(school_class=school_class).order_by('name').values('id', 'name', 'marker', 'type')
         groups_list = []
         for group in groups:
             group_files = files_dict[group['id']] if group['id'] in files_dict else []

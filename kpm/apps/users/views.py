@@ -51,19 +51,20 @@ def get_user(request):
                 json.dumps(
                     {'state': 'error', 'message': f'Аккаунт заблокирован.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=403)
-        student.last_login = timezone.now()
-        student.save()
-        logons = History.objects.filter(user=student).order_by('-datetime')
-        if logons:
-            last_logon = logons[0]
-            current_date = datetime.now()
-            if not (
-                    last_logon.datetime.date() == current_date.date() and last_logon.datetime.hour == current_date.hour):
+        if request.user.id == student.id:
+            student.last_login = timezone.now()
+            student.save()
+            logons = History.objects.filter(user=student).order_by('-datetime')
+            if logons:
+                last_logon = logons[0]
+                current_date = datetime.now()
+                if not (
+                        last_logon.datetime.date() == current_date.date() and last_logon.datetime.hour == current_date.hour):
+                    login_obj = History(user=student)
+                    login_obj.save()
+            else:
                 login_obj = History(user=student)
                 login_obj.save()
-        else:
-            login_obj = History(user=student)
-            login_obj.save()
         name = student.name
         groups = GroupUser.objects.filter(user=student).select_related('group').values('group_id', 'group__name', 'group__marker')
         groups_list = []
@@ -152,7 +153,7 @@ def get_users(request):
             'user_id', 'group_id', 'group__name', 'group__marker', 'group__type'
         )
         students = students.values(
-            'id', 'default_password', 'name', 'login', 'experience', 'mana_earned', 'last_homework_id', 'last_classwork_id', 'is_disabled', 'school_class')
+            'id', 'default_password', 'name', 'login', 'experience', 'mana_earned', 'last_homework_id', 'last_classwork_id', 'is_disabled', 'school_class', 'is_admin')
         students_groups_dict = {}
         students_types = {
             '-1': [],
@@ -202,7 +203,8 @@ def get_users(request):
                             "last_homework_id": student['last_homework_id'],
                             "last_classwork_id": student['last_classwork_id'],
                             "groups": groups,
-                            "is_disabled": student['is_disabled']
+                            "is_disabled": student['is_disabled'],
+                            "is_admin": student['is_admin'],
                             }
             students_list.append(student_info)
         return HttpResponse(

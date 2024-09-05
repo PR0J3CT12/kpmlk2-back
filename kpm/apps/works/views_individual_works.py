@@ -18,10 +18,10 @@ from django.utils import timezone
 from kpm.apps.grades.functions import is_number_float, mana_generation
 from datetime import datetime, timedelta
 from kpm.apps.works.validators import *
+from django.core.files import File
 
 
 HOST = settings.MEDIA_HOST_PATH
-MEDIA_ROOT = settings.MEDIA_ROOT
 LOGGER = settings.LOGGER
 
 
@@ -374,20 +374,25 @@ def create_response(request):
         work_user.answered_at = timezone.now()
         for file in files:
             ext = file.name.split('.')[-1]
-            to_jpeg = False
-            if ext == 'heic':
-                ext = 'jpeg'
-                to_jpeg = True
-            homework_file = WorkUserFile(link=work_user, file=file, ext=ext)
-            homework_file.save()
-            if to_jpeg:
-                path = os.path.join(MEDIA_ROOT, f'{homework_file.file}')
-                new_path = heif_to_jpeg(path)
-                new_name = f'{str(homework_file.file).split(".")[0]}.jpeg'
-                if new_path is not None:
-                    homework_file.file = new_name
-                    homework_file.save()
-                    os.remove(path)
+            if file.name.lower().endswith('.heif') or file.name.lower().endswith('.heic'):
+                temp_path = f'/tmp/{file.name}'
+                with open(temp_path, 'wb+') as temp_file:
+                    for chunk in file.chunks():
+                        temp_file.write(chunk)
+                new_path = heif_to_jpeg(temp_path)
+                if new_path:
+                    with open(new_path, 'rb') as jpeg_file:
+                        django_file = File(jpeg_file, name=os.path.basename(new_path))
+                        homework_file = WorkUserFile(link=work_user, file=django_file, ext='jpeg')
+                        homework_file.save()
+                    os.remove(temp_path)
+                    if new_path:
+                        os.remove(new_path)
+                else:
+                    continue
+            else:
+                homework_file = WorkUserFile(link=work_user, file=file, ext=ext)
+                homework_file.save()
         if work_user.status in [0, 3]:
             work_user.status = 1
         else:

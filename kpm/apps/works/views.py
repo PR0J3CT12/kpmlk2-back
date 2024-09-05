@@ -124,7 +124,7 @@ def get_work(request):
             result['users'] = users_list
         if work.is_homework or (work.type in [2, 10, 11]):
             groups_dict = {}
-            groups = Group.objects.filter(school_class=work.school_class).order_by("created_at").values("id", "name", "marker", "type")
+            groups = Group.objects.filter(school_class=work.school_class).order_by("name").values("id", "name", "marker", "type")
             for group in groups:
                 groups_dict[group['id']] = {
                     "id": group['id'],
