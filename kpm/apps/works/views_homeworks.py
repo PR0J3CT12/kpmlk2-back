@@ -355,6 +355,10 @@ def check_user_homework(request):
 @permission_classes([IsAuthenticated, IsEnabled])
 def create_response(request):
     try:
+        return HttpResponse(
+            json.dumps({'state': 'error', 'message': 'Попробуйте позже, работаем над исправлением ошибки.', 'details': {},
+                        'instance': request.path},
+                       ensure_ascii=False), status=404)
         if request.POST or request.FILES:
             data = request.POST
             files = request.FILES
