@@ -397,6 +397,10 @@ def create_response(request):
                      'instance': request.path},
                     ensure_ascii=False), status=403)
         files = files.getlist('files')
+        if not files:
+            return HttpResponse(
+                json.dumps({'state': 'error', 'message': 'Не указаны файлы.', 'details': {}, 'instance': request.path},
+                           ensure_ascii=False), status=400)
         for file in files:
             if 'image' in str(file.content_type):
                 pass
@@ -643,9 +647,9 @@ def delete_from_homework(request):
 @swagger_auto_schema(method='PATCH', operation_summary="Вернуть домашнюю работу с комментариями(админка).",
                      request_body=return_user_homework_request_body,
                      responses=return_user_homework_responses,
-                     operation_description=f"Уровни доступа: {permissions_operation_description['IsAdmin']}")
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["PATCH"])
-@permission_classes([IsAdmin, IsEnabled])
+@permission_classes([IsTierTwo, IsEnabled])
 def return_user_homework(request):
     try:
         if request.body:
