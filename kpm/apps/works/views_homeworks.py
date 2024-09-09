@@ -23,6 +23,7 @@ from kpm.apps.grades.functions import is_number_float, mana_generation
 from kpm.apps.users.docs import permissions_operation_description
 from kpm.apps.works.validators import *
 from django.core.files import File
+from kpm.apps.users.functions import is_trusted
 
 
 HOST = settings.MEDIA_HOST_PATH
@@ -463,7 +464,7 @@ def create_response(request):
 
 
 @swagger_auto_schema(method='GET', operation_summary="Получение домашней работы(пользователь).",
-                     manual_parameters=[id_param],
+                     manual_parameters=[id_param, student_param],
                      responses=get_user_homework_responses,
                      operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
@@ -471,13 +472,22 @@ def create_response(request):
 def get_user_homework(request):
     try:
         id_ = get_variable("id", request)
+        student_id = get_variable("student", request)
         if (id_ is None) or (id_ == ''):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         work = Work.objects.get(Q(id=id_) & ~Q(type__in=[2, 10, 11]))
-        student = User.objects.get(id=request.user.id)
+        if not is_trusted(request, student_id):
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=401)
+        user = User.objects.get(id=request.user.id)
+        if user.is_admin:
+            student = User.objects.get(id=student_id)
+        else:
+            student = user
         work_user = WorkUser.objects.filter(user=student, work=work)
         if not work_user:
             return HttpResponse(
