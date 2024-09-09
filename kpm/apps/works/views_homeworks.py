@@ -272,7 +272,17 @@ def check_user_homework(request):
             work_user.status = 2
         else:
             work_user.status = 6
+        if student.last_homework_id is None:
+            student.last_homework_id = work.id
+        else:
+            try:
+                last_homework = Work.objects.get(id=student.last_homework_id)
+                if work.created_at > last_homework.created_at:
+                    student.last_homework_id = work.id
+            except ObjectDoesNotExist:
+                student.last_homework_id = work.id
         work_user.save()
+        student.save()
         if work_user.status == 2:
             if score != old_score:
                 manas_delete = Mana.objects.filter(Q(user=student) & Q(work=work))

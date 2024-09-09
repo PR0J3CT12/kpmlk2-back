@@ -132,7 +132,6 @@ def get_stats(request):
             'last_homework_current': last_homework_perc_current,
             'last_homework_others': last_homework_perc_others,
             'last_classwork': last_classwork_perc,
-            'last_homework': last_homework_perc_current,
             'homeworks': homeworks_perc,
             'classworks': classworks_perc,
             'green': green,
