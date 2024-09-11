@@ -230,7 +230,7 @@ def check_user_individual_work(request):
         for i, value in enumerate(grades):
             if ',' in value:
                 value = value.replace(',', '.')
-            if not validate_grade(value):
+            if not is_number_float(value):
                 return HttpResponse(
                     json.dumps({'state': 'error', 'message': 'Некорректное значение оценки.', 'details': {},
                                 'instance': request.path},
