@@ -47,7 +47,7 @@ def get_my_individual_works(request):
                 'green': 0,
                 'blue': 0
             }
-        grades = Grade.objects.filter(work_id__in=list(works_list.keys())).select_related(
+        grades = Grade.objects.filter(work_id__in=list(works_list.keys()), user=student).select_related(
             'work').values('max_score', 'work_id', 'work__max_score', 'score')
         manas = Mana.objects.filter(work_id__in=list(works_list.keys()), user=student).values('work_id', 'color', 'is_given')
         for grade in grades:

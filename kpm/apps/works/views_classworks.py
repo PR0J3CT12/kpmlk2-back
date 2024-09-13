@@ -30,7 +30,7 @@ def get_my_classworks(request):
     try:
         student = User.objects.get(id=request.user.id)
         groups = GroupUser.objects.filter(user=student).select_related('group').values_list('group_id', flat=True)
-        files = GroupWorkFile.objects.filter(group_id__in=groups).select_related('work').order_by('added_at').values(
+        files = GroupWorkFile.objects.filter(group_id__in=groups).select_related('work').order_by('-added_at').values(
             'file', 'ext', 'work_id', 'work__name', 'work__course')
         classworks_list = {}
         host = HOST

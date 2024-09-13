@@ -51,8 +51,8 @@ def get_my_homeworks(request):
                 'green': 0,
                 'blue': 0
             }
-        grades = Grade.objects.filter(work_id__in=list(works_list.keys()), work__is_homework=True).select_related(
-            'work').values('max_score', 'work_id', 'work__max_score', 'score')
+        grades = Grade.objects.filter(work_id__in=list(works_list.keys()), work__is_homework=True, user=student).select_related(
+            'work').values('score', 'max_score', 'work_id', 'work__max_score')
         manas = Mana.objects.filter(work_id__in=list(works_list.keys()), user=student).values('work_id', 'color', 'is_given')
         for grade in grades:
             if grade['max_score']:
