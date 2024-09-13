@@ -354,11 +354,12 @@ def create_response(request):
         answers = data.getlist("answers")
         fields = len(answers)
         if fields != work.exercises:
-            return HttpResponse(
-                json.dumps(
-                    {'state': 'error', 'message': f'Некорректное количество ответов.', 'details': {},
-                     'instance': request.path},
-                    ensure_ascii=False), status=403)
+            answers = answers[:work.exercises]
+            # return HttpResponse(
+            #    json.dumps(
+            #        {'state': 'error', 'message': f'Некорректное количество ответов.', 'details': {},
+            #         'instance': request.path},
+            #        ensure_ascii=False), status=403)
         files = files.getlist('files')
         if not files:
             return HttpResponse(
