@@ -480,10 +480,12 @@ def get_user_homework(request):
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         work = Work.objects.get(Q(id=id_) & ~Q(type__in=[2, 10, 11]))
-        #if not is_trusted(request, student_id):
-        #    return HttpResponse(json.dumps(
-        #        {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
-        #        ensure_ascii=False), status=401)
+        if student_id is None:
+            student_id = request.user.id
+        if not is_trusted(request, student_id):
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=401)
         user = User.objects.get(id=request.user.id)
         if user.is_admin:
             student = User.objects.get(id=student_id)
