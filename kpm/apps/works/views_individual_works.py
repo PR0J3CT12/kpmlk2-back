@@ -213,7 +213,7 @@ def check_user_individual_work(request):
                     {'state': 'error', 'message': f'Отказано в доступе.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=403)
         work_user = work_user[0]
-        if work_user.status not in [1, 5]:
+        if work_user.status not in [0, 1, 5]:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Работа не нуждается в проверке.', 'details': {}, 'instance': request.path},
