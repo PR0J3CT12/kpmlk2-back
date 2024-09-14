@@ -275,7 +275,7 @@ def check_user_individual_work(request):
         if 'comment' in request_body.keys():
             comment = request_body['comment']
             work_user.comment = comment
-        if work_user.status == 1:
+        if work_user.status in [0, 1]:
             work_user.status = 2
         else:
             work_user.status = 6
