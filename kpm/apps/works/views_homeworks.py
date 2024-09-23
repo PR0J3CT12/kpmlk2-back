@@ -485,7 +485,7 @@ def get_user_homework(request):
         if not is_trusted(request, student_id):
             return HttpResponse(json.dumps(
                 {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
-                ensure_ascii=False), status=401)
+                ensure_ascii=False), status=403)
         user = User.objects.get(id=request.user.id)
         if user.is_admin:
             student = User.objects.get(id=student_id)
