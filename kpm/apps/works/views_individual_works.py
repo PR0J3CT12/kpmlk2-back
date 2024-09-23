@@ -432,10 +432,12 @@ def get_user_individual_work(request):
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         work = Work.objects.get(id=id_, type__in=[2, 10, 11])
-        #if not is_trusted(request, student_id):
-        #    return HttpResponse(json.dumps(
-        #        {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
-        #        ensure_ascii=False), status=401)
+        if student_id in [None, '']:
+            student_id = request.user.id
+        if not is_trusted(request, student_id):
+            return HttpResponse(json.dumps(
+                {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
+                ensure_ascii=False), status=403)
         user = User.objects.get(id=request.user.id)
         if user.is_admin:
             student = User.objects.get(id=student_id)
