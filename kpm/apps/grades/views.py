@@ -502,7 +502,7 @@ def get_mana_stats(request):
                 {'state': 'error', 'message': f'Отказано в доступе', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=401)
         student = User.objects.get(id=int(id_))
-        manas = Mana.objects.filter(user=student, is_given=True).select_related('work', 'work__theme').order_by('work__created_at').values('work_id', 'color', 'work__name', 'work__theme__name')
+        manas = Mana.objects.filter(user=student, is_given=True).select_related('work', 'work__theme').order_by('-work__created_at').values('work_id', 'color', 'work__name', 'work__theme__name')
         green = 0
         blue = 0
         works_dict = {}

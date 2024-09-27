@@ -34,7 +34,7 @@ LOGGER = settings.LOGGER
 def get_my_individual_works(request):
     try:
         student = User.objects.get(id=request.user.id)
-        work_user = WorkUser.objects.filter(user=student, is_closed=False, work__type__in=[2, 10, 11]).select_related('work').order_by('work__created_at').values('work_id', 'work__name', 'is_done', 'is_checked', 'work__exercises', 'status', 'work__course')
+        work_user = WorkUser.objects.filter(user=student, is_closed=False, work__type__in=[2, 10, 11]).select_related('work').order_by('-work__created_at').values('work_id', 'work__name', 'is_done', 'is_checked', 'work__exercises', 'status', 'work__course')
         works_list = {}
         for work in work_user:
             works_list[work['work_id']] = {
