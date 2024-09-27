@@ -31,7 +31,7 @@ LOGGER = settings.LOGGER
                      responses=get_user_responses,
                      operation_description=f"Уровни доступа: {permissions_operation_description['IsAuthenticated']}")
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsEnabled])
 def get_user(request):
     try:
         id_ = get_variable("id", request)

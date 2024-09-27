@@ -55,7 +55,6 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'kpm.middlewares.CustomAuthMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -141,8 +140,10 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.AllowAny',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        #'kpm.jwt.CustomJWTAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
+    'EXCEPTION_HANDLER': 'kpm.jwt.custom_exception_handler',
 }
 
 ACCESS_TOKEN_LIFETIME = timedelta(minutes=120) if DEBUG else timedelta(minutes=30)
@@ -183,12 +184,12 @@ LOGIN_URL = '/api/user/login'
 SWAGGER_SETTINGS = {
     'DEFAULT_MODEL_RENDERING': 'example',
     'SECURITY_DEFINITIONS': {
-            'api_key': {
-                'type': 'apiKey',
-                'in': 'header',
-                'name': 'Authorization'
-            }
-        },
+        'api_key': {
+            'type': 'apiKey',
+            'in': 'header',
+            'name': 'Authorization'
+        }
+    },
 }
 
 MEDIA_HOST_PATH = f'{os.environ.get("S3_DOMAIN")}/{os.environ.get("AWS_STORAGE_BUCKET_NAME")}/media'
