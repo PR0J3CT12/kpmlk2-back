@@ -33,7 +33,7 @@ def get_groups(request):
                      'instance': request.path},
                     ensure_ascii=False), status=404)
         groups_dict = {}
-        groups = Group.objects.filter(school_class=class_).values('id', 'name', 'marker', 'type')
+        groups = Group.objects.filter(school_class=class_).order_by('name').values('id', 'name', 'marker', 'type')
         groups_ids = []
         for row in groups:
             if row['id'] not in groups_dict:
@@ -45,7 +45,7 @@ def get_groups(request):
                     'type': row['type'],
                     'students': [],
                 }
-        groups_users = GroupUser.objects.filter(group_id__in=groups_ids).select_related('user').order_by('name').values('group_id', 'user__id', 'user__name')
+        groups_users = GroupUser.objects.filter(group_id__in=groups_ids).select_related('user').values('group_id', 'user__id', 'user__name')
         for user in groups_users:
             groups_dict[user['group_id']]['students'].append({
                 'id': user['user__id'],
