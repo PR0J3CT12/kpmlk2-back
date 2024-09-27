@@ -295,6 +295,8 @@ get_user_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                     'id': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
                                                     'name': openapi.Schema(type=openapi.TYPE_STRING,
                                                                            example="Домашняя работа 1"),
+                                                    'user_name': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                example="Иван Иванов"),
                                                     'course': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
                                                     'text': openapi.Schema(type=openapi.TYPE_STRING,
                                                                            example="Условие домашней работы"),
@@ -332,6 +334,10 @@ get_user_homework_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                         items=openapi.Schema(
                                                             type=openapi.TYPE_STRING)
                                                     ),
+                                                    'user_grades': openapi.Schema(
+                                                        type=openapi.TYPE_ARRAY,
+                                                        items=openapi.Schema(
+                                                            type=openapi.TYPE_STRING)),
                                                     'user_files': openapi.Schema(
                                                         type=openapi.TYPE_ARRAY,
                                                         items=openapi.Schema(
@@ -359,6 +365,8 @@ get_user_individual_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                            'id': openapi.Schema(type=openapi.TYPE_INTEGER, example=4),
                                                            'name': openapi.Schema(type=openapi.TYPE_STRING,
                                                                                   example="Блиц 1"),
+                                                           'user_name': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                                       example="Иван Иванов"),
                                                            'course': openapi.Schema(type=openapi.TYPE_INTEGER,
                                                                                     example=4),
                                                            'text': openapi.Schema(type=openapi.TYPE_STRING,
@@ -401,6 +409,10 @@ get_user_individual_work_response_200 = openapi.Schema(type=openapi.TYPE_OBJECT,
                                                                items=openapi.Schema(
                                                                    type=openapi.TYPE_STRING)
                                                            ),
+                                                           'user_grades': openapi.Schema(
+                                                               type=openapi.TYPE_ARRAY,
+                                                               items=openapi.Schema(
+                                                                   type=openapi.TYPE_STRING)),
                                                            'user_files': openapi.Schema(
                                                                type=openapi.TYPE_ARRAY,
                                                                items=openapi.Schema(

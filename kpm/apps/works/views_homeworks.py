@@ -508,6 +508,7 @@ def get_user_homework(request):
             files_list.append({'link': f'{host}/{link}', 'name': name, 'ext': ext})
         response = {
             'id': work.id,
+            'user_name': student.name,
             'name': work.name,
             'course': work.course,
             'text': work.text,
@@ -525,6 +526,7 @@ def get_user_homework(request):
         if work_user.is_done:
             response['user_answers'] = work_user.answers
             response['answers'] = work.answers
+            response['user_grades'] = grade.grades
             user_files = WorkUserFile.objects.filter(link=work_user)
             user_files_list = []
             for file in user_files:

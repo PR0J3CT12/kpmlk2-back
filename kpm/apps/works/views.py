@@ -157,9 +157,9 @@ def get_work(request):
 @swagger_auto_schema(method='POST', operation_summary="Создание работы.",
                      request_body=create_work_request_body,
                      responses=create_work_responses,
-                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']} | {operation_description}")
+                     operation_description=f"Уровни доступа: {permissions_operation_description['IsTierOne']} | {operation_description}")
 @api_view(["POST"])
-@permission_classes([IsTierTwo, IsEnabled])
+@permission_classes([IsTierOne, IsEnabled])
 def create_work(request):
     try:
         if request.POST or request.FILES:

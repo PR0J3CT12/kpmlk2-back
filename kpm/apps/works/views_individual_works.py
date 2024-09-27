@@ -461,6 +461,7 @@ def get_user_individual_work(request):
         response = {
             'id': work.id,
             'name': work.name,
+            'user_name': student.name,
             'course': work.course,
             'text': work.text,
             'fields': work.exercises,
@@ -477,6 +478,7 @@ def get_user_individual_work(request):
         if work_user.is_done:
             response['user_answers'] = work_user.answers
             response['answers'] = work.answers
+            response['user_grades'] = grade.grades
             user_files = WorkUserFile.objects.filter(link=work_user)
             user_files_list = []
             for file in user_files:
