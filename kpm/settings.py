@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'stats.apps.StatsConfig',
     'ratings.apps.RatingsConfig',
     'groups.apps.GroupsConfig',
+    'notifications.apps.NotificationsConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',

@@ -30,6 +30,7 @@ urlpatterns = [
     path('api/message/', include('messages.urls')),
     path('api/stat/', include('stats.urls')),
     path('api/rating/', include('ratings.urls')),
+    path('api/notification/', include('notifications.urls')),
     path('api/token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/verify', TokenVerifyView.as_view(), name='token_verify'),
     path('api/docs', schema_view.with_ui('swagger', cache_timeout=0), name="swagger-schema")
