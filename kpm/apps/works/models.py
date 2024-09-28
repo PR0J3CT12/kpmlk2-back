@@ -53,6 +53,9 @@ class Work(models.Model):
         (2, 'Углубленный'),
         (3, 'Углубленный алгебра'),
         (4, 'Углубленный геометрия'),
+        (5, 'Практикум'),
+        (6, 'Алгебра'),
+        (7, 'Геометрия'),
     )
     id = models.AutoField('work id', primary_key=True, editable=False)
     name = models.CharField('work name', max_length=100)

@@ -10,6 +10,7 @@ from drf_yasg.utils import swagger_auto_schema
 from kpm.apps.themes.docs import *
 from django.conf import settings
 from kpm.apps.users.docs import permissions_operation_description
+from kpm.apps.works.validators import validate_class
 
 
 LOGGER = settings.LOGGER
@@ -62,7 +63,7 @@ def get_themes(request):
                     {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         else:
-            if class_ not in ['4', '5', '6', '7']:
+            if not validate_class(class_):
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
@@ -71,9 +72,9 @@ def get_themes(request):
         themes = Theme.objects.filter(school_class=class_)
         type_ = get_variable("type", request)
         if type_ in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']:
-            TYPES_CLASSIFICATOR = {
-                '0': [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-                '1': [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+            TYPES_CLASSIFICATOR = {  # work_type: [theme_ids]
+                '0': [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                '1': [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
                 '2': [1],
                 '3': [8],
                 '4': [9],
@@ -83,7 +84,7 @@ def get_themes(request):
                 '8': [],
                 '9': [],
                 '10': [10, 11, 12],
-                '11': [10, 11, 12],
+                '11': [10, 11, 12, 13, 14],
             }
             themes = themes.filter(id__in=TYPES_CLASSIFICATOR[type_])
         themes = themes.values('id', 'name', 'school_class')
@@ -119,7 +120,7 @@ def create_theme(request):
             return HttpResponse(
                 json.dumps({'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
                            ensure_ascii=False), status=400)
-        if request_body["class"] not in [4, 5, 6, 7]:
+        if not validate_class(request_body["class"]):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
@@ -182,7 +183,7 @@ def delete_themes(request):
                     {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         else:
-            if class_ not in ['4', '5', '6', '7']:
+            if not validate_class(class_):
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},

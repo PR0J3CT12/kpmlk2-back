@@ -39,7 +39,7 @@ def get_works(request):
         class_ = get_variable("class", request)
         theme = get_variable("theme", request)
         type_ = get_variable("type", request)
-        if class_ not in ['4', '5', '6', '7']:
+        if not validate_class(class_):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
@@ -172,7 +172,7 @@ def create_work(request):
                            ensure_ascii=False), status=400)
         type_ = data["type"]
         school_class = data["class"]
-        if school_class not in ['4', '5', '6', '7']:
+        if not validate_class(school_class):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
@@ -228,6 +228,10 @@ def create_work(request):
             theme_id = "11"
         elif school_class == '7':
             theme_id = "12"
+        elif school_class == '8':
+            theme_id = "13"
+        elif school_class == '9':
+            theme_id = "14"
         theme = Theme.objects.get(id=theme_id)
         if type_ in ['0', '5', '6', '7']:
             is_homework = True
@@ -499,7 +503,7 @@ def delete_works(request):
                     {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         else:
-            if class_ not in ['4', '5', '6', '7']:
+            if not validate_class(class_):
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},

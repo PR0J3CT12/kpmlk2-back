@@ -100,7 +100,7 @@ def get_all_individual_works(request):
         class_ = get_variable("class", request)
         type_ = get_variable("type", request)
         course = get_variable("course", request)
-        if class_ not in ['4', '5', '6', '7']:
+        if not validate_class(class_):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
@@ -112,7 +112,7 @@ def get_all_individual_works(request):
                     {'state': 'error', 'message': f'Неверно указан тип работы.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=400)
-        if course not in [None, '', '0', '1', '2', '3', '4']:
+        if course not in [None, '', '0', '1', '2', '3', '4', '5', '6', '7']:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан курс работы.', 'details': {},

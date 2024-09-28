@@ -105,19 +105,19 @@ def get_all_homeworks(request):
         theme = get_variable("theme", request)
         type_ = get_variable("type", request)
         course = get_variable("course", request)
-        if class_ not in ['4', '5', '6', '7']:
+        if not validate_class(class_):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=400)
-        if course not in [None, '', '0', '1', '2', '3', '4']:
+        if course not in [None, '', '0', '1', '2', '3', '4', '5', '6', '7']:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан курс работы.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=400)
-        works = Work.objects.filter(is_homework=True, school_class=int(class_)).exclude(type__in=[1, 2, 3, 4, 7, 8, 9]).select_related("theme").order_by('-created_at')
+        works = Work.objects.filter(is_homework=True, school_class=int(class_)).exclude(type__in=[1, 2, 3, 4, 7, 8, 9, 10, 11]).select_related("theme").order_by('-created_at')
         works_users = WorkUser.objects.filter(work__in=works).select_related('user').values('work_id', 'user_id', 'is_checked', 'is_done')
         works_users_dict = {}
         for wu in works_users:
@@ -133,7 +133,7 @@ def get_all_homeworks(request):
             works = works.filter(theme_id=theme)
         if type_ in ['0', '5', '6']:
             works = works.filter(type=type_)
-        if course in ['0', '1', '2', '3', '4']:
+        if course not in ['', None]:
             works = works.filter(course=course)
         works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'theme__id', 'theme__name', 'type',
                              'is_homework', 'course')
@@ -334,7 +334,7 @@ def check_user_homework(request):
             else:
                 aggregated_data = Grade.objects.filter(
                     user=student,
-                    work__type__in=[0, 10, 11]
+                    work__type__in=[0]
                 ).aggregate(
                     total_experience=Sum('score'),
                 )
@@ -593,7 +593,7 @@ def add_to_homework(request):
                          'instance': request.path},
                         ensure_ascii=False), status=400)
         if work.type == 11:
-            if (1 not in student_types) or (2 not in student_types) or (3 not in student_types):
+            if (1 not in student_types) or (2 not in student_types) or (3 not in student_types) or (4 not in student_types) or (5 not in student_types) or (6 not in student_types):
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Несоответствие типа группы ученика и типа работы.', 'details': {},

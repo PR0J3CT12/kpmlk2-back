@@ -14,6 +14,7 @@ from django.db.models import Count
 from django.conf import settings
 from django.db import IntegrityError
 from kpm.apps.users.docs import permissions_operation_description
+from kpm.apps.works.validators import validate_class
 
 
 LOGGER = settings.LOGGER
@@ -28,7 +29,7 @@ LOGGER = settings.LOGGER
 def get_ratings(request):
     try:
         class_ = get_variable("class", request)
-        if class_ not in ['4', '5', '6', '7']:
+        if not validate_class(class_):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
@@ -165,7 +166,7 @@ def create_rating(request):
             return HttpResponse(json.dumps(
                 {'state': 'error', 'message': 'Body запроса пустое.', 'details': {}, 'instance': request.path},
                 ensure_ascii=False), status=400)
-        if request_body["class"] not in [4, 5, 6, 7]:
+        if not validate_class(request_body["class"]):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},

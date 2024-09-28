@@ -220,13 +220,13 @@ def get_classworks(request):
         theme = get_variable("theme", request)
         type_ = get_variable("type", request)
         course = get_variable("course", request)
-        if class_ not in ['4', '5', '6', '7']:
+        if not validate_class(class_):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=400)
-        if course not in [None, '', '0', '1', '2', '3', '4']:
+        if course not in [None, '', '0', '1', '2', '3', '4', '5', '6', '7']:
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан курс работы.', 'details': {},
@@ -237,7 +237,7 @@ def get_classworks(request):
             works = works.filter(theme_id=theme)
         if type_ in ['1', '2', '3', '4']:
             works = works.filter(type=type_)
-        if course in ['0', '1', '2', '3', '4']:
+        if course in ['0', '1', '2', '3', '4', '5', '6', '7']:
             works = works.filter(course=course)
         works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'theme_id', 'theme__name', 'type', 'is_homework', 'course')
         works_list = []

@@ -25,6 +25,9 @@ class Group(models.Model):
         (1, 'Углублённые'),
         (2, 'Углублённые алгебра'),
         (3, 'Углублённые геометрия'),
+        (4, 'Практикум'),
+        (5, 'Алгебра'),
+        (6, 'Геометрия'),
     )
     id = models.AutoField('id группы', primary_key=True, editable=False)
     name = models.CharField('Название группы', max_length=100)

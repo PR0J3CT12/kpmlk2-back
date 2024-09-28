@@ -19,6 +19,7 @@ from kpm.apps.users.docs import *
 from django.utils import timezone
 from datetime import datetime, timedelta
 from kpm.apps.users.docs import permissions_operation_description
+from kpm.apps.works.validators import validate_class
 
 
 SECRET_KEY = settings.SECRET_KEY
@@ -130,7 +131,7 @@ def get_users(request):
                          'instance': request.path},
                         ensure_ascii=False), status=404)
             else:
-                if class_ not in ['4', '5', '6', '7']:
+                if not validate_class(class_):
                     return HttpResponse(
                         json.dumps(
                             {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
@@ -156,11 +157,14 @@ def get_users(request):
             'id', 'default_password', 'name', 'login', 'experience', 'mana_earned', 'last_homework_id', 'last_classwork_id', 'is_disabled', 'school_class', 'is_admin')
         students_groups_dict = {}
         students_types = {
-            '-1': [],
-            '0': [],
-            '1': [],
-            '2': [],
-            '3': [],
+            '-1': [],  # 4 класс
+            '0': [],  # продвинутые
+            '1': [],  # углубленные
+            '2': [],  # углубленные алгебра
+            '3': [],  # углубленные геометрия
+            '4': [],  # практикум
+            '5': [],  # алгебра
+            '6': [],  # геометрия
         }
         for student in students_groups:
             group__type = '-1' if student['group__type'] is None else str(student['group__type'])
@@ -241,7 +245,7 @@ def create_user(request):
         else:
             last_id = 0
         id_, login_, password_ = login_password_creator(request_body["name"], last_id + 1)
-        if request_body["class"] not in [4, 5, 6, 7]:
+        if not validate_class(request_body["class"]):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {},
@@ -320,7 +324,7 @@ def delete_users(request):
                      'instance': request.path},
                     ensure_ascii=False), status=404)
         else:
-            if class_ not in ['4', '5', '6', '7']:
+            if not validate_class(class_):
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},

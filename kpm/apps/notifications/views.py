@@ -13,6 +13,7 @@ from django.db.models import Sum, Q, Count, F, Avg, ExpressionWrapper, FloatFiel
 from drf_yasg.utils import swagger_auto_schema
 from django.conf import settings
 from kpm.apps.users.docs import permissions_operation_description
+from kpm.apps.works.validators import validate_class
 
 
 host = settings.MEDIA_HOST_PATH
@@ -36,7 +37,7 @@ def get_notifications(request):
         messages = Message.objects.filter(user_to=user, is_viewed=False).count()
         if user.is_admin:
             class_ = get_variable('class', request)
-            if class_ not in ['4', '5', '6', '7', '8', '9']:
+            if not validate_class(class_):
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
@@ -49,7 +50,7 @@ def get_notifications(request):
             'messages': messages,
             'works': works
         }
-        return HttpResponse(json.dumps({}, ensure_ascii=False), status=200)
+        return HttpResponse(json.dumps(notifications, ensure_ascii=False), status=200)
     except ObjectDoesNotExist as e:
         return HttpResponse(
             json.dumps(

@@ -15,6 +15,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from kpm.apps.users.docs import permissions_operation_description
 from rest_framework.permissions import IsAuthenticated
+from kpm.apps.works.validators import validate_class
 
 
 LOGGER = settings.LOGGER
@@ -253,7 +254,7 @@ def get_grades(request):
         theme = get_variable("theme", request)
         type_ = get_variable("type", request)
         group = get_variable("group", request)
-        if class_ not in ['4', '5', '6', '7']:
+        if not validate_class(class_):
             return HttpResponse(
                 json.dumps(
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
@@ -423,7 +424,7 @@ def get_mana_waiters(request):
                     {'state': 'error', 'message': f'Не указан класс ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         else:
-            if class_ not in ['4', '5', '6', '7']:
+            if not validate_class(class_):
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Неверно указан класс ученика.', 'details': {}, 'instance': request.path},

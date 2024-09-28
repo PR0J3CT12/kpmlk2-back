@@ -1,3 +1,9 @@
+def validate_class(class_):
+    if class_ not in [4, 5, 6, 8, 9, '4', '5', '6', '7', '8', '9']:
+        return False
+    return True
+
+
 def validate_work_type_for_class(type_, class_):
     class_ = int(class_)
     type_ = int(type_)
@@ -6,6 +12,9 @@ def validate_work_type_for_class(type_, class_):
             return False
     if class_ in [5, 6, 7]:
         if type_ not in [0, 1, 9, 10, 11]:
+            return False
+    if class_ in [8, 9]:
+        if type_ not in [0, 1, 3]:
             return False
     return True
 
@@ -18,6 +27,9 @@ def validate_work_type_for_group_type(work_type, group_type):
             if work_type not in [0, 1, 9, 10]:
                 return False
         if group_type in [1, 2, 3]:
+            if work_type not in [0, 1, 9, 11]:
+                return False
+        if group_type in [4, 5, 6]:
             if work_type not in [0, 1, 9, 11]:
                 return False
     else:
@@ -38,6 +50,9 @@ def validate_work_class_for_work_course(work_class, work_course):
                 return True
         elif work_class == 7:
             if work_course in [1, 3, 4]:
+                return True
+        elif work_class in [8, 9]:
+            if work_course in [5, 6, 7]:
                 return True
         return False
     except Exception:
@@ -63,6 +78,9 @@ def validate_work_course_for_group_type(work_course, group_type):
                     return True
             if group_type == 3:
                 if work_course == 4:
+                    return True
+            if group_type in [4, 5, 6]:
+                if work_course in [5, 6, 7]:
                     return True
         return False
     except Exception:
