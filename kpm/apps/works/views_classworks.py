@@ -169,9 +169,14 @@ def get_classwork_files(request):
                             'instance': request.path},
                            ensure_ascii=False), status=400)
         work = Work.objects.get(id=id_)
+        course = work.course
+        if course is None:
+            group_type = None
+        else:
+            group_type = course + 1
         school_class = work.school_class
         host = HOST
-        group_files = GroupWorkFile.objects.filter(work=work).values('id', 'file', 'ext', 'group_id')
+        group_files = GroupWorkFile.objects.filter(work=work, group__type=group_type).values('id', 'file', 'ext', 'group_id')
         files_dict = defaultdict(list)
         for file in group_files:
             name = file['file'].split('/')[-1]
@@ -184,7 +189,7 @@ def get_classwork_files(request):
                 'ext': ext
             })
 
-        groups = Group.objects.filter(school_class=school_class).order_by('name').values('id', 'name', 'marker', 'type')
+        groups = Group.objects.filter(school_class=school_class, type=group_type).order_by('name').values('id', 'name', 'marker', 'type')
         groups_list = []
         for group in groups:
             group_files = files_dict[group['id']] if group['id'] in files_dict else []
