@@ -92,6 +92,7 @@ def get_work(request):
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         work = Work.objects.get(id=id_)
+        course = work.course
         result = {
             "id": work.id,
             "name": work.name,
@@ -124,7 +125,11 @@ def get_work(request):
             result['users'] = users_list
         if work.is_homework or (work.type in [2, 10, 11]):
             groups_dict = {}
-            groups = Group.objects.filter(school_class=work.school_class).order_by("name").values("id", "name", "marker", "type")
+            if course == 0:
+                group_type = None
+            else:
+                group_type = course - 1
+            groups = Group.objects.filter(school_class=work.school_class, type=group_type).order_by("name").values("id", "name", "marker", "type")
             for group in groups:
                 groups_dict[group['id']] = {
                     "id": group['id'],
