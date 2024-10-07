@@ -14,7 +14,7 @@ def validate_work_type_for_class(type_, class_):
         if type_ not in [0, 1, 9, 10, 11]:
             return False
     if class_ in [8, 9]:
-        if type_ not in [0, 1, 3]:
+        if type_ not in [0, 1, 11]:
             return False
     return True
 
