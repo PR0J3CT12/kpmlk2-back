@@ -170,10 +170,10 @@ def get_classwork_files(request):
                            ensure_ascii=False), status=400)
         work = Work.objects.get(id=id_)
         course = work.course
-        if course is None:
+        if course == 0:
             group_type = None
         else:
-            group_type = course + 1
+            group_type = course - 1
         school_class = work.school_class
         host = HOST
         group_files = GroupWorkFile.objects.filter(work=work, group__type=group_type).values('id', 'file', 'ext', 'group_id')
