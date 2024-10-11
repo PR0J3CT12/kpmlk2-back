@@ -1,5 +1,5 @@
 def validate_class(class_):
-    if class_ not in [4, 5, 6, 8, 9, '4', '5', '6', '7', '8', '9']:
+    if class_ not in [4, 5, 6, 7, 8, 9, '4', '5', '6', '7', '8', '9']:
         return False
     return True
 
