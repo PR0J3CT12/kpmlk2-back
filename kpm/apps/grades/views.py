@@ -464,7 +464,7 @@ def give_mana_all(request):
                 json.dumps({'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
                            ensure_ascii=False), status=404)
         student = User.objects.get(id=int(id_))
-        manas = Mana.objects.filter(user=student)
+        manas = Mana.objects.filter(user=student, is_given=False)
         for mana in manas:
             mana.is_given = 1
             mana.save()
