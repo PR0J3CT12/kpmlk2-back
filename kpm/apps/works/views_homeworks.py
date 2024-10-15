@@ -904,11 +904,12 @@ def get_all_answers(request):
                     ensure_ascii=False), status=404)
         admin = Admin.objects.get(user_id=request.user.id)
         work = Work.objects.get(Q(id=id_) & ~Q(type__in=[2, 10, 11]))
+        class_ = work.school_class
         grades = Grade.objects.filter(work=work).values('user_id', 'score', 'max_score')
         grades_dict = {}
         for grade in grades:
             if grade['user_id'] not in grades_dict:
-                grades_dict[grade['user_id']] = {'score': 0,'max_score': 0, 'green': 0, 'blue': 0}
+                grades_dict[grade['user_id']] = {'score': 0, 'max_score': 0, 'green': 0, 'blue': 0}
             grades_dict[grade['user_id']]['score'] = grade['score']
             grades_dict[grade['user_id']]['max_score'] = grade['max_score'] if grade['max_score'] else work.max_score
         manas = Mana.objects.filter(work=work, is_given=False).values('user_id', 'color')
@@ -923,7 +924,7 @@ def get_all_answers(request):
             'id', 'user_id', 'user__name', 'is_done', 'is_checked', 'comment', 'checker_id', 'checker__name',
             'checked_at', 'added_at', 'answered_at', 'answers', 'is_closed'
         )
-        groups_users = GroupUser.objects.filter(group__school_class=4).select_related('group').values('user_id', 'group_id', 'group__marker', 'group__name', 'group__type')
+        groups_users = GroupUser.objects.filter(group__school_class=class_).select_related('group').values('user_id', 'group_id', 'group__marker', 'group__name', 'group__type')
         user_groups_dict = {}
         for gu in groups_users:
             if gu['user_id'] not in user_groups_dict:
