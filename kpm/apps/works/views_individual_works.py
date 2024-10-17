@@ -536,7 +536,7 @@ def add_to_individual_work(request):
         work = Work.objects.get(id=id_, type__in=[2, 10, 11])
         student = User.objects.get(id=student_id)
         student_types = GroupUser.objects.filter(user=student).values_list('group__type', flat=True)
-        student_types = set(student_types)
+        student_types = set(list(student_types))
         if work.type == 10:
             if 0 not in student_types:
                 return HttpResponse(
@@ -545,7 +545,7 @@ def add_to_individual_work(request):
                          'instance': request.path},
                         ensure_ascii=False), status=400)
         if work.type == 11:
-            if (1 not in student_types) or (2 not in student_types) or (3 not in student_types):
+            if (1 not in student_types) and (2 not in student_types) and (3 not in student_types):
                 return HttpResponse(
                     json.dumps(
                         {'state': 'error', 'message': f'Несоответствие типа группы ученика и типа работы.', 'details': {},
@@ -861,6 +861,7 @@ def get_all_answers_individuals(request):
                     ensure_ascii=False), status=404)
         admin = Admin.objects.get(user_id=request.user.id)
         work = Work.objects.get(id=id_, type__in=[2, 10, 11])
+        school_class = work.school_class
         grades = Grade.objects.filter(work=work).values('user_id', 'score', 'max_score')
         grades_dict = {}
         for grade in grades:
@@ -880,7 +881,7 @@ def get_all_answers_individuals(request):
             'id', 'user_id', 'user__name', 'is_done', 'is_checked', 'comment', 'checker_id', 'checker__name',
             'checked_at', 'added_at', 'answered_at', 'answers', 'is_closed'
         )
-        groups_users = GroupUser.objects.filter(group__school_class=4).select_related('group').values('user_id', 'group_id', 'group__marker', 'group__name', 'group__type')
+        groups_users = GroupUser.objects.filter(group__school_class=school_class).select_related('group').values('user_id', 'group_id', 'group__marker', 'group__name', 'group__type')
         user_groups_dict = {}
         for gu in groups_users:
             if gu['user_id'] not in user_groups_dict:

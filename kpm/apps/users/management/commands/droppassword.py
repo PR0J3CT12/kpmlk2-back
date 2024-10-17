@@ -20,13 +20,10 @@ class Command(BaseCommand):
             login = kwargs['login']
             password = kwargs['password']
             encrypted_password = make_password(password, SECRET_KEY)
-            print(encrypted_password)
-            users = User.objects.all()
-            print(users)
             user = User.objects.get(login=login)
             user.password = encrypted_password
             user.save()
-            self.stdout.write(f'Пользователь создан.')
+            self.stdout.write(f'Пароль пользователя обновлен.')
         except ObjectDoesNotExist:
             self.stdout.write(f'Пользователь с таким логином не найден.')
         except Exception as e:
