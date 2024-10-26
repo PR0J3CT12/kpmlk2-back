@@ -45,7 +45,7 @@ def mana_generation(type_, score, max_score):
         else:
             mana = 0
     elif type_ in [10, 11]:
-        mana = score
+        mana = math.ceil(score)
     elif type_ == 7:
         mana = math.ceil(float(score) / float(max_score) * 4)
     elif type_ == 6:
