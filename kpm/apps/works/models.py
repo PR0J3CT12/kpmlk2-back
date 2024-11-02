@@ -17,10 +17,10 @@ MINIO_ACCESS_KEY = settings.STORAGES["default"]["OPTIONS"]["access_key"]
 MINIO_SECRET_KEY = settings.STORAGES["default"]["OPTIONS"]["secret_key"]
 MINIO_USE_HTTPS = True
 minio_client = Minio(
-    settings.MINIO_ENDPOINT,
-    access_key=settings.MINIO_ACCESS_KEY,
-    secret_key=settings.MINIO_SECRET_KEY,
-    secure=settings.MINIO_USE_HTTPS,
+    MINIO_ENDPOINT,
+    access_key=MINIO_ACCESS_KEY,
+    secret_key=MINIO_SECRET_KEY,
+    secure=MINIO_USE_HTTPS,
 )
 
 
