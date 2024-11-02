@@ -36,14 +36,14 @@ class PathRename(object):
         full_path = os.path.join(self.path, filename)
         media_full_path = f"media/{full_path}"
 
-        while minio_client.bucket_exists(self.bucket_name):
+        if minio_client.bucket_exists(BUCKET_NAME):
             try:
                 minio_client.stat_object(self.bucket_name, media_full_path)
                 unique_id = str(uuid.uuid4())[:8]
                 filename = f'{name}_{unique_id}{ext}'
                 full_path = os.path.join(self.path, filename)
             except Exception:
-                break
+                pass
 
         #if os.path.exists(os.path.join(STORAGE_PATH, full_path)):
         #    unique_id = str(uuid.uuid4())[:8]
