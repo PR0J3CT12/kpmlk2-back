@@ -12,7 +12,7 @@ from minio import Minio
 
 STORAGE_PATH = settings.STORAGE_PATH
 BUCKET_NAME = settings.STORAGES["default"]["OPTIONS"]["bucket_name"]
-MINIO_ENDPOINT = settings.STORAGES["default"]["OPTIONS"]["endpoint_url"]
+MINIO_ENDPOINT = settings.STORAGES["default"]["OPTIONS"]["endpoint_url"].replace("https://", "").replace("http://", "")
 MINIO_ACCESS_KEY = settings.STORAGES["default"]["OPTIONS"]["access_key"]
 MINIO_SECRET_KEY = settings.STORAGES["default"]["OPTIONS"]["secret_key"]
 MINIO_USE_HTTPS = True
