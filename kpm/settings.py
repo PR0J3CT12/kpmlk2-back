@@ -196,7 +196,7 @@ MEDIA_HOST_PATH = f'{os.environ.get("S3_DOMAIN")}/{os.environ.get("AWS_STORAGE_B
 
 STORAGES = {
     "default": {
-        "BACKEND": "storages.backends.s3.S3Storage",
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
         "OPTIONS": {
             'access_key': os.environ.get("AWS_ACCESS_KEY_ID"),
             'secret_key': os.environ.get("AWS_SECRET_ACCESS_KEY"),
@@ -211,7 +211,7 @@ STORAGES = {
         },
     },
     'staticfiles': {
-        "BACKEND": "storages.backends.s3.S3Storage",
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
         "OPTIONS": {
             'access_key': os.environ.get("AWS_ACCESS_KEY_ID"),
             'secret_key': os.environ.get("AWS_SECRET_ACCESS_KEY"),

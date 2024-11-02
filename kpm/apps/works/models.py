@@ -7,9 +7,21 @@ from django.core.exceptions import ValidationError
 from .validators import validate_work_class_for_work_course
 import uuid
 from django.conf import settings
+from minio import Minio
 
 
 STORAGE_PATH = settings.STORAGE_PATH
+BUCKET_NAME = settings.STORAGES["default"]["OPTIONS"]["bucket_name"]
+MINIO_ENDPOINT = settings.STORAGES["default"]["OPTIONS"]["endpoint_url"]
+MINIO_ACCESS_KEY = settings.STORAGES["default"]["OPTIONS"]["access_key"]
+MINIO_SECRET_KEY = settings.STORAGES["default"]["OPTIONS"]["secret_key"]
+MINIO_USE_HTTPS = True
+minio_client = Minio(
+    settings.MINIO_ENDPOINT,
+    access_key=settings.MINIO_ACCESS_KEY,
+    secret_key=settings.MINIO_SECRET_KEY,
+    secure=settings.MINIO_USE_HTTPS,
+)
 
 
 @deconstructible
@@ -17,14 +29,26 @@ class PathRename(object):
 
     def __init__(self, sub_path):
         self.path = sub_path
+        self.bucket_name = BUCKET_NAME
 
     def __call__(self, instance, filename):
         name, ext = os.path.splitext(filename)
         full_path = os.path.join(self.path, filename)
-        if os.path.exists(os.path.join(STORAGE_PATH, full_path)):
-            unique_id = str(uuid.uuid4())[:8]
-            filename = f'{name}_{unique_id}{ext}'
-            full_path = os.path.join(self.path, filename)
+
+        while minio_client.bucket_exists(self.bucket_name):
+            try:
+                minio_client.stat_object(self.bucket_name, full_path)
+                # Если файл существует, добавляем уникальный ID
+                unique_id = str(uuid.uuid4())[:8]
+                filename = f'{name}_{unique_id}{ext}'
+                full_path = os.path.join(self.path, filename)
+            except Exception:
+                break
+
+        #if os.path.exists(os.path.join(STORAGE_PATH, full_path)):
+        #    unique_id = str(uuid.uuid4())[:8]
+        #    filename = f'{name}_{unique_id}{ext}'
+        #    full_path = os.path.join(self.path, filename)
         return full_path
 
 
