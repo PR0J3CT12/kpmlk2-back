@@ -34,11 +34,11 @@ class PathRename(object):
     def __call__(self, instance, filename):
         name, ext = os.path.splitext(filename)
         full_path = os.path.join(self.path, filename)
+        media_full_path = f"media/{full_path}"
 
         while minio_client.bucket_exists(self.bucket_name):
             try:
-                minio_client.stat_object(self.bucket_name, full_path)
-                # Если файл существует, добавляем уникальный ID
+                minio_client.stat_object(self.bucket_name, media_full_path)
                 unique_id = str(uuid.uuid4())[:8]
                 filename = f'{name}_{unique_id}{ext}'
                 full_path = os.path.join(self.path, filename)
