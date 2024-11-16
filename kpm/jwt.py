@@ -3,8 +3,7 @@ from rest_framework.views import exception_handler
 
 def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
-
-    if response.status_code != 200:
+    if response and response.status_code != 200:
         detail = response.data['detail']
         if detail == 'Учетные данные не были предоставлены.':
             response.data = {'state': 'error', 'message': f'Пользователь не аутентифицирован.', 'details': {},

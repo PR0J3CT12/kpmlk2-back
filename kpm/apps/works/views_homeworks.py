@@ -674,7 +674,7 @@ def delete_from_homework(request):
                      responses=return_user_homework_responses,
                      operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["PATCH"])
-@permission_classes([IsTierTwo, IsEnabled])
+@permission_classes([IsAdmin, IsEnabled])  # todo: не isAdmin!!!
 def return_user_homework(request):
     try:
         if request.body:

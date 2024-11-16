@@ -626,7 +626,7 @@ def delete_from_individual_work(request):
                      responses=return_user_individual_work_responses,
                      operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["PATCH"])
-@permission_classes([IsTierTwo, IsEnabled])
+@permission_classes([IsAdmin, IsEnabled])  # todo: не isAdmin!!!
 def return_user_individual_work(request):
     try:
         if request.body:
