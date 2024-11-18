@@ -8,6 +8,8 @@ from .validators import validate_work_class_for_work_course
 import uuid
 from django.conf import settings
 from minio import Minio
+from django.utils.text import slugify
+from minio.error import S3Error
 
 
 STORAGE_PATH = settings.STORAGE_PATH
@@ -23,7 +25,7 @@ minio_client = Minio(
     secure=MINIO_USE_HTTPS,
 )
 
-
+"""
 @deconstructible
 class PathRename(object):
 
@@ -49,6 +51,48 @@ class PathRename(object):
         #    unique_id = str(uuid.uuid4())[:8]
         #    filename = f'{name}_{unique_id}{ext}'
         #    full_path = os.path.join(self.path, filename)
+        return full_path
+"""
+
+
+@deconstructible
+class PathRename:
+    def __init__(self, sub_path):
+        self.path = sub_path
+        self.bucket_name = BUCKET_NAME
+
+    def __call__(self, instance, filename):
+        # Нормализуем имя файла
+        name, ext = os.path.splitext(filename)
+        slugified_name = slugify(name) if name else "file"
+
+        # Формируем начальный путь для загрузки
+        unique_filename = f"{slugified_name}{ext}"
+        full_path = os.path.join(self.path, unique_filename)
+        media_full_path = f"media/{full_path}"
+
+        # Убедимся, что bucket существует
+        # try:
+        #     if not minio_client.bucket_exists(self.bucket_name):
+        #         minio_client.make_bucket(self.bucket_name)
+        # except S3Error as e:
+        #     raise Exception(f"MinIO bucket error: {e}")
+
+        while True:
+            try:
+                minio_client.stat_object(self.bucket_name, media_full_path)
+                # Если файл существует, добавляем UUID
+                unique_id = str(uuid.uuid4())[:8]
+                unique_filename = f"{slugified_name}_{unique_id}{ext}"
+                full_path = os.path.join(self.path, unique_filename)
+                media_full_path = f"media/{full_path}"
+            except S3Error as e:
+                if e.code == "NoSuchKey":
+                    # Файл не существует, можно загружать
+                    break
+                else:
+                    raise Exception(f"MinIO error: {e}")
+
         return full_path
 
 
