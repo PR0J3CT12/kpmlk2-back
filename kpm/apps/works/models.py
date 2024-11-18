@@ -64,10 +64,9 @@ class PathRename:
     def __call__(self, instance, filename):
         # Нормализуем имя файла
         name, ext = os.path.splitext(filename)
-        slugified_name = slugify(name) if name else "file"
 
         # Формируем начальный путь для загрузки
-        unique_filename = f"{slugified_name}{ext}"
+        unique_filename = f"{name}{ext}"
         full_path = os.path.join(self.path, unique_filename)
         media_full_path = f"media/{full_path}"
 
@@ -83,7 +82,7 @@ class PathRename:
                 minio_client.stat_object(self.bucket_name, media_full_path)
                 # Если файл существует, добавляем UUID
                 unique_id = str(uuid.uuid4())[:8]
-                unique_filename = f"{slugified_name}_{unique_id}{ext}"
+                unique_filename = f"{name}_{unique_id}{ext}"
                 full_path = os.path.join(self.path, unique_filename)
                 media_full_path = f"media/{full_path}"
             except S3Error as e:
