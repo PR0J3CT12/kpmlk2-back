@@ -64,6 +64,7 @@ class PathRename:
     def __call__(self, instance, filename):
         # Нормализуем имя файла
         name, ext = os.path.splitext(filename)
+        name = name.strip()
 
         # Формируем начальный путь для загрузки
         unique_filename = f"{name}{ext}"
