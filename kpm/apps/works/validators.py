@@ -46,10 +46,10 @@ def validate_work_class_for_work_course(work_class, work_course):
             if work_course == 0:
                 return True
         elif work_class in [5, 6]:
-            if work_course in [1, 2]:
+            if work_course in [1, 2, 5]:
                 return True
         elif work_class == 7:
-            if work_course in [1, 3, 4]:
+            if work_course in [1, 3, 4, 5]:
                 return True
         elif work_class in [8, 9]:
             if work_course in [5, 6, 7]:

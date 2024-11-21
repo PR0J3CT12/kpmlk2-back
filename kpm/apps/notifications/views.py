@@ -43,7 +43,7 @@ def get_notifications(request):
                         {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                          'instance': request.path},
                         ensure_ascii=False), status=400)
-            works = WorkUser.objects.filter(user=user, status__in=[1, 5], work__school_class=class_).count()
+            works = WorkUser.objects.filter(status__in=[1, 5], work__school_class=class_).count()
         else:
             works = WorkUser.objects.filter(user=user, status__in=[0, 3, 4]).count()
         notifications = {
