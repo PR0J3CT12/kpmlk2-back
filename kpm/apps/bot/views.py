@@ -47,11 +47,14 @@ def report(request):
         with psycopg2.connect(**DB_PARAMS) as connection:
             with connection.cursor() as cursor:
                 query = f"""
-                            SELECT COUNT(*) AS count, users.name
-                            FROM works_users
-                            JOIN users ON users.id = works_users.checker_id
-                            WHERE EXTRACT(MONTH FROM checked_at) = {int(month)}
-                            GROUP BY checker_id, users.name
+                            SELECT 
+                                COUNT(works_users.id) AS count, 
+                                users.name
+                            FROM users
+                            LEFT JOIN works_users ON works_users.checker_id = users.id 
+                                AND EXTRACT(MONTH FROM works_users.checked_at) = {int(month)}
+                            WHERE users.is_admin IS TRUE
+                            GROUP BY users.name
                             ORDER BY count DESC;
                         """
                 cursor.execute(query)
