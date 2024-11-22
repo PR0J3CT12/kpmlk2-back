@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'ratings.apps.RatingsConfig',
     'groups.apps.GroupsConfig',
     'notifications.apps.NotificationsConfig',
+    'bot.apps.BotConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -272,3 +273,4 @@ LOGGER.addHandler(file_handler)
 
 TG_SUPPORT_CHAT = os.environ.get("TG_SUPPORT_CHAT")
 TG_BOT_TOKEN = os.environ.get("TG_BOT_TOKEN")
+TG_ALLOWED_CHATS = os.environ.get("TG_ALLOWED_CHATS")
