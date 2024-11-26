@@ -257,7 +257,7 @@ def create_work(request):
             else:
                 type_2007 = 8
 
-            grades_2007 = data["grades_2007"]
+            grades_2007 = data.getlist("grades_2007")
             if len(grades_2007) != len(grades):
                 return HttpResponse(
                     json.dumps(
