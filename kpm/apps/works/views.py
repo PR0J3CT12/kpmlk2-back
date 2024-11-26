@@ -289,8 +289,10 @@ def create_work(request):
                              is_homework=is_homework, author_id=request.user.id, course=course)
             work.full_clean()
             work_2007.full_clean()
+            work.save()
+            work_2007.save()
             link = Exam(work=work, work_2007=work_2007)
-            link.full_clean()
+            link.save()
 
         has_attachments = data["has_attachments"].lower() == "true" if "has_attachments" in data else False
         if has_attachments:
