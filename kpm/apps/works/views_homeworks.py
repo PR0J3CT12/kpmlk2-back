@@ -272,7 +272,7 @@ def check_user_homework(request):
             grade_row.save()
         else:
             grade_row = Grade.objects.get(user=student, work=work)
-            work_2007 = Exam.objects.get(work=work).work_2007
+            work_2007 = Exam.objects.get(user=student, work=work).work_2007
             grade_row_2007 = Grade.objects.get(work=work_2007)
             work_grades = list(map(float, work.grades))
             work_grades_2007 = list(map(float, work_2007.grades))
