@@ -238,7 +238,7 @@ def get_classworks(request):
                      'instance': request.path},
                     ensure_ascii=False), status=400)
         if class_ == '4':
-            works = Work.objects.filter(school_class=4, type__in=[1, 4, 8])
+            works = Work.objects.filter(school_class=4, type__in=[1, 4, 8]).select_related("theme").order_by('-id')
         else:
             works = Work.objects.filter(is_homework=False, school_class=int(class_)).exclude(type__in=[0, 5, 6, 7, 8, 9]).select_related("theme").order_by('-id')
             if (theme is not None) and (theme != ''):
