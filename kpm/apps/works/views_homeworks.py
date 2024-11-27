@@ -44,7 +44,7 @@ def get_my_homeworks(request):
         works_with_2007 = []
         for work in work_user:
             if work['work__type'] == 5:
-                work_2007 = Exam.objects.filter(work_id=work['work_id']).work_2007
+                work_2007 = Exam.objects.get(work_id=work['work_id']).work_2007
                 works_2007_links[work_2007.id] = work['work_id']
                 works_with_2007.append(work_2007.id)
             else:
