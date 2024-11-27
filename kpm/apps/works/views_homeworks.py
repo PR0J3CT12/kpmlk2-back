@@ -198,6 +198,9 @@ def check_user_homework(request):
                     {'state': 'error', 'message': f'Не указан id ученика.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         work = Work.objects.get(Q(id=id_) & ~Q(type__in=[2, 10, 11]))
+        exam = False
+        if work.type == 5:
+            exam = True
         student = User.objects.get(id=student_id)
         admin = User.objects.get(id=request.user.id)
         work_user = WorkUser.objects.filter(user=student, work=work)
@@ -212,60 +215,136 @@ def check_user_homework(request):
                 json.dumps(
                     {'state': 'error', 'message': f'Работа не нуждается в проверке.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=403)
-        grade_row = Grade.objects.get(user=student, work=work)
-        work_grades = list(map(float, work.grades))
-        new_grades = grade_row.grades
-        grades = request_body["grades"]
-        old_score = grade_row.score
-        score = 0
-        max_score = 0
-        exercises = 0
-        is_empty = True
-        for i, value in enumerate(grades):
-            if ',' in value:
-                value = value.replace(',', '.')
-            if not validate_grade(value):
-                return HttpResponse(
-                    json.dumps({'state': 'error', 'message': 'Некорректное значение оценки.', 'details': {},
-                                'instance': request.path},
-                               ensure_ascii=False), status=400)
-            if value == '-':
-                is_empty = False
-                pass
-            elif value == '#':
-                exercises += 1
-                max_score += work_grades[i]
-            else:
-                is_empty = False
-                exercises += 1
-                max_score += work_grades[i]
-                score += float(value)
-            if score > work.max_score:
-                return HttpResponse(
-                    json.dumps(
-                        {'state': 'error', 'message': 'Некорректное значение оценок. Сумма вышла больше максимума.',
-                         'details': {},
-                         'instance': request.path},
-                        ensure_ascii=False), status=404)
-            if is_empty:
-                exercises = 0
-                max_score = 0
-                score = 0
-                work_user.is_checked = False
-                work_user.checked_at = None
-                work_user.is_done = False
-                work_user.checker = None
-            else:
-                work_user.is_checked = True
-                work_user.checked_at = timezone.now()
-                work_user.is_done = True
-                work_user.checker = admin
-            new_grades[i] = value
-        grade_row.score = score
-        grade_row.exercises = exercises
-        grade_row.max_score = max_score
-        grade_row.grades = new_grades
-        grade_row.save()
+        if not exam:
+            grade_row = Grade.objects.get(user=student, work=work)
+            work_grades = list(map(float, work.grades))
+            new_grades = grade_row.grades
+            grades = request_body["grades"]
+            old_score = grade_row.score
+            score = 0
+            max_score = 0
+            exercises = 0
+            is_empty = True
+            for i, value in enumerate(grades):
+                if ',' in value:
+                    value = value.replace(',', '.')
+                if not validate_grade(value):
+                    return HttpResponse(
+                        json.dumps({'state': 'error', 'message': 'Некорректное значение оценки.', 'details': {},
+                                    'instance': request.path},
+                                   ensure_ascii=False), status=400)
+                if value == '-':
+                    is_empty = False
+                    pass
+                elif value == '#':
+                    exercises += 1
+                    max_score += work_grades[i]
+                else:
+                    is_empty = False
+                    exercises += 1
+                    max_score += work_grades[i]
+                    score += float(value)
+                if score > work.max_score:
+                    return HttpResponse(
+                        json.dumps(
+                            {'state': 'error', 'message': 'Некорректное значение оценок. Сумма вышла больше максимума.',
+                             'details': {},
+                             'instance': request.path},
+                            ensure_ascii=False), status=404)
+                if is_empty:
+                    exercises = 0
+                    max_score = 0
+                    score = 0
+                    work_user.is_checked = False
+                    work_user.checked_at = None
+                    work_user.is_done = False
+                    work_user.checker = None
+                else:
+                    work_user.is_checked = True
+                    work_user.checked_at = timezone.now()
+                    work_user.is_done = True
+                    work_user.checker = admin
+                new_grades[i] = value
+            grade_row.score = score
+            grade_row.exercises = exercises
+            grade_row.max_score = max_score
+            grade_row.grades = new_grades
+            grade_row.save()
+        else:
+            grade_row = Grade.objects.get(user=student, work=work)
+            work_2007 = Exam.objects.get(work=work).work_2007
+            grade_row_2007 = Grade.objects.get(work=work_2007)
+            work_grades = list(map(float, work.grades))
+            work_grades_2007 = list(map(float, work_2007.grades))
+            new_grades = grade_row.grades
+            new_grades_2007 = grade_row_2007.grades
+            grades = request_body["grades"]
+            old_score = grade_row.score
+            score = 0
+            score_2007 = 0
+            max_score = 0
+            max_score_2007 = 0
+            exercises = 0
+            is_empty = True
+            for i, value in enumerate(grades):
+                if ',' in value:
+                    value = value.replace(',', '.')
+                if not validate_grade(value):
+                    return HttpResponse(
+                        json.dumps({'state': 'error', 'message': 'Некорректное значение оценки.', 'details': {},
+                                    'instance': request.path},
+                                   ensure_ascii=False), status=400)
+                if value == '-':
+                    is_empty = False
+                    pass
+                elif value == '#':
+                    exercises += 1
+                    max_score += work_grades[i]
+                    max_score_2007 += work_grades_2007[i]
+                else:
+                    is_empty = False
+                    exercises += 1
+                    max_score += work_grades[i]
+                    max_score_2007 += work_grades_2007[i]
+                    score_2007 += float(value)
+                    perc = float(value) / work_grades_2007[i]
+                    score += float(round(perc * value))
+                if (score > work.max_score) or (score_2007 > work_2007.max_score):
+                    return HttpResponse(
+                        json.dumps(
+                            {'state': 'error', 'message': 'Некорректное значение оценок. Сумма вышла больше максимума.',
+                             'details': {},
+                             'instance': request.path},
+                            ensure_ascii=False), status=404)
+                if is_empty:
+                    exercises = 0
+                    max_score = 0
+                    max_score_2007 = 0
+                    score = 0
+                    score_2007 = 0
+                    work_user.is_checked = False
+                    work_user.checked_at = None
+                    work_user.is_done = False
+                    work_user.checker = None
+                else:
+                    work_user.is_checked = True
+                    work_user.checked_at = timezone.now()
+                    work_user.is_done = True
+                    work_user.checker = admin
+                new_grades_2007[i] = value
+                perc = float(value) / work_grades_2007[i]
+                new_grades[i] = round(perc * value)
+            grade_row.score = score
+            grade_row.exercises = exercises
+            grade_row.max_score = max_score
+            grade_row.grades = new_grades
+            grade_row.full_clean()
+            grade_row_2007.score = score_2007
+            grade_row_2007.exercises = exercises
+            grade_row_2007.max_score = max_score_2007
+            grade_row_2007.grades = new_grades_2007
+            grade_row_2007.save()
+            grade_row.save()
         if 'comment' in request_body.keys():
             comment = request_body['comment']
             work_user.comment = comment
@@ -520,7 +599,11 @@ def get_user_homework(request):
             'is_checked': work_user.is_checked,
             'created_at': str(work.created_at)
         }
-        grade = Grade.objects.get(work=work, user=student)
+        if work.type == 5:
+            work_2007 = Exam.objects.get(work=work).work_2007
+            grade = Grade.objects.get(work=work_2007, user=student)
+        else:
+            grade = Grade.objects.get(work=work, user=student)
         max_score = grade.max_score
         score = grade.score
         if work_user.is_done:
