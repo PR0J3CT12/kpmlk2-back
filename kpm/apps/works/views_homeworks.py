@@ -328,7 +328,7 @@ def check_user_homework(request):
                     max_score_2007 += work_grades_2007[i]
                     score_2007 += float(value)
                     perc = float(value) / work_grades_2007[i]
-                    score += float(round(perc * float(value)))
+                    score += float(round(perc * float(work_grades[i])))
                 if (score > work.max_score) or (score_2007 > work_2007.max_score):
                     return HttpResponse(
                         json.dumps(
@@ -353,7 +353,7 @@ def check_user_homework(request):
                     work_user.checker = admin
                 new_grades_2007[i] = value
                 perc = float(value) / work_grades_2007[i]
-                new_grades[i] = round(perc * float(value))
+                new_grades[i] = str(round(perc * work_grades[i]))
             grade_row.score = score
             grade_row.exercises = exercises
             grade_row.max_score = max_score
