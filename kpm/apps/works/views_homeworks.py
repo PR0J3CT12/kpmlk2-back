@@ -38,9 +38,17 @@ LOGGER = settings.LOGGER
 def get_my_homeworks(request):
     try:
         student = User.objects.get(id=request.user.id)
-        work_user = WorkUser.objects.filter(Q(user=student) & Q(is_closed=False) & ~Q(work__type__in=[2, 10, 11])).select_related('work').order_by('-work__created_at').values('work_id', 'work__name', 'is_done', 'is_checked', 'work__exercises', 'status', 'work__course')
+        work_user = WorkUser.objects.filter(Q(user=student) & Q(is_closed=False) & ~Q(work__type__in=[2, 10, 11])).select_related('work').order_by('-work__created_at').values('work_id', 'work__name', 'is_done', 'is_checked', 'work__exercises', 'status', 'work__course', 'work__type')
         works_list = {}
+        works_2007_links = {}
+        works_with_2007 = []
         for work in work_user:
+            if work['work__type'] == 5:
+                work_2007 = Exam.objects.filter(work_id=work['work_id']).work_2007
+                works_2007_links[work_2007.id] = work['work_id']
+                works_with_2007.append(work_2007.id)
+            else:
+                works_with_2007.append(work['work_id'])
             works_list[work['work_id']] = {
                 'name': work['work__name'],
                 'course': work['work__course'],
@@ -51,18 +59,30 @@ def get_my_homeworks(request):
                 'green': 0,
                 'blue': 0
             }
-        grades = Grade.objects.filter(work_id__in=list(works_list.keys()), work__is_homework=True, user=student).select_related(
+        grades = Grade.objects.filter(work_id__in=works_with_2007, work__is_homework=True, user=student).select_related(
             'work').values('score', 'max_score', 'work_id', 'work__max_score')
-        manas = Mana.objects.filter(work_id__in=list(works_list.keys()), user=student).values('work_id', 'color', 'is_given')
+        manas = Mana.objects.filter(work_id__in=works_with_2007, user=student).values('work_id', 'color', 'is_given')
         for grade in grades:
-            if grade['max_score']:
-                works_list[grade['work_id']]['max_score'] = grade['max_score']
+            if grade['work_id'] in works_list:
+                if grade['max_score']:
+                    works_list[grade['work_id']]['max_score'] = grade['max_score']
+                else:
+                    works_list[grade['work_id']]['max_score'] = grade['work__max_score']
+                works_list[grade['work_id']]['score'] = grade['score']
             else:
-                works_list[grade['work_id']]['max_score'] = grade['work__max_score']
-            works_list[grade['work_id']]['score'] = grade['score']
+                real_work_id = works_2007_links[grade['work_id']]
+                if grade['max_score']:
+                    works_list[real_work_id]['max_score'] = grade['max_score']
+                else:
+                    works_list[real_work_id]['max_score'] = grade['work__max_score']
+                works_list[real_work_id]['score'] = grade['score']
         for mana in manas:
             if mana['work_id'] in works_list:
                 works_list[mana['work_id']][mana['color']] += 1
+            else:
+                if mana['work_id'] in works_2007_links:
+                    real_work_id = works_2007_links[mana['work_id']]
+                    works_list[real_work_id][mana['color']] += 1
         homeworks_list = []
         for homework in works_list:
             result = {
@@ -308,7 +328,7 @@ def check_user_homework(request):
                     max_score_2007 += work_grades_2007[i]
                     score_2007 += float(value)
                     perc = float(value) / work_grades_2007[i]
-                    score += float(round(perc * value))
+                    score += float(round(perc * float(value)))
                 if (score > work.max_score) or (score_2007 > work_2007.max_score):
                     return HttpResponse(
                         json.dumps(
@@ -333,7 +353,7 @@ def check_user_homework(request):
                     work_user.checker = admin
                 new_grades_2007[i] = value
                 perc = float(value) / work_grades_2007[i]
-                new_grades[i] = round(perc * value)
+                new_grades[i] = round(perc * float(value))
             grade_row.score = score
             grade_row.exercises = exercises
             grade_row.max_score = max_score
