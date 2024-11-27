@@ -237,13 +237,16 @@ def get_classworks(request):
                     {'state': 'error', 'message': f'Неверно указан курс работы.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=400)
-        works = Work.objects.filter(is_homework=False, school_class=int(class_)).exclude(type__in=[0, 5, 6, 7, 8, 9]).select_related("theme").order_by('-id')
-        if (theme is not None) and (theme != ''):
-            works = works.filter(theme_id=theme)
-        if type_ in ['1', '2', '3', '4']:
-            works = works.filter(type=type_)
-        if course in ['0', '1', '2', '3', '4', '5', '6', '7']:
-            works = works.filter(course=course)
+        if class_ == '4':
+            works = Work.objects.filter(school_class=4, type__in=[1, 4, 8])
+        else:
+            works = Work.objects.filter(is_homework=False, school_class=int(class_)).exclude(type__in=[0, 5, 6, 7, 8, 9]).select_related("theme").order_by('-id')
+            if (theme is not None) and (theme != ''):
+                works = works.filter(theme_id=theme)
+            if type_ in ['1', '2', '3', '4']:
+                works = works.filter(type=type_)
+            if course in ['0', '1', '2', '3', '4', '5', '6', '7']:
+                works = works.filter(course=course)
         works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'theme_id', 'theme__name', 'type', 'is_homework', 'course')
         works_list = []
         for work in works:
