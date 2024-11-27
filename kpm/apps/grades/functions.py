@@ -22,7 +22,7 @@ def get_variable(variable_name, source_request):
 
 
 def mana_generation(type_, score, max_score):
-    if type_ == 0:
+    if type_ in [0, 5]:
         percentage = float(score) / float(max_score) * 100
         if 0 < percentage <= 25:
             mana = 1
