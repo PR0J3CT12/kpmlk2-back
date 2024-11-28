@@ -361,16 +361,19 @@ def insert_classwork_grade(request):
                 ensure_ascii=False), status=400)
         value = request_body['value']
         if value not in [True, False]:
-            return HttpResponse(json.dumps(
-                {'state': 'error', 'message': 'Некорректное значение value.', 'details': {}, 'instance': request.path},
-                ensure_ascii=False), status=400)
+            if not is_number(value):
+                return HttpResponse(json.dumps(
+                    {'state': 'error', 'message': 'Некорректное значение value.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=400)
         grade_row = Grade.objects.get(work=work, user=student)
         new_grades = grade_row.grades
         log_grades = "_._".join(new_grades)
-        if value:
+        if value is True:
             new_grades[cell] = str(work_grades[cell])
-        else:
+        elif value is False:
             new_grades[cell] = '#'
+        else:
+            new_grades[cell] = value
         new_score = 0
         new_max_score = sum(work_grades)
         new_exercises = work.exercises
