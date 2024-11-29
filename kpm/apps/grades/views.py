@@ -263,8 +263,13 @@ def get_grades(request):
         grades = Grade.objects.filter(user__school_class=int(class_)).exclude(work__type__in=[3, 5]).order_by('work__created_at').select_related('work', 'user')
         if (theme is not None) and (theme != ''):
             grades = grades.filter(work__theme__id=int(theme))
-        if type_ in ['0', '1', '2', '4', '6', '7', '8', '9']:
-            grades = grades.filter(work__type=int(type_))
+        if type_ in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
+            if type_ == '3':
+                grades = grades.filter(work__type=8)
+            elif type_ == '5':
+                grades = grades.filter(work__type=7)
+            else:
+                grades = grades.filter(work__type=int(type_))
         if (group is not None) and (group != ''):
             grades = grades.filter(user__groupuser__group_id=int(group))
         grades = grades.values('user_id', 'user__name', 'user__experience', 'work_id', 'score', 'max_score', 'grades', 'exercises')
