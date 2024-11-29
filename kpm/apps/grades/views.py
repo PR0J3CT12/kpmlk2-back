@@ -27,7 +27,7 @@ LOGGER = settings.LOGGER
                      responses=insert_grades_responses,
                      operation_description=f"Уровни доступа: {permissions_operation_description['IsTierTwo']}")
 @api_view(["POST"])
-@permission_classes([IsTierTwo, IsEnabled])
+@permission_classes([IsTierOne, IsEnabled])  # todo: isTierTwo
 def insert_grades(request):
     global_change = {
         "work_id": None,
