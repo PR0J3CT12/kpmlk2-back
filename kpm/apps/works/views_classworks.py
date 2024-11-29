@@ -237,13 +237,16 @@ def get_classworks(request):
                     {'state': 'error', 'message': f'Неверно указан курс работы.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=400)
-        works = Work.objects.filter(is_homework=False, school_class=int(class_)).exclude(type__in=[0, 5, 6, 7, 8, 9]).select_related("theme").order_by('-id')
-        if (theme is not None) and (theme != ''):
-            works = works.filter(theme_id=theme)
-        if type_ in ['1', '2', '3', '4']:
-            works = works.filter(type=type_)
-        if course in ['0', '1', '2', '3', '4', '5', '6', '7']:
-            works = works.filter(course=course)
+        if class_ == '4':
+            works = Work.objects.filter(school_class=4, type__in=[1, 3, 4]).select_related("theme").order_by('-id')
+        else:
+            works = Work.objects.filter(is_homework=False, school_class=int(class_)).exclude(type__in=[0, 5, 6, 7, 8, 9]).select_related("theme").order_by('-id')
+            if (theme is not None) and (theme != ''):
+                works = works.filter(theme_id=theme)
+            if type_ in ['1', '2', '3', '4']:
+                works = works.filter(type=type_)
+            if course in ['0', '1', '2', '3', '4', '5', '6', '7']:
+                works = works.filter(course=course)
         works = works.values('id', 'name', 'grades', 'max_score', 'exercises', 'theme_id', 'theme__name', 'type', 'is_homework', 'course')
         works_list = []
         for work in works:
@@ -358,16 +361,19 @@ def insert_classwork_grade(request):
                 ensure_ascii=False), status=400)
         value = request_body['value']
         if value not in [True, False]:
-            return HttpResponse(json.dumps(
-                {'state': 'error', 'message': 'Некорректное значение value.', 'details': {}, 'instance': request.path},
-                ensure_ascii=False), status=400)
+            if not is_number(value):
+                return HttpResponse(json.dumps(
+                    {'state': 'error', 'message': 'Некорректное значение value.', 'details': {}, 'instance': request.path},
+                    ensure_ascii=False), status=400)
         grade_row = Grade.objects.get(work=work, user=student)
         new_grades = grade_row.grades
         log_grades = "_._".join(new_grades)
-        if value:
+        if value is True:
             new_grades[cell] = str(work_grades[cell])
-        else:
+        elif value is False:
             new_grades[cell] = '#'
+        else:
+            new_grades[cell] = value
         new_score = 0
         new_max_score = sum(work_grades)
         new_exercises = work.exercises

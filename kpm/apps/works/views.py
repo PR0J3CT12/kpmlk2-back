@@ -92,12 +92,19 @@ def get_work(request):
                     {'state': 'error', 'message': f'Не указан id работы.', 'details': {}, 'instance': request.path},
                     ensure_ascii=False), status=404)
         work = Work.objects.get(id=id_)
+        if work.type in [3, 5]:
+            work_2007 = Exam.objects.get(work=work).work_2007
+            grades = work_2007.grades
+            max_score = work_2007.max_score
+        else:
+            grades = work.grades
+            max_score = work.max_score
         course = work.course
         result = {
             "id": work.id,
             "name": work.name,
-            "grades": work.grades,
-            "max_score": work.max_score,
+            "grades": grades,
+            "max_score": max_score,
             "exercises": work.exercises,
             "theme_id": work.theme_id,
             "theme_name": work.theme.name,
@@ -257,7 +264,7 @@ def create_work(request):
             else:
                 type_2007 = 8
 
-            grades_2007 = data["grades_2007"]
+            grades_2007 = data.getlist("grades_2007")
             if len(grades_2007) != len(grades):
                 return HttpResponse(
                     json.dumps(
@@ -289,8 +296,10 @@ def create_work(request):
                              is_homework=is_homework, author_id=request.user.id, course=course)
             work.full_clean()
             work_2007.full_clean()
+            work.save()
+            work_2007.save()
             link = Exam(work=work, work_2007=work_2007)
-            link.full_clean()
+            link.save()
 
         has_attachments = data["has_attachments"].lower() == "true" if "has_attachments" in data else False
         if has_attachments:

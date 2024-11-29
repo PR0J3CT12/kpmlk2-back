@@ -260,14 +260,16 @@ def get_grades(request):
                     {'state': 'error', 'message': f'Неверно указан класс учеников.', 'details': {},
                      'instance': request.path},
                     ensure_ascii=False), status=404)
-        grades = Grade.objects.filter(user__school_class=int(class_)).exclude(work__type=5).exclude(work__type=3).order_by('work__created_at').select_related('work', 'user')
+        grades = Grade.objects.filter(user__school_class=int(class_)).exclude(work__type__in=[3, 5]).order_by('work__created_at').select_related('work', 'user')
         if (theme is not None) and (theme != ''):
-            if theme == '8':
-                grades = grades.filter(work__theme__id=int(theme))
+            grades = grades.filter(work__theme__id=int(theme))
+        if type_ in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
+            if type_ == '3':
+                grades = grades.filter(work__type=8)
+            elif type_ == '5':
+                grades = grades.filter(work__type=7)
             else:
-                grades = grades.filter(work__theme__id=int(theme))
-        if type_ in ['0', '1', '2', '4', '6', '7', '8', '9']:
-            grades = grades.filter(work__type=int(type_))
+                grades = grades.filter(work__type=int(type_))
         if (group is not None) and (group != ''):
             grades = grades.filter(user__groupuser__group_id=int(group))
         grades = grades.values('user_id', 'user__name', 'user__experience', 'work_id', 'score', 'max_score', 'grades', 'exercises')
@@ -297,16 +299,17 @@ def get_grades(request):
                 }
                 grades_dict[grade['user_id']]['total_score'] += grade['score']
                 grades_dict[grade['user_id']]['total_max_score'] += grade['max_score']
-        works = Work.objects.filter(id__in=works_list, school_class=int(class_)).order_by('created_at').values('id', 'name', 'max_score', 'grades')
+        works = Work.objects.filter(id__in=works_list, school_class=int(class_)).order_by('created_at')
         works_data = []
         links_dict = {}
         if ((type_ == '7') or (type_ == '8')) or (theme == '8'):
-            links = Exam.objects.filter(work_2007__in=works).select_related('work_2007').values('id', 'work_id', 'work_2007_id', 'work__grades')
+            links = Exam.objects.filter(work_2007__in=works).values('work_id', 'work_2007_id', 'work__grades')
             for link in links:
                 links_dict[link['work_2007_id']] = {
                     'pair_work_id': link['work_id'],
                     'grades': link['work__grades']
                 }
+        works = works.values('id', 'name', 'max_score', 'grades')
         if (group is not None) and (group != ''):
             group_users = GroupUser.objects.filter(group_id=group, user__school_class=int(class_), user__is_admin=0).order_by('group_id', 'user_id').values('user_id', 'group_id', 'group__marker')
             groups_dict = {}
