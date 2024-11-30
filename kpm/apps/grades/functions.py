@@ -149,7 +149,7 @@ def validate_grade(grade):
     if ',' in grade:
         grade = grade.replace(',', '.')
     if grade not in ['', '-']:
-        return is_number(grade)
+        return is_number_float(grade)
     else:
         return False
 
